@@ -39,7 +39,7 @@ func NewAuthHandler(authService *auth.AuthService, v *validator.Validator, log *
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req request.LoginRequest
 	if err := decodeAndValidate(r, &req, h.validator); err != nil {
-		response.Error(w, h.log, err)
+		response.Error(w, r, h.log, err)
 		return
 	}
 
@@ -48,7 +48,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Password: req.Password,
 	})
 	if err != nil {
-		response.Error(w, h.log, err)
+		response.Error(w, r, h.log, err)
 		return
 	}
 
@@ -69,7 +69,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	var req request.RefreshRequest
 	if err := decodeAndValidate(r, &req, h.validator); err != nil {
-		response.Error(w, h.log, err)
+		response.Error(w, r, h.log, err)
 		return
 	}
 
@@ -77,7 +77,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		RefreshToken: req.RefreshToken,
 	})
 	if err != nil {
-		response.Error(w, h.log, err)
+		response.Error(w, r, h.log, err)
 		return
 	}
 
@@ -98,14 +98,14 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	var req request.LogoutRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.Error(w, h.log, err)
+		response.Error(w, r, h.log, err)
 		return
 	}
 
 	if err := h.authService.Logout(r.Context(), auth.LogoutInput{
 		RefreshToken: req.RefreshToken,
 	}); err != nil {
-		response.Error(w, h.log, err)
+		response.Error(w, r, h.log, err)
 		return
 	}
 
@@ -124,13 +124,13 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	userID, err := middleware.GetUserID(r.Context())
 	if err != nil {
-		response.Error(w, h.log, err)
+		response.Error(w, r, h.log, err)
 		return
 	}
 
 	user, err := h.authService.GetCurrentUser(r.Context(), userID)
 	if err != nil {
-		response.Error(w, h.log, err)
+		response.Error(w, r, h.log, err)
 		return
 	}
 

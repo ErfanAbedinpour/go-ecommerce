@@ -370,6 +370,14 @@ const docTemplate = `{
             "properties": {
                 "error": {
                     "$ref": "#/definitions/response.ErrorBody"
+                },
+                "path": {
+                    "type": "string",
+                    "example": "/api/v1/auth/login"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 400
                 }
             }
         },

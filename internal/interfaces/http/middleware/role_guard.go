@@ -21,12 +21,12 @@ func RequireRole(roles ...user.Role) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			role, err := GetUserRole(r.Context())
 			if err != nil {
-				response.Error(w, nil, err)
+				response.Error(w, r, nil, err)
 				return
 			}
 
 			if _, ok := allowed[role]; !ok {
-				response.Error(w, nil, apperror.Forbidden("access denied for role: "+role.String()))
+				response.Error(w, r, nil, apperror.Forbidden("access denied for role: "+role.String()))
 				return
 			}
 

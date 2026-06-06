@@ -9,7 +9,9 @@ type ErrorBody struct {
 
 // ErrorResponse is the standard API error envelope.
 type ErrorResponse struct {
-	Error ErrorBody `json:"error"`
+	StatusCode int       `json:"statusCode" example:"400"`
+	Path       string    `json:"path" example:"/api/v1/auth/login"`
+	Error      ErrorBody `json:"error"`
 }
 
 // HealthResponse is the liveness probe response.

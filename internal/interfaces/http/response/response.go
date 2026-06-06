@@ -32,17 +32,25 @@ func NoContent(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// Error writes a structured error response.
-func Error(w http.ResponseWriter, log *slog.Logger, err error) {
+// Error writes a structured error response with statusCode and request path.
+func Error(w http.ResponseWriter, r *http.Request, log *slog.Logger, err error) {
 	appErr := apperror.AsAppError(err)
 
-	if appErr.Status >= http.StatusInternalServerError {
+	if appErr.Status >= http.StatusInternalServerError && log != nil {
 		log.Error("internal error",
 			slog.String("code", appErr.Code),
+			slog.String("path", requestPath(r)),
 			slog.String("error", appErr.Error()),
 		)
 		appErr = apperror.Internal("an unexpected error occurred")
 	}
 
-	JSON(w, appErr.Status, apperror.ErrorResponse{Error: *appErr})
+	JSON(w, appErr.Status, apperror.NewErrorResponse(appErr, requestPath(r)))
+}
+
+func requestPath(r *http.Request) string {
+	if r == nil || r.URL == nil {
+		return ""
+	}
+	return r.URL.Path
 }

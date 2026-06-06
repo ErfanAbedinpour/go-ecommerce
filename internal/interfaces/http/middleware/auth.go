@@ -33,19 +33,19 @@ func Authenticate(jwtService TokenValidator) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token, err := extractBearerToken(r)
 			if err != nil {
-				response.Error(w, nil, err)
+				response.Error(w, r, nil, err)
 				return
 			}
 
 			claims, err := jwtService.ValidateAccessToken(token)
 			if err != nil {
-				response.Error(w, nil, apperror.Unauthorized("invalid or expired access token"))
+				response.Error(w, r, nil, apperror.Unauthorized("invalid or expired access token"))
 				return
 			}
 
 			role, err := user.ParseRole(claims.Role)
 			if err != nil {
-				response.Error(w, nil, apperror.Unauthorized("invalid role in token"))
+				response.Error(w, r, nil, apperror.Unauthorized("invalid role in token"))
 				return
 			}
 

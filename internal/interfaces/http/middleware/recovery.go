@@ -21,7 +21,7 @@ func Recovery(log *slog.Logger) func(http.Handler) http.Handler {
 						slog.String("request_id", GetRequestID(r.Context())),
 						slog.String("path", r.URL.Path),
 					)
-					response.Error(w, log, apperror.Internal("an unexpected error occurred"))
+					response.Error(w, r, log, apperror.Internal("an unexpected error occurred"))
 				}
 			}()
 			next.ServeHTTP(w, r)

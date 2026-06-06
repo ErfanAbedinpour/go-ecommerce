@@ -45,7 +45,18 @@ func (e *AppError) Unwrap() error {
 
 // ErrorResponse is the JSON envelope for error responses.
 type ErrorResponse struct {
-	Error AppError `json:"error"`
+	StatusCode int      `json:"statusCode"`
+	Path       string   `json:"path"`
+	Error      AppError `json:"error"`
+}
+
+// NewErrorResponse builds a client-facing error envelope.
+func NewErrorResponse(appErr *AppError, path string) ErrorResponse {
+	return ErrorResponse{
+		StatusCode: appErr.Status,
+		Path:       path,
+		Error:      *appErr,
+	}
 }
 
 // New creates a new AppError.

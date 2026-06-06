@@ -53,6 +53,21 @@ func TestStatusCode(t *testing.T) {
 	}
 }
 
+func TestNewErrorResponse(t *testing.T) {
+	appErr := Validation("request validation failed", map[string]string{"email": "is required"})
+	resp := NewErrorResponse(appErr, "/api/v1/auth/login")
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusBadRequest)
+	}
+	if resp.Path != "/api/v1/auth/login" {
+		t.Errorf("Path = %q, want %q", resp.Path, "/api/v1/auth/login")
+	}
+	if resp.Error.Code != CodeValidation {
+		t.Errorf("Error.Code = %q, want %q", resp.Error.Code, CodeValidation)
+	}
+}
+
 func TestIsAppError(t *testing.T) {
 	if !IsAppError(NotFound("x")) {
 		t.Error("expected IsAppError to return true for AppError")
