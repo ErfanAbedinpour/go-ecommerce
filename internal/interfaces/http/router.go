@@ -73,7 +73,19 @@ func registerAdminRoutes(r chi.Router, c *di.Container) {
 
 		r.Get("/", handler.AdminIndex)
 
-		// Future admin modules (products, orders, coupons, etc.) are registered here.
+		registerProductRoutes(r, c)
+	})
+}
+
+func registerProductRoutes(r chi.Router, c *di.Container) {
+	r.Route("/products", func(r chi.Router) {
+		r.Get("/search", c.Product.Search)
+		r.Get("/", c.Product.List)
+		r.Post("/", c.Product.Create)
+		r.Get("/{id}", c.Product.Get)
+		r.Put("/{id}", c.Product.Update)
+		r.Delete("/{id}", c.Product.Delete)
+		r.Patch("/{id}/inventory", c.Product.UpdateInventory)
 	})
 }
 

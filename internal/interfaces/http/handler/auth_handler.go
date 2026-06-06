@@ -6,11 +6,14 @@ import (
 	"net/http"
 
 	"app/internal/application/auth"
+	dtoresponse "app/internal/interfaces/http/dto/response"
 	"app/internal/interfaces/http/dto/request"
 	"app/internal/interfaces/http/middleware"
 	"app/internal/interfaces/http/response"
 	"app/pkg/validator"
 )
+
+var _ = dtoresponse.TokenResponse{}
 
 // AuthHandler handles authentication HTTP endpoints.
 type AuthHandler struct {
@@ -31,10 +34,10 @@ func NewAuthHandler(authService *auth.AuthService, v *validator.Validator, log *
 // @Accept       json
 // @Produce      json
 // @Param        body  body      request.LoginRequest  true  "Login credentials"
-// @Success      200   {object}  response.TokenResponse
-// @Failure      400   {object}  response.ErrorResponse
-// @Failure      401   {object}  response.ErrorResponse
-// @Failure      403   {object}  response.ErrorResponse
+// @Success      200   {object}  dtoresponse.TokenResponse
+// @Failure      400   {object}  dtoresponse.ErrorResponse
+// @Failure      401   {object}  dtoresponse.ErrorResponse
+// @Failure      403   {object}  dtoresponse.ErrorResponse
 // @Router       /api/v1/auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req request.LoginRequest
@@ -62,9 +65,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param        body  body      request.RefreshRequest  true  "Refresh token"
-// @Success      200   {object}  response.TokenResponse
-// @Failure      400   {object}  response.ErrorResponse
-// @Failure      401   {object}  response.ErrorResponse
+// @Success      200   {object}  dtoresponse.TokenResponse
+// @Failure      400   {object}  dtoresponse.ErrorResponse
+// @Failure      401   {object}  dtoresponse.ErrorResponse
 // @Router       /api/v1/auth/refresh [post]
 func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	var req request.RefreshRequest
@@ -93,7 +96,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Param        body  body  request.LogoutRequest  false  "Optional refresh token to revoke"
 // @Success      204   "No Content"
-// @Failure      401   {object}  response.ErrorResponse
+// @Failure      401   {object}  dtoresponse.ErrorResponse
 // @Router       /api/v1/auth/logout [post]
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	var req request.LogoutRequest
@@ -118,8 +121,8 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 // @Tags         auth
 // @Produce      json
 // @Security     BearerAuth
-// @Success      200  {object}  response.CurrentUserResponse
-// @Failure      401  {object}  response.ErrorResponse
+// @Success      200  {object}  dtoresponse.CurrentUserResponse
+// @Failure      401  {object}  dtoresponse.ErrorResponse
 // @Router       /api/v1/auth/me [get]
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	userID, err := middleware.GetUserID(r.Context())

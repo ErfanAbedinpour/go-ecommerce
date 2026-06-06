@@ -5,8 +5,11 @@ import (
 	"net/http"
 	"time"
 
+	dtoresponse "app/internal/interfaces/http/dto/response"
 	"app/internal/interfaces/http/response"
 )
+
+var _ = dtoresponse.HealthResponse{}
 
 // HealthChecker defines the interface for dependency health checks.
 type HealthChecker interface {
@@ -40,7 +43,7 @@ type readinessResponse struct {
 // @Description  Returns 200 if the process is alive. Used by orchestrators for liveness checks.
 // @Tags         health
 // @Produce      json
-// @Success      200  {object}  response.HealthResponse
+// @Success      200  {object}  dtoresponse.HealthResponse
 // @Router       /healthz [get]
 func (h *HealthHandler) Liveness(w http.ResponseWriter, _ *http.Request) {
 	response.OK(w, healthResponse{
@@ -54,8 +57,8 @@ func (h *HealthHandler) Liveness(w http.ResponseWriter, _ *http.Request) {
 // @Description  Returns 200 if all dependencies (database) are healthy, 503 otherwise.
 // @Tags         health
 // @Produce      json
-// @Success      200  {object}  response.ReadinessResponse
-// @Failure      503  {object}  response.ReadinessResponse
+// @Success      200  {object}  dtoresponse.ReadinessResponse
+// @Failure      503  {object}  dtoresponse.ReadinessResponse
 // @Router       /readyz [get]
 func (h *HealthHandler) Readiness(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)

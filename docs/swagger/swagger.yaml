@@ -1,5 +1,58 @@
 basePath: /
 definitions:
+  app_internal_interfaces_http_dto_request.CreateProductRequest:
+    properties:
+      attributes:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.ProductAttributeRequest'
+        type: array
+      brand:
+        maxLength: 100
+        type: string
+      category_id:
+        type: string
+      description:
+        type: string
+      images:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.ProductImageRequest'
+        maxItems: 10
+        type: array
+      inventory:
+        $ref: '#/definitions/app_internal_interfaces_http_dto_request.ProductInventoryRequest'
+      is_featured:
+        type: boolean
+      name:
+        maxLength: 300
+        minLength: 1
+        type: string
+      price:
+        minimum: 0
+        type: number
+      sale_price:
+        minimum: 0
+        type: number
+      short_description:
+        maxLength: 500
+        type: string
+      sku:
+        maxLength: 100
+        minLength: 1
+        type: string
+      slug:
+        maxLength: 300
+        type: string
+      status:
+        enum:
+        - draft
+        - active
+        - archived
+        type: string
+    required:
+    - name
+    - price
+    - sku
+    type: object
   app_internal_interfaces_http_dto_request.LoginRequest:
     properties:
       email:
@@ -16,6 +69,41 @@ definitions:
       refresh_token:
         type: string
     type: object
+  app_internal_interfaces_http_dto_request.ProductAttributeRequest:
+    properties:
+      name:
+        maxLength: 100
+        type: string
+      value:
+        maxLength: 200
+        type: string
+    required:
+    - name
+    - value
+    type: object
+  app_internal_interfaces_http_dto_request.ProductImageRequest:
+    properties:
+      alt_text:
+        maxLength: 200
+        type: string
+      sort_order:
+        minimum: 0
+        type: integer
+      url:
+        maxLength: 500
+        type: string
+    required:
+    - url
+    type: object
+  app_internal_interfaces_http_dto_request.ProductInventoryRequest:
+    properties:
+      low_stock_threshold:
+        minimum: 0
+        type: integer
+      quantity:
+        minimum: 0
+        type: integer
+    type: object
   app_internal_interfaces_http_dto_request.RefreshRequest:
     properties:
       refresh_token:
@@ -23,7 +111,68 @@ definitions:
     required:
     - refresh_token
     type: object
-  response.CurrentUserResponse:
+  app_internal_interfaces_http_dto_request.UpdateInventoryRequest:
+    properties:
+      adjustment_reason:
+        maxLength: 200
+        type: string
+      low_stock_threshold:
+        minimum: 0
+        type: integer
+      quantity:
+        minimum: 0
+        type: integer
+    required:
+    - quantity
+    type: object
+  app_internal_interfaces_http_dto_request.UpdateProductRequest:
+    properties:
+      attributes:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.ProductAttributeRequest'
+        type: array
+      brand:
+        maxLength: 100
+        type: string
+      category_id:
+        type: string
+      description:
+        type: string
+      images:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.ProductImageRequest'
+        maxItems: 10
+        type: array
+      is_featured:
+        type: boolean
+      name:
+        maxLength: 300
+        minLength: 1
+        type: string
+      price:
+        minimum: 0
+        type: number
+      sale_price:
+        minimum: 0
+        type: number
+      short_description:
+        maxLength: 500
+        type: string
+      sku:
+        maxLength: 100
+        minLength: 1
+        type: string
+      slug:
+        maxLength: 300
+        type: string
+      status:
+        enum:
+        - draft
+        - active
+        - archived
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.CurrentUserResponse:
     properties:
       email:
         example: admin@shop.com
@@ -47,7 +196,7 @@ definitions:
         example: admin
         type: string
     type: object
-  response.ErrorBody:
+  app_internal_interfaces_http_dto_response.ErrorBody:
     properties:
       code:
         example: VALIDATION_ERROR
@@ -60,10 +209,10 @@ definitions:
         example: request validation failed
         type: string
     type: object
-  response.ErrorResponse:
+  app_internal_interfaces_http_dto_response.ErrorResponse:
     properties:
       error:
-        $ref: '#/definitions/response.ErrorBody'
+        $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorBody'
       path:
         example: /api/v1/auth/login
         type: string
@@ -71,7 +220,7 @@ definitions:
         example: 400
         type: integer
     type: object
-  response.HealthResponse:
+  app_internal_interfaces_http_dto_response.HealthResponse:
     properties:
       status:
         example: ok
@@ -80,13 +229,94 @@ definitions:
         example: 1.0.0
         type: string
     type: object
-  response.MessageResponse:
+  app_internal_interfaces_http_dto_response.MessageResponse:
     properties:
       message:
         example: ecommerce admin API v1
         type: string
     type: object
-  response.ReadinessResponse:
+  app_internal_interfaces_http_dto_response.ProductAttributeResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      value:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.ProductImageResponse:
+    properties:
+      alt_text:
+        type: string
+      id:
+        type: string
+      sort_order:
+        type: integer
+      url:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.ProductInventoryResponse:
+    properties:
+      is_low_stock:
+        type: boolean
+      is_out_of_stock:
+        type: boolean
+      low_stock_threshold:
+        type: integer
+      quantity:
+        type: integer
+    type: object
+  app_internal_interfaces_http_dto_response.ProductListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.ProductResponse:
+    properties:
+      attributes:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductAttributeResponse'
+        type: array
+      brand:
+        type: string
+      category_id:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      images:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductImageResponse'
+        type: array
+      inventory:
+        $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductInventoryResponse'
+      is_featured:
+        type: boolean
+      name:
+        type: string
+      price:
+        type: number
+      sale_price:
+        type: number
+      short_description:
+        type: string
+      sku:
+        type: string
+      slug:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.ReadinessResponse:
     properties:
       checks:
         additionalProperties:
@@ -99,7 +329,7 @@ definitions:
         example: 1.0.0
         type: string
     type: object
-  response.TokenResponse:
+  app_internal_interfaces_http_dto_response.TokenResponse:
     properties:
       access_token:
         example: eyJhbGciOiJIUzI1NiIs...
@@ -113,6 +343,17 @@ definitions:
       token_type:
         example: Bearer
         type: string
+    type: object
+  app_pkg_pagination.Meta:
+    properties:
+      page:
+        type: integer
+      per_page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
     type: object
 host: localhost:8080
 info:
@@ -137,20 +378,332 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.MessageResponse'
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.MessageResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Admin API root
       tags:
       - admin
+  /api/v1/admin/products:
+    get:
+      description: Get a paginated list of products with optional filters.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Sort field
+        enum:
+        - created_at
+        - name
+        - price
+        - updated_at
+        in: query
+        name: sort
+        type: string
+      - description: Sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        type: string
+      - description: Filter by status
+        enum:
+        - draft
+        - active
+        - archived
+        in: query
+        name: status
+        type: string
+      - description: Filter by category
+        in: query
+        name: category_id
+        type: string
+      - description: Filter by brand
+        in: query
+        name: brand
+        type: string
+      - description: Filter featured products
+        in: query
+        name: is_featured
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List products
+      tags:
+      - products
+    post:
+      consumes:
+      - application/json
+      description: Create a new product with images, attributes, and inventory.
+      parameters:
+      - description: Product data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.CreateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create product
+      tags:
+      - products
+  /api/v1/admin/products/{id}:
+    delete:
+      description: Soft-delete a product. Fails if referenced by active orders.
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete product
+      tags:
+      - products
+    get:
+      description: Get a product by ID with images, attributes, and inventory.
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get product
+      tags:
+      - products
+    put:
+      consumes:
+      - application/json
+      description: Update an existing product. Supports partial updates.
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Product data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update product
+      tags:
+      - products
+  /api/v1/admin/products/{id}/inventory:
+    patch:
+      consumes:
+      - application/json
+      description: Adjust stock quantity and low-stock threshold for a product.
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Inventory data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateInventoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductInventoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update product inventory
+      tags:
+      - products
+  /api/v1/admin/products/search:
+    get:
+      description: Search products by name, SKU, or description.
+      parameters:
+      - description: Search query (min 2 chars)
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Search products
+      tags:
+      - products
   /api/v1/auth/login:
     post:
       consumes:
@@ -170,19 +723,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.TokenResponse'
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.TokenResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
       summary: Login
       tags:
       - auth
@@ -205,7 +758,7 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Logout
@@ -220,11 +773,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.CurrentUserResponse'
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CurrentUserResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get current user
@@ -248,15 +801,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.TokenResponse'
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.TokenResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
       summary: Refresh token
       tags:
       - auth
@@ -270,7 +823,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.HealthResponse'
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.HealthResponse'
       summary: Liveness probe
       tags:
       - health
@@ -283,11 +836,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.ReadinessResponse'
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ReadinessResponse'
         "503":
           description: Service Unavailable
           schema:
-            $ref: '#/definitions/response.ReadinessResponse'
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ReadinessResponse'
       summary: Readiness probe
       tags:
       - health

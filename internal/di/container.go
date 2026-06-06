@@ -5,6 +5,7 @@ import (
 	"os"
 
 	appauth "app/internal/application/auth"
+	appproduct "app/internal/application/product"
 	"app/internal/config"
 	infraauth "app/internal/infrastructure/auth"
 	"app/internal/infrastructure/persistence/postgres"
@@ -24,11 +25,13 @@ type Container struct {
 	Hasher *infraauth.PasswordHasher
 
 	// Services
-	AuthService *appauth.AuthService
+	AuthService    *appauth.AuthService
+	ProductService *appproduct.Service
 
 	// Handlers
-	Health *handler.HealthHandler
-	Auth   *handler.AuthHandler
+	Health  *handler.HealthHandler
+	Auth    *handler.AuthHandler
+	Product *handler.ProductHandler
 }
 
 // New creates and wires the dependency injection container.
@@ -49,16 +52,21 @@ func New(cfg *config.Config) (*Container, error) {
 	refreshTokenRepo := postgres.NewRefreshTokenRepository(db.DB)
 	authService := appauth.NewAuthService(userRepo, refreshTokenRepo, hasher, jwtService)
 
+	productRepo := postgres.NewProductRepository(db.DB)
+	productService := appproduct.NewService(productRepo)
+
 	c := &Container{
-		Config:      cfg,
-		Log:         log,
-		DB:          db,
-		Validator:   v,
-		JWT:         jwtService,
-		Hasher:      hasher,
-		AuthService: authService,
-		Health:      handler.NewHealthHandler(db, cfg.App.Version),
-		Auth:        handler.NewAuthHandler(authService, v, log),
+		Config:         cfg,
+		Log:            log,
+		DB:             db,
+		Validator:      v,
+		JWT:            jwtService,
+		Hasher:         hasher,
+		AuthService:    authService,
+		ProductService: productService,
+		Health:         handler.NewHealthHandler(db, cfg.App.Version),
+		Auth:           handler.NewAuthHandler(authService, v, log),
+		Product:        handler.NewProductHandler(productService, v, log),
 	}
 
 	return c, nil
