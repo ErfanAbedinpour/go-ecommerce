@@ -1,0 +1,295 @@
+basePath: /
+definitions:
+  app_internal_interfaces_http_dto_request.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  app_internal_interfaces_http_dto_request.LogoutRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_request.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  response.CurrentUserResponse:
+    properties:
+      email:
+        example: admin@shop.com
+        type: string
+      first_name:
+        example: Admin
+        type: string
+      id:
+        example: c0000000-0000-0000-0000-000000000001
+        type: string
+      last_name:
+        example: User
+        type: string
+      phone:
+        example: "+1234567890"
+        type: string
+      role:
+        enum:
+        - admin
+        - customer
+        example: admin
+        type: string
+    type: object
+  response.ErrorBody:
+    properties:
+      code:
+        example: VALIDATION_ERROR
+        type: string
+      details:
+        additionalProperties:
+          type: string
+        type: object
+      message:
+        example: request validation failed
+        type: string
+    type: object
+  response.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/response.ErrorBody'
+    type: object
+  response.HealthResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+      version:
+        example: 1.0.0
+        type: string
+    type: object
+  response.MessageResponse:
+    properties:
+      message:
+        example: ecommerce admin API v1
+        type: string
+    type: object
+  response.ReadinessResponse:
+    properties:
+      checks:
+        additionalProperties:
+          type: string
+        type: object
+      status:
+        example: ready
+        type: string
+      version:
+        example: 1.0.0
+        type: string
+    type: object
+  response.TokenResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIs...
+        type: string
+      expires_in:
+        example: 900
+        type: integer
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIs...
+        type: string
+      token_type:
+        example: Bearer
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@shop.com
+    name: API Support
+  description: REST API for the eCommerce admin panel. Supports JWT authentication
+    with role-based access (admin, customer).
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: eCommerce Admin API
+  version: "1.0"
+paths:
+  /api/v1/admin/:
+    get:
+      description: Returns a welcome message. Requires admin role.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Admin API root
+      tags:
+      - admin
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate with email and password. Returns JWT access and refresh
+        tokens.
+      parameters:
+      - description: Login credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Login
+      tags:
+      - auth
+  /api/v1/auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Revoke the refresh token family. Requires a valid access token.
+      parameters:
+      - description: Optional refresh token to revoke
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout
+      tags:
+      - auth
+  /api/v1/auth/me:
+    get:
+      description: Returns the profile of the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.CurrentUserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user
+      tags:
+      - auth
+  /api/v1/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Exchange a valid refresh token for a new access/refresh token pair.
+      parameters:
+      - description: Refresh token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Refresh token
+      tags:
+      - auth
+  /healthz:
+    get:
+      description: Returns 200 if the process is alive. Used by orchestrators for
+        liveness checks.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.HealthResponse'
+      summary: Liveness probe
+      tags:
+      - health
+  /readyz:
+    get:
+      description: Returns 200 if all dependencies (database) are healthy, 503 otherwise.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.ReadinessResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/response.ReadinessResponse'
+      summary: Readiness probe
+      tags:
+      - health
+securityDefinitions:
+  BearerAuth:
+    description: 'Enter "Bearer" followed by a space and the JWT access token. Example:
+      Bearer eyJhbGciOiJIUzI1NiIs...'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

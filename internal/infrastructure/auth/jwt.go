@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"app/internal/config"
+	"app/internal/domain/user"
 )
 
 // TokenType distinguishes access and refresh tokens.
@@ -20,14 +21,13 @@ const (
 	TokenTypeRefresh TokenType = "refresh"
 )
 
-// Claims holds JWT claims for admin users.
+// Claims holds JWT claims for authenticated users.
 type Claims struct {
 	jwt.RegisteredClaims
-	UserID      string   `json:"user_id"`
-	Email       string   `json:"email"`
-	Roles       []string `json:"roles"`
-	Permissions []string `json:"permissions"`
-	TokenType   string   `json:"token_type"`
+	UserID    string `json:"user_id"`
+	Email     string `json:"email"`
+	Role      string `json:"role"`
+	TokenType string `json:"token_type"`
 }
 
 // TokenPair holds an access/refresh token pair.
@@ -58,10 +58,9 @@ func NewJWTService(cfg config.JWTConfig) *JWTService {
 
 // TokenInput holds data needed to generate tokens.
 type TokenInput struct {
-	UserID      uuid.UUID
-	Email       string
-	Roles       []string
-	Permissions []string
+	UserID uuid.UUID
+	Email  string
+	Role   user.Role
 }
 
 // GenerateTokenPair creates a new access and refresh token pair.
@@ -125,11 +124,10 @@ func (s *JWTService) generateToken(input TokenInput, tokenType TokenType, ttl ti
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
 		},
-		UserID:      input.UserID.String(),
-		Email:       input.Email,
-		Roles:       input.Roles,
-		Permissions: input.Permissions,
-		TokenType:   string(tokenType),
+		UserID:    input.UserID.String(),
+		Email:     input.Email,
+		Role:      input.Role.String(),
+		TokenType: string(tokenType),
 	}
 	if jti != "" {
 		claims.RegisteredClaims.ID = jti

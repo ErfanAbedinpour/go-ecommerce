@@ -12,6 +12,8 @@ CREATE TABLE admin_users (
     first_name    VARCHAR(100) NOT NULL,
     last_name     VARCHAR(100) NOT NULL,
     phone         VARCHAR(20),
+    role          VARCHAR(20) NOT NULL DEFAULT 'customer'
+                  CHECK (role IN ('admin', 'customer')),
     is_active     BOOLEAN NOT NULL DEFAULT TRUE,
     last_login_at TIMESTAMPTZ,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),

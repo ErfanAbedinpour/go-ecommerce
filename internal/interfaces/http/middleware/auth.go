@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"app/internal/domain/user"
 	"app/internal/infrastructure/auth"
 	"app/internal/interfaces/http/response"
 	"app/pkg/apperror"
@@ -15,10 +16,9 @@ import (
 type contextKeyAuth string
 
 const (
-	UserIDKey      contextKeyAuth = "user_id"
-	UserEmailKey   contextKeyAuth = "user_email"
-	UserRolesKey   contextKeyAuth = "user_roles"
-	UserPermsKey   contextKeyAuth = "user_permissions"
+	UserIDKey    contextKeyAuth = "user_id"
+	UserEmailKey contextKeyAuth = "user_email"
+	UserRoleKey  contextKeyAuth = "user_role"
 )
 
 // TokenValidator validates JWT access tokens.
@@ -27,6 +27,7 @@ type TokenValidator interface {
 }
 
 // Authenticate validates the Bearer token and injects user claims into context.
+// Must be applied before any role-based route guard.
 func Authenticate(jwtService TokenValidator) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -42,11 +43,16 @@ func Authenticate(jwtService TokenValidator) func(http.Handler) http.Handler {
 				return
 			}
 
+			role, err := user.ParseRole(claims.Role)
+			if err != nil {
+				response.Error(w, nil, apperror.Unauthorized("invalid role in token"))
+				return
+			}
+
 			ctx := r.Context()
 			ctx = context.WithValue(ctx, UserIDKey, claims.UserID)
 			ctx = context.WithValue(ctx, UserEmailKey, claims.Email)
-			ctx = context.WithValue(ctx, UserRolesKey, claims.Roles)
-			ctx = context.WithValue(ctx, UserPermsKey, claims.Permissions)
+			ctx = context.WithValue(ctx, UserRoleKey, role)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
@@ -62,13 +68,13 @@ func GetUserID(ctx context.Context) (uuid.UUID, error) {
 	return uuid.Parse(id)
 }
 
-// GetUserPermissions extracts permissions from context.
-func GetUserPermissions(ctx context.Context) []string {
-	perms, ok := ctx.Value(UserPermsKey).([]string)
-	if !ok {
-		return nil
+// GetUserRole extracts the authenticated user's role from context.
+func GetUserRole(ctx context.Context) (user.Role, error) {
+	role, ok := ctx.Value(UserRoleKey).(user.Role)
+	if !ok || !role.IsValid() {
+		return "", apperror.Unauthorized("authentication required")
 	}
-	return perms
+	return role, nil
 }
 
 func extractBearerToken(r *http.Request) (string, error) {

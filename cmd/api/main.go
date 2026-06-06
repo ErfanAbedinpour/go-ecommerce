@@ -1,3 +1,22 @@
+// @title           eCommerce Admin API
+// @version         1.0
+// @description     REST API for the eCommerce admin panel. Supports JWT authentication with role-based access (admin, customer).
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.email  support@shop.com
+
+// @license.name  MIT
+// @license.url   https://opensource.org/licenses/MIT
+
+// @host      localhost:8080
+// @BasePath  /
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Enter "Bearer" followed by a space and the JWT access token. Example: Bearer eyJhbGciOiJIUzI1NiIs...
+
 package main
 
 import (

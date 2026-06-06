@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"app/internal/domain/adminuser"
+	"app/internal/domain/user"
 	"app/internal/infrastructure/auth"
 )
 
@@ -24,16 +24,16 @@ type TokenGenerator interface {
 
 // AuthService handles authentication use cases.
 type AuthService struct {
-	users        adminuser.Repository
-	refreshTokens adminuser.RefreshTokenRepository
-	hasher       PasswordVerifier
-	jwt          TokenGenerator
+	users         user.Repository
+	refreshTokens user.RefreshTokenRepository
+	hasher        PasswordVerifier
+	jwt           TokenGenerator
 }
 
 // NewAuthService creates a new AuthService.
 func NewAuthService(
-	users adminuser.Repository,
-	refreshTokens adminuser.RefreshTokenRepository,
+	users user.Repository,
+	refreshTokens user.RefreshTokenRepository,
 	hasher PasswordVerifier,
 	jwt TokenGenerator,
 ) *AuthService {
@@ -59,30 +59,30 @@ type TokenOutput struct {
 	TokenType    string `json:"token_type"`
 }
 
-// Login authenticates an admin user and returns tokens.
+// Login authenticates a user and returns tokens.
 func (s *AuthService) Login(ctx context.Context, input LoginInput) (*TokenOutput, error) {
-	user, err := s.users.FindByEmail(ctx, input.Email)
+	u, err := s.users.FindByEmail(ctx, input.Email)
 	if err != nil {
-		if err == adminuser.ErrNotFound {
-			return nil, adminuser.ErrInvalidCredentials
+		if err == user.ErrNotFound {
+			return nil, user.ErrInvalidCredentials
 		}
 		return nil, err
 	}
 
-	if !user.IsActive {
-		return nil, adminuser.ErrAccountDisabled
+	if !u.IsActive {
+		return nil, user.ErrAccountDisabled
 	}
 
-	if !s.hasher.Verify(user.PasswordHash, input.Password) {
-		return nil, adminuser.ErrInvalidCredentials
+	if !s.hasher.Verify(u.PasswordHash, input.Password) {
+		return nil, user.ErrInvalidCredentials
 	}
 
-	tokens, _, _, err := s.generateAndStoreTokens(ctx, user)
+	tokens, _, _, err := s.generateAndStoreTokens(ctx, u)
 	if err != nil {
 		return nil, err
 	}
 
-	_ = s.users.UpdateLastLogin(ctx, user.ID)
+	_ = s.users.UpdateLastLogin(ctx, u.ID)
 
 	return tokens, nil
 }
@@ -96,7 +96,7 @@ type RefreshInput struct {
 func (s *AuthService) Refresh(ctx context.Context, input RefreshInput) (*TokenOutput, error) {
 	claims, err := s.jwt.ValidateRefreshToken(input.RefreshToken)
 	if err != nil {
-		return nil, adminuser.ErrInvalidToken
+		return nil, user.ErrInvalidToken
 	}
 
 	tokenHash := auth.HashToken(input.RefreshToken)
@@ -107,32 +107,32 @@ func (s *AuthService) Refresh(ctx context.Context, input RefreshInput) (*TokenOu
 
 	if stored.IsRevoked() {
 		_ = s.refreshTokens.RevokeFamily(ctx, stored.FamilyID)
-		return nil, adminuser.ErrTokenRevoked
+		return nil, user.ErrTokenRevoked
 	}
 
 	if stored.IsExpired() {
-		return nil, adminuser.ErrInvalidToken
+		return nil, user.ErrInvalidToken
 	}
 
 	userID, err := uuid.Parse(claims.UserID)
 	if err != nil {
-		return nil, adminuser.ErrInvalidToken
+		return nil, user.ErrInvalidToken
 	}
 
-	user, err := s.users.FindByID(ctx, userID)
+	u, err := s.users.FindByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	if !user.IsActive {
-		return nil, adminuser.ErrAccountDisabled
+	if !u.IsActive {
+		return nil, user.ErrAccountDisabled
 	}
 
 	if err := s.refreshTokens.Revoke(ctx, stored.ID); err != nil {
 		return nil, err
 	}
 
-	tokens, _, _, err := s.generateAndStoreTokensWithFamily(ctx, user, stored.FamilyID)
+	tokens, _, _, err := s.generateAndStoreTokensWithFamily(ctx, u, stored.FamilyID)
 	if err != nil {
 		return nil, err
 	}
@@ -162,53 +162,40 @@ func (s *AuthService) Logout(ctx context.Context, input LogoutInput) error {
 
 // CurrentUserOutput holds the current user response.
 type CurrentUserOutput struct {
-	ID          string   `json:"id"`
-	Email       string   `json:"email"`
-	FirstName   string   `json:"first_name"`
-	LastName    string   `json:"last_name"`
-	Phone       string   `json:"phone,omitempty"`
-	Roles       []string `json:"roles"`
-	Permissions []string `json:"permissions"`
+	ID        string `json:"id"`
+	Email     string `json:"email"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Phone     string `json:"phone,omitempty"`
+	Role      string `json:"role"`
 }
 
-// GetCurrentUser returns the authenticated admin user's profile.
+// GetCurrentUser returns the authenticated user's profile.
 func (s *AuthService) GetCurrentUser(ctx context.Context, userID uuid.UUID) (*CurrentUserOutput, error) {
-	user, err := s.users.FindByID(ctx, userID)
+	u, err := s.users.FindByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	roles := make([]string, len(user.Roles))
-	for i, r := range user.Roles {
-		roles[i] = r.Name
-	}
-
 	return &CurrentUserOutput{
-		ID:          user.ID.String(),
-		Email:       user.Email,
-		FirstName:   user.FirstName,
-		LastName:    user.LastName,
-		Phone:       user.Phone,
-		Roles:       roles,
-		Permissions: user.PermissionNames(),
+		ID:        u.ID.String(),
+		Email:     u.Email,
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Phone:     u.Phone,
+		Role:      u.Role.String(),
 	}, nil
 }
 
-func (s *AuthService) generateAndStoreTokens(ctx context.Context, user *adminuser.AdminUser) (*TokenOutput, string, uuid.UUID, error) {
-	return s.generateAndStoreTokensWithFamily(ctx, user, uuid.New())
+func (s *AuthService) generateAndStoreTokens(ctx context.Context, u *user.User) (*TokenOutput, string, uuid.UUID, error) {
+	return s.generateAndStoreTokensWithFamily(ctx, u, uuid.New())
 }
 
-func (s *AuthService) generateAndStoreTokensWithFamily(ctx context.Context, user *adminuser.AdminUser, familyID uuid.UUID) (*TokenOutput, string, uuid.UUID, error) {
-	roles := make([]string, len(user.Roles))
-	for i, r := range user.Roles {
-		roles[i] = r.Name
-	}
-
+func (s *AuthService) generateAndStoreTokensWithFamily(ctx context.Context, u *user.User, familyID uuid.UUID) (*TokenOutput, string, uuid.UUID, error) {
 	tokenInput := auth.TokenInput{
-		UserID:      user.ID,
-		Email:       user.Email,
-		Roles:       roles,
-		Permissions: user.PermissionNames(),
+		UserID: u.ID,
+		Email:  u.Email,
+		Role:   u.Role,
 	}
 
 	pair, tokenHash, returnedFamilyID, err := s.jwt.GenerateTokenPair(tokenInput)
@@ -220,13 +207,13 @@ func (s *AuthService) generateAndStoreTokensWithFamily(ctx context.Context, user
 		returnedFamilyID = familyID
 	}
 
-	refreshToken := &adminuser.RefreshToken{
-		ID:          uuid.New(),
-		AdminUserID: user.ID,
-		TokenHash:   tokenHash,
-		FamilyID:    returnedFamilyID,
-		ExpiresAt:   time.Now().UTC().Add(s.jwt.RefreshTokenTTL()),
-		CreatedAt:   time.Now().UTC(),
+	refreshToken := &user.RefreshToken{
+		ID:        uuid.New(),
+		UserID:    u.ID,
+		TokenHash: tokenHash,
+		FamilyID:  returnedFamilyID,
+		ExpiresAt: time.Now().UTC().Add(s.jwt.RefreshTokenTTL()),
+		CreatedAt: time.Now().UTC(),
 	}
 
 	if err := s.refreshTokens.Create(ctx, refreshToken); err != nil {

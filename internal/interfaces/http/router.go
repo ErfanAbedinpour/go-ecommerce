@@ -7,9 +7,13 @@ import (
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 
+	"app/docs/swagger"
 	"app/internal/config"
 	"app/internal/di"
+	"app/internal/domain/user"
+	"app/internal/interfaces/http/handler"
 	appmiddleware "app/internal/interfaces/http/middleware"
 )
 
@@ -25,35 +29,51 @@ func NewRouter(c *di.Container) http.Handler {
 	r.Use(chimiddleware.Compress(5))
 	r.Use(corsMiddleware(c.Config))
 
-	// Observability routes (no auth)
+	// ── Public routes (no authentication) ──────────────────────────
 	r.Get("/healthz", c.Health.Liveness)
 	r.Get("/readyz", c.Health.Readiness)
 	r.Handle("/metrics", promhttp.Handler())
 
-	// API v1 admin routes
-	r.Route("/api/v1/admin", func(r chi.Router) {
-		registerAuthRoutes(r, c)
+	// Swagger UI and OpenAPI spec
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.InstanceName(swagger.SwaggerInfo.InstanceName()),
+	))
+
+	r.Route("/api/v1", func(r chi.Router) {
+		registerPublicRoutes(r, c)
+		registerAuthenticatedRoutes(r, c)
+		registerAdminRoutes(r, c)
 	})
 
 	return r
 }
 
-func registerAuthRoutes(r chi.Router, c *di.Container) {
-	r.Get("/", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"message":"ecommerce admin API v1"}`))
-	})
-
+// registerPublicRoutes — accessible without a token.
+func registerPublicRoutes(r chi.Router, c *di.Container) {
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/login", c.Auth.Login)
 		r.Post("/refresh", c.Auth.Refresh)
+	})
+}
 
-		r.Group(func(r chi.Router) {
-			r.Use(appmiddleware.Authenticate(c.JWT))
-			r.Post("/logout", c.Auth.Logout)
-			r.Get("/me", c.Auth.Me)
-		})
+// registerAuthenticatedRoutes — any authenticated user (admin or customer).
+func registerAuthenticatedRoutes(r chi.Router, c *di.Container) {
+	r.Group(func(r chi.Router) {
+		r.Use(appmiddleware.Authenticate(c.JWT))
+		r.Post("/auth/logout", c.Auth.Logout)
+		r.Get("/auth/me", c.Auth.Me)
+	})
+}
+
+// registerAdminRoutes — admin role required; enforced at router layer.
+func registerAdminRoutes(r chi.Router, c *di.Container) {
+	r.Route("/admin", func(r chi.Router) {
+		r.Use(appmiddleware.Authenticate(c.JWT))
+		r.Use(appmiddleware.RequireRole(user.RoleAdmin))
+
+		r.Get("/", handler.AdminIndex)
+
+		// Future admin modules (products, orders, coupons, etc.) are registered here.
 	})
 }
 

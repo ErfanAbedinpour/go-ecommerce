@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"app/internal/config"
+	"app/internal/domain/user"
 )
 
 func TestJWTService_GenerateAndValidateAccessToken(t *testing.T) {
@@ -19,10 +20,9 @@ func TestJWTService_GenerateAndValidateAccessToken(t *testing.T) {
 
 	userID := uuid.New()
 	input := TokenInput{
-		UserID:      userID,
-		Email:       "admin@shop.com",
-		Roles:       []string{"super_admin"},
-		Permissions: []string{"products:read"},
+		UserID: userID,
+		Email:  "admin@shop.com",
+		Role:   user.RoleAdmin,
 	}
 
 	pair, hash, familyID, err := svc.GenerateTokenPair(input)
@@ -49,6 +49,9 @@ func TestJWTService_GenerateAndValidateAccessToken(t *testing.T) {
 	if claims.UserID != userID.String() {
 		t.Errorf("UserID = %q, want %q", claims.UserID, userID.String())
 	}
+	if claims.Role != string(user.RoleAdmin) {
+		t.Errorf("Role = %q, want %q", claims.Role, user.RoleAdmin)
+	}
 	if claims.TokenType != string(TokenTypeAccess) {
 		t.Errorf("TokenType = %q, want %q", claims.TokenType, TokenTypeAccess)
 	}
@@ -65,6 +68,7 @@ func TestJWTService_ValidateRefreshToken(t *testing.T) {
 	input := TokenInput{
 		UserID: uuid.New(),
 		Email:  "admin@shop.com",
+		Role:   user.RoleCustomer,
 	}
 
 	pair, _, _, err := svc.GenerateTokenPair(input)

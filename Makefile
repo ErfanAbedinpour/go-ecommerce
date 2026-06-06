@@ -1,4 +1,4 @@
-.PHONY: build run test test-unit test-integration lint fmt migrate-up migrate-down docker-up docker-down docker-build clean
+.PHONY: build run test test-unit test-integration lint fmt migrate-up migrate-down docker-up docker-down docker-build clean swagger
 
 APP_NAME := ecommerce-api
 BUILD_DIR := bin
@@ -31,11 +31,16 @@ fmt:
 	gofmt -w .
 	goimports -w .
 
+DB_DSN ?= postgres://admin:admin@localhost:5432/ecommerce-db?sslmode=disable
+
 migrate-up:
-	migrate -path migrations -database "postgres://ecommerce:ecommerce@localhost:5432/ecommerce?sslmode=disable" up
+	migrate -path migrations -database "$(DB_DSN)" up
 
 migrate-down:
-	migrate -path migrations -database "postgres://ecommerce:ecommerce@localhost:5432/ecommerce?sslmode=disable" down 1
+	migrate -path migrations -database "$(DB_DSN)" down 1
+
+migrate-version:
+	migrate -path migrations -database "$(DB_DSN)" version
 
 docker-up:
 	$(DOCKER_COMPOSE) up -d
@@ -58,3 +63,10 @@ tidy:
 
 vet:
 	go vet ./...
+
+swagger:
+	go run github.com/swaggo/swag/cmd/swag@latest init \
+		-g cmd/api/main.go \
+		-o docs/swagger \
+		--parseDependency \
+		--parseInternal

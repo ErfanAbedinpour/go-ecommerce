@@ -8,11 +8,11 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	"app/internal/domain/adminuser"
+	"app/internal/domain/user"
 	"app/internal/infrastructure/persistence/models"
 )
 
-// RefreshTokenRepository implements adminuser.RefreshTokenRepository using GORM.
+// RefreshTokenRepository implements user.RefreshTokenRepository using GORM.
 type RefreshTokenRepository struct {
 	db *gorm.DB
 }
@@ -22,10 +22,10 @@ func NewRefreshTokenRepository(db *gorm.DB) *RefreshTokenRepository {
 	return &RefreshTokenRepository{db: db}
 }
 
-func (r *RefreshTokenRepository) Create(ctx context.Context, token *adminuser.RefreshToken) error {
+func (r *RefreshTokenRepository) Create(ctx context.Context, token *user.RefreshToken) error {
 	m := &models.RefreshTokenModel{
 		ID:          token.ID,
-		AdminUserID: token.AdminUserID,
+		AdminUserID: token.UserID,
 		TokenHash:   token.TokenHash,
 		FamilyID:    token.FamilyID,
 		ExpiresAt:   token.ExpiresAt,
@@ -34,12 +34,12 @@ func (r *RefreshTokenRepository) Create(ctx context.Context, token *adminuser.Re
 	return r.db.WithContext(ctx).Create(m).Error
 }
 
-func (r *RefreshTokenRepository) FindByHash(ctx context.Context, hash string) (*adminuser.RefreshToken, error) {
+func (r *RefreshTokenRepository) FindByHash(ctx context.Context, hash string) (*user.RefreshToken, error) {
 	var m models.RefreshTokenModel
 	err := r.db.WithContext(ctx).Where("token_hash = ?", hash).First(&m).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, adminuser.ErrInvalidToken
+			return nil, user.ErrInvalidToken
 		}
 		return nil, err
 	}

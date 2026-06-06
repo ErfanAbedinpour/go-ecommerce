@@ -35,7 +35,13 @@ type readinessResponse struct {
 	Checks  map[string]string `json:"checks"`
 }
 
-// Liveness handles GET /healthz — process is alive.
+// Liveness godoc
+// @Summary      Liveness probe
+// @Description  Returns 200 if the process is alive. Used by orchestrators for liveness checks.
+// @Tags         health
+// @Produce      json
+// @Success      200  {object}  response.HealthResponse
+// @Router       /healthz [get]
 func (h *HealthHandler) Liveness(w http.ResponseWriter, _ *http.Request) {
 	response.OK(w, healthResponse{
 		Status:  "ok",
@@ -43,7 +49,14 @@ func (h *HealthHandler) Liveness(w http.ResponseWriter, _ *http.Request) {
 	})
 }
 
-// Readiness handles GET /readyz — dependencies are healthy.
+// Readiness godoc
+// @Summary      Readiness probe
+// @Description  Returns 200 if all dependencies (database) are healthy, 503 otherwise.
+// @Tags         health
+// @Produce      json
+// @Success      200  {object}  response.ReadinessResponse
+// @Failure      503  {object}  response.ReadinessResponse
+// @Router       /readyz [get]
 func (h *HealthHandler) Readiness(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()

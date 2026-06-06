@@ -24,7 +24,18 @@ func NewAuthHandler(authService *auth.AuthService, v *validator.Validator, log *
 	return &AuthHandler{authService: authService, validator: v, log: log}
 }
 
-// Login handles POST /api/v1/admin/auth/login
+// Login godoc
+// @Summary      Login
+// @Description  Authenticate with email and password. Returns JWT access and refresh tokens.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      request.LoginRequest  true  "Login credentials"
+// @Success      200   {object}  response.TokenResponse
+// @Failure      400   {object}  response.ErrorResponse
+// @Failure      401   {object}  response.ErrorResponse
+// @Failure      403   {object}  response.ErrorResponse
+// @Router       /api/v1/auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req request.LoginRequest
 	if err := decodeAndValidate(r, &req, h.validator); err != nil {
@@ -44,7 +55,17 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, tokens)
 }
 
-// Refresh handles POST /api/v1/admin/auth/refresh
+// Refresh godoc
+// @Summary      Refresh token
+// @Description  Exchange a valid refresh token for a new access/refresh token pair.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      request.RefreshRequest  true  "Refresh token"
+// @Success      200   {object}  response.TokenResponse
+// @Failure      400   {object}  response.ErrorResponse
+// @Failure      401   {object}  response.ErrorResponse
+// @Router       /api/v1/auth/refresh [post]
 func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	var req request.RefreshRequest
 	if err := decodeAndValidate(r, &req, h.validator); err != nil {
@@ -63,7 +84,17 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, tokens)
 }
 
-// Logout handles POST /api/v1/admin/auth/logout
+// Logout godoc
+// @Summary      Logout
+// @Description  Revoke the refresh token family. Requires a valid access token.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body  request.LogoutRequest  false  "Optional refresh token to revoke"
+// @Success      204   "No Content"
+// @Failure      401   {object}  response.ErrorResponse
+// @Router       /api/v1/auth/logout [post]
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	var req request.LogoutRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -81,7 +112,15 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	response.NoContent(w)
 }
 
-// Me handles GET /api/v1/admin/auth/me
+// Me godoc
+// @Summary      Get current user
+// @Description  Returns the profile of the authenticated user.
+// @Tags         auth
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  response.CurrentUserResponse
+// @Failure      401  {object}  response.ErrorResponse
+// @Router       /api/v1/auth/me [get]
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	userID, err := middleware.GetUserID(r.Context())
 	if err != nil {

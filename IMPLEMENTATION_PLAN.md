@@ -94,8 +94,8 @@
 
 #### Admin Users
 - CRUD for admin accounts
-- Role assignment (super_admin, admin, manager, support)
-- Permission-based access control
+- Single role per user: `admin` or `customer`
+- Route-level authorization guards (not DB permission lookups)
 - Separate from storefront customers
 
 #### Audit Logs
@@ -157,15 +157,28 @@ Manual constructor injection via a `Container` struct in `internal/di`. No refle
 
 **Justification:** Stateless access tokens scale horizontally. Refresh token rotation prevents replay attacks. DB-backed refresh tokens enable revocation.
 
-### 2.7 RBAC Model
+### 2.7 RBAC Model (Application-Layer Route Guards)
 
 ```
-User ──M:N──> Role ──M:N──> Permission
+User ──has──> Role (admin | customer)
+                │
+                ▼
+         Router Middleware Guards
 ```
 
-Permissions are string-based: `products:read`, `products:write`, `orders:refund`, etc. Middleware checks permission claims in JWT or loads from DB on sensitive operations.
+Authorization is enforced at the **router/application layer**, not the database layer:
 
-**Justification:** Fine-grained permissions map directly to admin panel features. Role bundles simplify assignment.
+| Guard | Applied To | Roles Allowed |
+|-------|-----------|---------------|
+| **Public** | `/healthz`, `/api/v1/auth/login`, `/api/v1/auth/refresh` | None (no token) |
+| **Authenticated** | `/api/v1/auth/logout`, `/api/v1/auth/me` | `admin`, `customer` |
+| **Admin** | `/api/v1/admin/*` | `admin` only |
+
+- Each user has exactly **one role**: `admin` or `customer` (stored as a column on `admin_users`).
+- Role is embedded in the JWT at login and validated by middleware — no DB permission lookups per request.
+- Route guards: `Authenticate` → `RequireRole(user.RoleAdmin)`.
+
+**Justification:** Simple two-role model matches the admin panel vs storefront split. Router-level guards are explicit, testable, and follow the principle that authorization policy lives in the application layer, not in SQL joins.
 
 ### 2.8 Error Handling
 
@@ -590,7 +603,13 @@ CREATE INDEX idx_refresh_tokens_hash ON refresh_tokens(token_hash);
 
 ## 5. API Design
 
-Base URL: `/api/v1/admin`
+### Route Guard Tiers
+
+| Tier | Base Path | Guard Middleware | Description |
+|------|-----------|------------------|-------------|
+| Public | `/api/v1/auth/login`, `/api/v1/auth/refresh` | None | No token required |
+| Authenticated | `/api/v1/auth/logout`, `/api/v1/auth/me` | `Authenticate` | Any role (`admin`, `customer`) |
+| Admin | `/api/v1/admin/*` | `Authenticate` + `RequireRole(admin)` | Admin panel APIs |
 
 ### 5.1 Authentication
 
@@ -626,7 +645,7 @@ Base URL: `/api/v1/admin`
 | | |
 |---|---|
 | **Auth** | Bearer token |
-| **Response 200** | `{ "id", "email", "first_name", "last_name", "roles": [], "permissions": [] }` |
+| **Response 200** | `{ "id", "email", "first_name", "last_name", "role": "admin" }` |
 
 ---
 
@@ -635,13 +654,13 @@ Base URL: `/api/v1/admin`
 #### GET `/dashboard/stats`
 | | |
 |---|---|
-| **Auth** | `dashboard:read` |
+| **Auth** | Admin role |
 | **Response 200** | `{ "total_revenue", "total_orders", "total_customers", "total_products", "pending_orders", "low_stock_count" }` |
 
 #### GET `/dashboard/revenue`
 | | |
 |---|---|
-| **Auth** | `dashboard:read` |
+| **Auth** | Admin role |
 | **Query** | `period` (today, week, month, year), `from`, `to` |
 | **Response 200** | `{ "data": [{ "date", "revenue", "orders" }] }` |
 
@@ -1102,7 +1121,7 @@ ecommerce/
 - [x] Bcrypt password hashing
 - [x] Login, Refresh, Logout, GetCurrentUser use cases
 - [x] Auth middleware (Bearer token validation)
-- [x] RBAC middleware (permission checking)
+- [x] Role-based route guards (admin | customer)
 - [x] Auth HTTP handlers
 - [x] Unit tests for auth use cases
 - [ ] Integration tests for auth endpoints (Phase 10)
@@ -1155,7 +1174,7 @@ ecommerce/
 - [ ] Tests
 
 ### Phase 10: Testing & Production Hardening ⬜
-- [ ] Swagger/OpenAPI generation (swaggo)
+- [x] Swagger/OpenAPI generation (swaggo)
 - [ ] Integration test suite with testcontainers
 - [ ] Rate limiting middleware
 - [ ] Request validation library (go-playground/validator)

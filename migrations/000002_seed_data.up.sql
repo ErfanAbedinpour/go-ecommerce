@@ -57,13 +57,14 @@ WHERE name IN (
 
 -- Seed default super admin (password: Admin@123456)
 -- bcrypt hash of "Admin@123456" with cost 12
-INSERT INTO admin_users (id, email, password_hash, first_name, last_name, is_active)
+INSERT INTO admin_users (id, email, password_hash, first_name, last_name, role, is_active)
 VALUES (
     'c0000000-0000-0000-0000-000000000001',
     'admin@shop.com',
     '$2a$12$RZiAsIUKM1MczJ23.j0pX.gtg5uBUE3EZMZVUk.KoLGG4tANpxju2',
     'Admin',
     'User',
+    'admin',
     TRUE
 );
 

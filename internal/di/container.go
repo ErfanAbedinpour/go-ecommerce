@@ -20,8 +20,8 @@ type Container struct {
 	Validator *validator.Validator
 
 	// Infrastructure
-	JWT      *infraauth.JWTService
-	Hasher   *infraauth.PasswordHasher
+	JWT    *infraauth.JWTService
+	Hasher *infraauth.PasswordHasher
 
 	// Services
 	AuthService *appauth.AuthService
@@ -45,9 +45,9 @@ func New(cfg *config.Config) (*Container, error) {
 	jwtService := infraauth.NewJWTService(cfg.JWT)
 	hasher := infraauth.NewPasswordHasher()
 
-	adminUserRepo := postgres.NewAdminUserRepository(db.DB)
+	userRepo := postgres.NewUserRepository(db.DB)
 	refreshTokenRepo := postgres.NewRefreshTokenRepository(db.DB)
-	authService := appauth.NewAuthService(adminUserRepo, refreshTokenRepo, hasher, jwtService)
+	authService := appauth.NewAuthService(userRepo, refreshTokenRepo, hasher, jwtService)
 
 	c := &Container{
 		Config:      cfg,
