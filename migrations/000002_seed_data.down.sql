@@ -1,0 +1,5 @@
+DELETE FROM admin_user_roles WHERE admin_user_id = 'c0000000-0000-0000-0000-000000000001';
+DELETE FROM admin_users WHERE id = 'c0000000-0000-0000-0000-000000000001';
+DELETE FROM role_permissions;
+DELETE FROM roles;
+DELETE FROM permissions;
