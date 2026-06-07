@@ -1,5 +1,22 @@
 basePath: /
 definitions:
+  app_internal_interfaces_http_dto_request.CreateBrandRequest:
+    properties:
+      description:
+        maxLength: 1000
+        type: string
+      is_active:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+      slug:
+        maxLength: 100
+        type: string
+    required:
+    - name
+    type: object
   app_internal_interfaces_http_dto_request.CreateCategoryRequest:
     properties:
       description:
@@ -53,6 +70,40 @@ definitions:
     - code
     - discount_type
     - discount_value
+    type: object
+  app_internal_interfaces_http_dto_request.CreateProductAttributeRequest:
+    properties:
+      is_active:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+      slug:
+        maxLength: 100
+        type: string
+      sort_order:
+        minimum: 0
+        type: integer
+    required:
+    - name
+    type: object
+  app_internal_interfaces_http_dto_request.CreateProductAttributeValueRequest:
+    properties:
+      attribute_id:
+        type: string
+      is_active:
+        type: boolean
+      sort_order:
+        minimum: 0
+        type: integer
+      value:
+        maxLength: 200
+        minLength: 1
+        type: string
+    required:
+    - attribute_id
+    - value
     type: object
   app_internal_interfaces_http_dto_request.CreateProductRequest:
     properties:
@@ -243,6 +294,21 @@ definitions:
     - last_name
     - password
     type: object
+  app_internal_interfaces_http_dto_request.UpdateBrandRequest:
+    properties:
+      description:
+        maxLength: 1000
+        type: string
+      is_active:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+      slug:
+        maxLength: 100
+        type: string
+    type: object
   app_internal_interfaces_http_dto_request.UpdateCategoryRequest:
     properties:
       description:
@@ -346,6 +412,33 @@ definitions:
         type: string
     required:
     - status
+    type: object
+  app_internal_interfaces_http_dto_request.UpdateProductAttributeRequest:
+    properties:
+      is_active:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+      slug:
+        maxLength: 100
+        type: string
+      sort_order:
+        minimum: 0
+        type: integer
+    type: object
+  app_internal_interfaces_http_dto_request.UpdateProductAttributeValueRequest:
+    properties:
+      is_active:
+        type: boolean
+      sort_order:
+        minimum: 0
+        type: integer
+      value:
+        maxLength: 200
+        minLength: 1
+        type: string
     type: object
   app_internal_interfaces_http_dto_request.UpdateProductRequest:
     properties:
@@ -456,6 +549,84 @@ definitions:
         maxLength: 500
         type: string
     type: object
+  app_internal_interfaces_http_dto_response.BrandListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.BrandResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.BrandResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      slug:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.CatalogAttributeListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.CatalogAttributeResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      slug:
+        type: string
+      sort_order:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.CatalogAttributeValueListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeValueResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.CatalogAttributeValueResponse:
+    properties:
+      attribute_id:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      sort_order:
+        type: integer
+      updated_at:
+        type: string
+      value:
+        type: string
+    type: object
   app_internal_interfaces_http_dto_response.CategoryListResponse:
     properties:
       data:
@@ -485,6 +656,8 @@ definitions:
         type: string
       parent_id:
         type: string
+      products_count:
+        type: integer
       slug:
         type: string
       sort_order:
@@ -1011,6 +1184,17 @@ definitions:
       updated_at:
         type: string
     type: object
+  app_internal_interfaces_http_dto_response.ProductStatsResponse:
+    properties:
+      active:
+        type: integer
+      draft:
+        type: integer
+      out_of_stock:
+        type: integer
+      total:
+        type: integer
+    type: object
   app_internal_interfaces_http_dto_response.ReadinessResponse:
     properties:
       checks:
@@ -1126,6 +1310,17 @@ definitions:
         example: Bearer
         type: string
     type: object
+  app_internal_interfaces_http_dto_response.UploadResponse:
+    properties:
+      content_type:
+        type: string
+      filename:
+        type: string
+      size:
+        type: integer
+      url:
+        type: string
+    type: object
   app_pkg_pagination.Meta:
     properties:
       page:
@@ -1174,6 +1369,198 @@ paths:
       summary: Admin API root
       tags:
       - admin
+  /api/v1/admin/brands:
+    get:
+      description: Get a paginated list of product brands.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Filter by active status
+        in: query
+        name: is_active
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.BrandListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List brands
+      tags:
+      - brands
+    post:
+      consumes:
+      - application/json
+      description: Create a new product brand.
+      parameters:
+      - description: Brand data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.CreateBrandRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.BrandResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create brand
+      tags:
+      - brands
+  /api/v1/admin/brands/{id}:
+    delete:
+      description: Soft-delete a brand.
+      parameters:
+      - description: Brand ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete brand
+      tags:
+      - brands
+    get:
+      description: Get a brand by ID.
+      parameters:
+      - description: Brand ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.BrandResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get brand
+      tags:
+      - brands
+    put:
+      consumes:
+      - application/json
+      description: Update an existing brand.
+      parameters:
+      - description: Brand ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Brand data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateBrandRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.BrandResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update brand
+      tags:
+      - brands
   /api/v1/admin/categories:
     get:
       description: Get paginated categories or a nested tree with tree=true.
@@ -2291,6 +2678,216 @@ paths:
       summary: Update order status
       tags:
       - orders
+  /api/v1/admin/product-attribute-values:
+    get:
+      description: Get a paginated list of attribute values, optionally filtered by
+        attribute_id.
+      parameters:
+      - description: Filter by attribute definition ID
+        in: query
+        name: attribute_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeValueListResponse'
+      security:
+      - BearerAuth: []
+      summary: List attribute values
+      tags:
+      - product-attribute-values
+    post:
+      consumes:
+      - application/json
+      description: Create a value for a global product attribute.
+      parameters:
+      - description: Value data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.CreateProductAttributeValueRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeValueResponse'
+      security:
+      - BearerAuth: []
+      summary: Create attribute value
+      tags:
+      - product-attribute-values
+  /api/v1/admin/product-attribute-values/{id}:
+    delete:
+      parameters:
+      - description: Value ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Delete attribute value
+      tags:
+      - product-attribute-values
+    get:
+      parameters:
+      - description: Value ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeValueResponse'
+      security:
+      - BearerAuth: []
+      summary: Get attribute value
+      tags:
+      - product-attribute-values
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Value ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Value data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateProductAttributeValueRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeValueResponse'
+      security:
+      - BearerAuth: []
+      summary: Update attribute value
+      tags:
+      - product-attribute-values
+  /api/v1/admin/product-attributes:
+    get:
+      description: Get a paginated list of global attribute definitions.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeListResponse'
+      security:
+      - BearerAuth: []
+      summary: List product attributes
+      tags:
+      - product-attributes
+    post:
+      consumes:
+      - application/json
+      description: Create a global product attribute definition.
+      parameters:
+      - description: Attribute data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.CreateProductAttributeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeResponse'
+      security:
+      - BearerAuth: []
+      summary: Create product attribute
+      tags:
+      - product-attributes
+  /api/v1/admin/product-attributes/{id}:
+    delete:
+      parameters:
+      - description: Attribute ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Delete product attribute
+      tags:
+      - product-attributes
+    get:
+      parameters:
+      - description: Attribute ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeResponse'
+      security:
+      - BearerAuth: []
+      summary: Get product attribute
+      tags:
+      - product-attributes
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Attribute ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Attribute data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateProductAttributeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeResponse'
+      security:
+      - BearerAuth: []
+      summary: Update product attribute
+      tags:
+      - product-attributes
   /api/v1/admin/products:
     get:
       description: Get a paginated list of products with optional filters.
@@ -2341,6 +2938,13 @@ paths:
         in: query
         name: is_featured
         type: boolean
+      - description: Filter by stock level
+        enum:
+        - low
+        - out
+        in: query
+        name: stock_level
+        type: string
       produces:
       - application/json
       responses:
@@ -2603,6 +3207,29 @@ paths:
       summary: Search products
       tags:
       - products
+  /api/v1/admin/products/stats:
+    get:
+      description: Get product catalog KPI counts for dashboard cards.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductStatsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Product statistics
+      tags:
+      - products
   /api/v1/admin/settings/contact:
     get:
       description: Returns public contact information.
@@ -2835,6 +3462,42 @@ paths:
       summary: Update social settings
       tags:
       - settings
+  /api/v1/admin/uploads:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload an image file (product image, logo, favicon). Returns a
+        public URL.
+      parameters:
+      - description: Image file (jpeg, png, webp, gif)
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.UploadResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload file
+      tags:
+      - uploads
   /api/v1/auth/forgot-password:
     post:
       consumes:

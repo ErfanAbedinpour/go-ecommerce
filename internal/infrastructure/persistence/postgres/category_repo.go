@@ -200,6 +200,30 @@ func (r *CategoryRepository) orderClause(page pagination.Params) string {
 	return fmt.Sprintf("%s %s", column, order)
 }
 
+func (r *CategoryRepository) ProductCounts(ctx context.Context) (map[uuid.UUID]int64, error) {
+	type countRow struct {
+		CategoryID uuid.UUID `gorm:"column:category_id"`
+		Count      int64     `gorm:"column:count"`
+	}
+
+	var rows []countRow
+	err := r.db.WithContext(ctx).
+		Model(&models.ProductModel{}).
+		Select("category_id, COUNT(*) AS count").
+		Where("category_id IS NOT NULL").
+		Group("category_id").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	counts := make(map[uuid.UUID]int64, len(rows))
+	for _, row := range rows {
+		counts[row.CategoryID] = row.Count
+	}
+	return counts, nil
+}
+
 func mapCategoryDBError(err error) error {
 	msg := strings.ToLower(err.Error())
 	if strings.Contains(msg, "slug") {

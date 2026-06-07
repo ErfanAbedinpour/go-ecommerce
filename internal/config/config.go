@@ -17,6 +17,7 @@ type Config struct {
 	Auth     AuthConfig
 	SMTP     SMTPConfig
 	CORS     CORSConfig
+	Upload   UploadConfig
 	Log      LogConfig
 }
 
@@ -87,6 +88,14 @@ type CORSConfig struct {
 	AllowedHeaders   []string `env:"CORS_ALLOWED_HEADERS" envDefault:"Accept,Authorization,Content-Type,X-Request-ID"`
 	AllowCredentials bool     `env:"CORS_ALLOW_CREDENTIALS" envDefault:"true"`
 	MaxAge           int      `env:"CORS_MAX_AGE" envDefault:"300"`
+}
+
+// UploadConfig holds file upload settings.
+type UploadConfig struct {
+	Dir          string   `env:"UPLOAD_DIR" envDefault:"./uploads"`
+	MaxSizeMB    int      `env:"UPLOAD_MAX_SIZE_MB" envDefault:"5"`
+	BaseURL      string   `env:"UPLOAD_BASE_URL" envDefault:"http://localhost:8080/uploads"`
+	AllowedTypes []string `env:"UPLOAD_ALLOWED_TYPES" envDefault:"image/jpeg,image/png,image/webp,image/gif"`
 }
 
 // LogConfig holds logging settings.

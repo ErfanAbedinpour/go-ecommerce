@@ -10,7 +10,7 @@
 |------|----------|------------------|-------|
 | Authentication | `/signin` | ✅ | Login, signup, forgot/reset password |
 | Dashboard `/` | KPIs, chart, recent orders, low stock | ✅ | Growth %, featured products, enriched recent orders |
-| Products | `/products`, `/products/create`, `/products/settings` | ✅ Partial | CRUD + search OK; settings catalog APIs missing |
+| Products | `/products`, `/products/create`, `/products/settings` | ✅ | CRUD, stats, stock filter, brands, attributes, uploads |
 | Orders | `/orders`, `/orders/:id`, `/orders/:id/invoice`, `/orders/create` | ✅ Partial | List/detail/actions OK; create order + invoice endpoint missing |
 | Users | `/users`, `/users/:id` | ✅ Partial | Read-only customers; no admin-user CRUD, no customer edit/delete |
 | Coupons | `/coupons` | ✅ Full | All CRUD + activate/deactivate |
@@ -280,7 +280,13 @@ The home page renders **6 KPI cards**, a **sales & revenue chart**, **featured p
 | Search | `GET` | `/api/v1/admin/products/search?q=` | Search box |
 | Delete | `DELETE` | `/api/v1/admin/products/{id}` | Row action |
 
-**List query params:** `page`, `per_page`, `sort`, `order`, `status`, `category_id`, `brand`, `is_featured`
+**List query params:** `page`, `per_page`, `sort`, `order`, `status`, `category_id`, `brand`, `is_featured`, `stock_level` (`low`|`out`)
+
+**Product KPI cards → `GET /api/v1/admin/products/stats`**
+
+```json
+{ "total": 245, "active": 198, "draft": 32, "out_of_stock": 15 }
+```
 
 **List response item (`ProductResponse`)**
 
@@ -313,7 +319,6 @@ The home page renders **6 KPI cards**, a **sales & revenue chart**, **featured p
 
 **UI KPI cards** (total / active / draft / out of stock): derive client-side from list filters or add a dedicated stats endpoint (not implemented).
 
-**Gap:** No `stock_level=low|out` query filter — filter client-side via `inventory.is_low_stock` / `is_out_of_stock`.
 
 ### `/products/create` and product edit
 
@@ -344,21 +349,24 @@ The home page renders **6 KPI cards**, a **sales & revenue chart**, **featured p
 
 **Category dropdown:** `GET /api/v1/admin/categories?tree=true` or flat list.
 
-**Gap:** Image upload is URL-only — no `POST /api/v1/admin/uploads` for drag-and-drop files.
+**File upload:** `POST /api/v1/admin/uploads` (multipart `file` field) → `{ "url", "filename", "size", "content_type" }`
 
 ### `/products/settings` — Product Settings
 
-UI manages **global categories**, **attribute definitions**, and **attribute values** in separate tables.
+| API | Status |
+|-----|--------|
+| `GET/POST/PUT/DELETE /api/v1/admin/categories` | ✅ includes `products_count` |
+| `GET/POST/PUT/DELETE /api/v1/admin/product-attributes` | ✅ |
+| `GET/POST/PUT/DELETE /api/v1/admin/product-attribute-values` | ✅ (`?attribute_id=`) |
+| `GET/POST/PUT/DELETE /api/v1/admin/brands` | ✅ |
 
-| Needed API | Status |
-|------------|--------|
-| `GET/POST/PUT/DELETE /api/v1/admin/categories` | ✅ Categories CRUD exists |
-| `GET /api/v1/admin/categories` with product counts per category | ❌ No `products_count` on category |
-| `GET/POST/PUT/DELETE /api/v1/admin/product-attributes` | ❌ Global attribute catalog |
-| `GET/POST/PUT/DELETE /api/v1/admin/product-attribute-values` | ❌ Attribute value catalog |
-| `GET/POST/PUT/DELETE /api/v1/admin/brands` | ❌ Brand is free-text on product |
+**Category response** now includes `products_count` for settings tables.
 
-**Workaround for attributes:** Per-product attributes via product create/update. Global settings page needs new APIs.
+**Attribute value create body**
+
+```json
+{ "attribute_id": "uuid", "value": "Black", "sort_order": 0, "is_active": true }
+```
 
 ---
 
@@ -600,7 +608,7 @@ The UI **Users** section maps to **storefront customers** (not admin panel accou
 | Site settings | `GET/PUT` | `/api/v1/admin/settings/site` |
 | Contact settings | `GET/PUT` | `/api/v1/admin/settings/contact` |
 | Social settings | `GET/PUT` | `/api/v1/admin/settings/social` |
-| File upload (logo) | `POST` | `/api/v1/admin/uploads` ❌ not yet |
+| File upload (logo) | `POST` | `/api/v1/admin/uploads` ✅ |
 
 **Site settings (PUT body)**
 
@@ -695,7 +703,7 @@ No dedicated sidebar page, but required for product forms and settings.
 /                → GET /dashboard/stats, /revenue, /recent-orders, /low-stock, /featured-products
 /products        → GET /products, GET /products/search, DELETE /products/{id}
 /products/create → POST /products, GET /categories?tree=true
-/products/settings → GET/POST/PUT/DELETE /categories (+ missing attribute/brand APIs)
+/products/settings → /categories, /brands, /product-attributes, /product-attribute-values, POST /uploads
 /orders          → GET /orders
 /orders/:id      → GET /orders/{id}, PATCH /status, POST /cancel, POST /refund
 /orders/:id/invoice → GET /orders/{id} (workaround)

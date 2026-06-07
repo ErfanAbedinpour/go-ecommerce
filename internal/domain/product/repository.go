@@ -14,6 +14,7 @@ type ListFilter struct {
 	CategoryID *uuid.UUID
 	Brand      string
 	IsFeatured *bool
+	StockLevel string
 }
 
 // Repository defines the port for product persistence.
@@ -29,4 +30,5 @@ type Repository interface {
 	UpdateInventory(ctx context.Context, productID uuid.UUID, inventory Inventory) error
 	ExistsInActiveOrders(ctx context.Context, productID uuid.UUID) (bool, error)
 	CategoryExists(ctx context.Context, categoryID uuid.UUID) (bool, error)
+	GetStats(ctx context.Context) (*Stats, error)
 }

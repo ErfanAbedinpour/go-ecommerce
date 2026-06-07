@@ -16,8 +16,9 @@ type CategoryResponse struct {
 	Description string             `json:"description,omitempty"`
 	ImageURL    string             `json:"image_url,omitempty"`
 	SortOrder   int                `json:"sort_order"`
-	IsActive    bool               `json:"is_active"`
-	Children    []CategoryResponse `json:"children,omitempty"`
+	IsActive      bool               `json:"is_active"`
+	ProductsCount int64              `json:"products_count"`
+	Children      []CategoryResponse `json:"children,omitempty"`
 	CreatedAt   time.Time          `json:"created_at"`
 	UpdatedAt   time.Time          `json:"updated_at"`
 }
@@ -42,8 +43,9 @@ func ToCategoryResponse(c *domain.Category) CategoryResponse {
 		Description: c.Description,
 		ImageURL:    c.ImageURL,
 		SortOrder:   c.SortOrder,
-		IsActive:    c.IsActive,
-		CreatedAt:   c.CreatedAt,
+		IsActive:      c.IsActive,
+		ProductsCount: c.ProductsCount,
+		CreatedAt:     c.CreatedAt,
 		UpdatedAt:   c.UpdatedAt,
 	}
 	if c.ParentID != nil {

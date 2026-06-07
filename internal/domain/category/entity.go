@@ -16,7 +16,8 @@ type Category struct {
 	ImageURL    string
 	SortOrder   int
 	IsActive    bool
-	Children    []Category
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	Children      []Category
+	ProductsCount int64
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }

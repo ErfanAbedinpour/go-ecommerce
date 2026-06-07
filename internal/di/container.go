@@ -4,7 +4,10 @@ import (
 	"log/slog"
 	"os"
 
+	appattr "app/internal/application/attributedef"
+	appattrval "app/internal/application/attributevalue"
 	appauth "app/internal/application/auth"
+	appbrand "app/internal/application/brand"
 	appcategory "app/internal/application/category"
 	appcoupon "app/internal/application/coupon"
 	appcustomer "app/internal/application/customer"
@@ -16,6 +19,7 @@ import (
 	infraauth "app/internal/infrastructure/auth"
 	"app/internal/infrastructure/email"
 	"app/internal/infrastructure/persistence/postgres"
+	"app/internal/infrastructure/storage"
 	"app/internal/interfaces/http/handler"
 	"app/pkg/validator"
 )
@@ -38,8 +42,11 @@ type Container struct {
 	CouponService    *appcoupon.Service
 	CustomerService  *appcustomer.Service
 	DashboardService *appdashboard.Service
-	OrderService     *apporder.Service
-	SettingsService  *appsettings.Service
+	OrderService      *apporder.Service
+	SettingsService   *appsettings.Service
+	BrandService      *appbrand.Service
+	AttributeService  *appattr.Service
+	AttrValueService  *appattrval.Service
 
 	// Handlers
 	Health   *handler.HealthHandler
@@ -51,6 +58,9 @@ type Container struct {
 	Dashboard *handler.DashboardHandler
 	Order     *handler.OrderHandler
 	Settings  *handler.SettingsHandler
+	Brand     *handler.BrandHandler
+	Attribute *handler.AttributeHandler
+	Upload    *handler.UploadHandler
 }
 
 // New creates and wires the dependency injection container.
@@ -102,6 +112,17 @@ func New(cfg *config.Config) (*Container, error) {
 	settingsRepo := postgres.NewSettingsRepository(db.DB)
 	settingsService := appsettings.NewService(settingsRepo)
 
+	brandRepo := postgres.NewBrandRepository(db.DB)
+	brandService := appbrand.NewService(brandRepo)
+
+	attrDefRepo := postgres.NewAttributeDefinitionRepository(db.DB)
+	attrDefService := appattr.NewService(attrDefRepo)
+
+	attrValRepo := postgres.NewAttributeValueRepository(db.DB)
+	attrValService := appattrval.NewService(attrValRepo)
+
+	uploader := storage.NewUploader(cfg.Upload)
+
 	c := &Container{
 		Config:          cfg,
 		Log:             log,
@@ -117,6 +138,9 @@ func New(cfg *config.Config) (*Container, error) {
 		DashboardService: dashboardService,
 		OrderService:     orderService,
 		SettingsService:  settingsService,
+		BrandService:     brandService,
+		AttributeService: attrDefService,
+		AttrValueService: attrValService,
 		Health:           handler.NewHealthHandler(db, cfg.App.Version),
 		Auth:            handler.NewAuthHandler(authService, v, log),
 		Product:         handler.NewProductHandler(productService, v, log),
@@ -126,6 +150,9 @@ func New(cfg *config.Config) (*Container, error) {
 		Dashboard:       handler.NewDashboardHandler(dashboardService, v, log),
 		Order:           handler.NewOrderHandler(orderService, v, log),
 		Settings:        handler.NewSettingsHandler(settingsService, v, log),
+		Brand:           handler.NewBrandHandler(brandService, v, log),
+		Attribute:       handler.NewAttributeHandler(attrDefService, attrValService, v, log),
+		Upload:          handler.NewUploadHandler(uploader, log),
 	}
 
 	return c, nil

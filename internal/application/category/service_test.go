@@ -89,6 +89,10 @@ func (m *mockRepo) IsDescendant(_ context.Context, ancestorID, descendantID uuid
 	return m.descendant[key], nil
 }
 
+func (m *mockRepo) ProductCounts(_ context.Context) (map[uuid.UUID]int64, error) {
+	return map[uuid.UUID]int64{}, nil
+}
+
 func TestService_Create(t *testing.T) {
 	svc := NewService(newMockRepo())
 	c, err := svc.Create(context.Background(), CreateInput{Name: "Electronics"})

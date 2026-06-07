@@ -11,4 +11,7 @@ var (
 	ErrInvalidSalePrice  = apperror.Validation("invalid sale price", map[string]string{
 		"sale_price": "must be less than or equal to price",
 	})
+	ErrInvalidStockLevel = apperror.Validation("invalid stock_level filter", map[string]string{
+		"stock_level": "must be one of: low, out",
+	})
 )

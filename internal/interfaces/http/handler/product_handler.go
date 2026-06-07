@@ -167,6 +167,25 @@ func (h *ProductHandler) Get(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, dtoresponse.ToProductResponse(product))
 }
 
+// Stats godoc
+// @Summary      Product statistics
+// @Description  Get product catalog KPI counts for dashboard cards.
+// @Tags         products
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  dtoresponse.ProductStatsResponse
+// @Failure      401  {object}  dtoresponse.ErrorResponse
+// @Failure      403  {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/admin/products/stats [get]
+func (h *ProductHandler) Stats(w http.ResponseWriter, r *http.Request) {
+	stats, err := h.service.GetStats(r.Context())
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.OK(w, dtoresponse.ToProductStatsResponse(stats))
+}
+
 // List godoc
 // @Summary      List products
 // @Description  Get a paginated list of products with optional filters.
@@ -181,6 +200,7 @@ func (h *ProductHandler) Get(w http.ResponseWriter, r *http.Request) {
 // @Param        category_id   query  string  false  "Filter by category"
 // @Param        brand         query  string  false  "Filter by brand"
 // @Param        is_featured   query  bool    false  "Filter featured products"
+// @Param        stock_level   query  string  false  "Filter by stock level"  Enums(low, out)
 // @Success      200  {object}  dtoresponse.ProductListResponse
 // @Failure      401  {object}  dtoresponse.ErrorResponse
 // @Failure      403  {object}  dtoresponse.ErrorResponse
@@ -277,8 +297,9 @@ func parseUUIDParam(r *http.Request, param string) (uuid.UUID, error) {
 func parseListFilter(r *http.Request) domain.ListFilter {
 	q := r.URL.Query()
 	filter := domain.ListFilter{
-		Status: q.Get("status"),
-		Brand:  q.Get("brand"),
+		Status:     q.Get("status"),
+		Brand:      q.Get("brand"),
+		StockLevel: q.Get("stock_level"),
 	}
 	if cid := q.Get("category_id"); cid != "" {
 		if id, err := uuid.Parse(cid); err == nil {

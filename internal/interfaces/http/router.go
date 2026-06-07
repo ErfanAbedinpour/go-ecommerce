@@ -39,6 +39,10 @@ func NewRouter(c *di.Container) http.Handler {
 		httpSwagger.InstanceName(swagger.SwaggerInfo.InstanceName()),
 	))
 
+	// Uploaded files (public static assets)
+	uploadDir := c.Config.Upload.Dir
+	r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadDir))))
+
 	r.Route("/api/v1", func(r chi.Router) {
 		registerPublicRoutes(r, c)
 		registerAuthenticatedRoutes(r, c)
@@ -78,6 +82,7 @@ func registerAdminRoutes(r chi.Router, c *di.Container) {
 
 		registerDashboardRoutes(r, c)
 		registerProductRoutes(r, c)
+		registerCatalogRoutes(r, c)
 		registerCategoryRoutes(r, c)
 		registerCouponRoutes(r, c)
 		registerCustomerRoutes(r, c)
@@ -98,6 +103,7 @@ func registerDashboardRoutes(r chi.Router, c *di.Container) {
 
 func registerProductRoutes(r chi.Router, c *di.Container) {
 	r.Route("/products", func(r chi.Router) {
+		r.Get("/stats", c.Product.Stats)
 		r.Get("/search", c.Product.Search)
 		r.Get("/", c.Product.List)
 		r.Post("/", c.Product.Create)
@@ -105,6 +111,34 @@ func registerProductRoutes(r chi.Router, c *di.Container) {
 		r.Put("/{id}", c.Product.Update)
 		r.Delete("/{id}", c.Product.Delete)
 		r.Patch("/{id}/inventory", c.Product.UpdateInventory)
+	})
+}
+
+func registerCatalogRoutes(r chi.Router, c *di.Container) {
+	r.Post("/uploads", c.Upload.Upload)
+
+	r.Route("/brands", func(r chi.Router) {
+		r.Get("/", c.Brand.List)
+		r.Post("/", c.Brand.Create)
+		r.Get("/{id}", c.Brand.Get)
+		r.Put("/{id}", c.Brand.Update)
+		r.Delete("/{id}", c.Brand.Delete)
+	})
+
+	r.Route("/product-attributes", func(r chi.Router) {
+		r.Get("/", c.Attribute.ListAttributes)
+		r.Post("/", c.Attribute.CreateAttribute)
+		r.Get("/{id}", c.Attribute.GetAttribute)
+		r.Put("/{id}", c.Attribute.UpdateAttribute)
+		r.Delete("/{id}", c.Attribute.DeleteAttribute)
+	})
+
+	r.Route("/product-attribute-values", func(r chi.Router) {
+		r.Get("/", c.Attribute.ListValues)
+		r.Post("/", c.Attribute.CreateValue)
+		r.Get("/{id}", c.Attribute.GetValue)
+		r.Put("/{id}", c.Attribute.UpdateValue)
+		r.Delete("/{id}", c.Attribute.DeleteValue)
 	})
 }
 

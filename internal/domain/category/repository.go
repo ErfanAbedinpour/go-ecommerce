@@ -27,4 +27,5 @@ type Repository interface {
 	HasChildren(ctx context.Context, id uuid.UUID) (bool, error)
 	HasProducts(ctx context.Context, id uuid.UUID) (bool, error)
 	IsDescendant(ctx context.Context, ancestorID, descendantID uuid.UUID) (bool, error)
+	ProductCounts(ctx context.Context) (map[uuid.UUID]int64, error)
 }

@@ -157,7 +157,16 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
 
 // GetByID returns a category by ID.
 func (s *Service) GetByID(ctx context.Context, id uuid.UUID) (*domain.Category, error) {
-	return s.repo.FindByID(ctx, id)
+	category, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	counts, err := s.repo.ProductCounts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	category.ProductsCount = counts[category.ID]
+	return category, nil
 }
 
 // List returns categories (flat paginated or nested tree).
@@ -167,6 +176,9 @@ func (s *Service) List(ctx context.Context, filter domain.ListFilter, page pagin
 		if err != nil {
 			return nil, err
 		}
+		if err := s.attachProductCounts(ctx, items); err != nil {
+			return nil, err
+		}
 		return buildTree(items), nil
 	}
 
@@ -174,7 +186,21 @@ func (s *Service) List(ctx context.Context, filter domain.ListFilter, page pagin
 	if err != nil {
 		return nil, err
 	}
+	if err := s.attachProductCounts(ctx, items); err != nil {
+		return nil, err
+	}
 	return pagination.NewPaginated(items, page.Page, page.PerPage, total), nil
+}
+
+func (s *Service) attachProductCounts(ctx context.Context, items []domain.Category) error {
+	counts, err := s.repo.ProductCounts(ctx)
+	if err != nil {
+		return err
+	}
+	for i := range items {
+		items[i].ProductsCount = counts[items[i].ID]
+	}
+	return nil
 }
 
 func (s *Service) ensureUniqueSlug(ctx context.Context, slug string, excludeID uuid.UUID) error {

@@ -99,6 +99,10 @@ func (m *mockRepo) CategoryExists(_ context.Context, _ uuid.UUID) (bool, error) 
 	return true, nil
 }
 
+func (m *mockRepo) GetStats(_ context.Context) (*domain.Stats, error) {
+	return &domain.Stats{Total: 10, Active: 7, Draft: 2, OutOfStock: 1}, nil
+}
+
 func TestService_Create(t *testing.T) {
 	svc := NewService(newMockRepo())
 	p, err := svc.Create(context.Background(), CreateInput{

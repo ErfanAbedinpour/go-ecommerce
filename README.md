@@ -803,8 +803,36 @@ CREATE INDEX idx_refresh_tokens_hash ON refresh_tokens(token_hash);
 |                  |                                                                                      |
 | ---------------- | ------------------------------------------------------------------------------------ |
 | **Auth**         | `products:read`                                                                      |
-| **Query**        | `page`, `per_page`, `sort`, `order`, `status`, `category_id`, `brand`, `is_featured` |
+| **Query**        | `page`, `per_page`, `sort`, `order`, `status`, `category_id`, `brand`, `is_featured`, `stock_level` (`low`, `out`) |
 | **Response 200** | Paginated ProductResponse list                                                       |
+
+#### GET `/products/stats`
+
+|                  |                                                                          |
+| ---------------- | ------------------------------------------------------------------------ |
+| **Auth**         | Admin role                                                               |
+| **Response 200** | `{ "total", "active", "draft", "out_of_stock" }`                         |
+
+#### POST `/uploads`
+
+|                    |                                                                                  |
+| ------------------ | -------------------------------------------------------------------------------- |
+| **Auth**           | Admin role                                                                       |
+| **Request**        | `multipart/form-data` with field `file` (jpeg, png, webp, gif; max 5 MB default) |
+| **Response 201**   | `{ "url", "filename", "size", "content_type" }`                                  |
+| **Env**            | `UPLOAD_DIR`, `UPLOAD_BASE_URL`, `UPLOAD_MAX_SIZE_MB`, `UPLOAD_ALLOWED_TYPES`    |
+
+#### Brands `/brands`
+
+Full CRUD for brand catalog. Cannot delete brands referenced by products.
+
+#### Product attributes `/product-attributes` and `/product-attribute-values`
+
+Global attribute definition and value catalogs for `/products/settings`. Values filtered by `?attribute_id=`.
+
+#### Categories — `products_count`
+
+Category list/tree responses include `products_count` per category.
 
 #### GET `/products/search`
 
@@ -1373,13 +1401,13 @@ ecommerce/
 
 #### Products & catalog settings
 
-- [ ] `POST /api/v1/admin/uploads` — image/logo file upload (product images, site logo)
-- [ ] `GET/POST/PUT/DELETE /api/v1/admin/brands` — brand catalog (`/products/settings`)
-- [ ] `GET/POST/PUT/DELETE /api/v1/admin/product-attributes` — global attribute definitions
-- [ ] `GET/POST/PUT/DELETE /api/v1/admin/product-attribute-values` — attribute value catalog
-- [ ] `products_count` on category list — settings page shows products per category
-- [ ] `GET /api/v1/admin/products/stats` — KPI cards (total/active/draft/out-of-stock counts)
-- [ ] `stock_level` query filter on product list (`low`, `out`)
+- [x] `POST /api/v1/admin/uploads` — image/logo file upload (product images, site logo)
+- [x] `GET/POST/PUT/DELETE /api/v1/admin/brands` — brand catalog (`/products/settings`)
+- [x] `GET/POST/PUT/DELETE /api/v1/admin/product-attributes` — global attribute definitions
+- [x] `GET/POST/PUT/DELETE /api/v1/admin/product-attribute-values` — attribute value catalog
+- [x] `products_count` on category list — settings page shows products per category
+- [x] `GET /api/v1/admin/products/stats` — KPI cards (total/active/draft/out-of-stock counts)
+- [x] `stock_level` query filter on product list (`low`, `out`)
 
 #### Orders
 

@@ -175,6 +175,7 @@ func (r *ProductRepository) List(ctx context.Context, filter product.ListFilter,
 	if filter.IsFeatured != nil {
 		query = query.Where("is_featured = ?", *filter.IsFeatured)
 	}
+	query = r.applyStockLevelFilter(query, filter.StockLevel)
 
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
@@ -257,6 +258,42 @@ func (r *ProductRepository) ExistsInActiveOrders(ctx context.Context, productID 
 		Where("orders.status NOT IN ?", []string{"cancelled", "refunded", "delivered"}).
 		Count(&count).Error
 	return count > 0, err
+}
+
+func (r *ProductRepository) GetStats(ctx context.Context) (*product.Stats, error) {
+	var stats product.Stats
+	err := r.db.WithContext(ctx).Raw(`
+		SELECT
+			(SELECT COUNT(*) FROM products WHERE deleted_at IS NULL) AS total,
+			(SELECT COUNT(*) FROM products WHERE deleted_at IS NULL AND status = 'active') AS active,
+			(SELECT COUNT(*) FROM products WHERE deleted_at IS NULL AND status = 'draft') AS draft,
+			COALESCE((
+				SELECT COUNT(*)
+				FROM inventories i
+				INNER JOIN products p ON p.id = i.product_id
+				WHERE p.deleted_at IS NULL AND i.quantity = 0
+			), 0) AS out_of_stock
+	`).Scan(&stats).Error
+	if err != nil {
+		return nil, err
+	}
+	return &stats, nil
+}
+
+func (r *ProductRepository) applyStockLevelFilter(query *gorm.DB, stockLevel string) *gorm.DB {
+	switch stockLevel {
+	case "low":
+		return query.
+			Joins("INNER JOIN inventories ON inventories.product_id = products.id").
+			Where("inventories.quantity > 0").
+			Where("inventories.quantity <= inventories.low_stock_threshold")
+	case "out":
+		return query.
+			Joins("INNER JOIN inventories ON inventories.product_id = products.id").
+			Where("inventories.quantity = 0")
+	default:
+		return query
+	}
 }
 
 func (r *ProductRepository) CategoryExists(ctx context.Context, categoryID uuid.UUID) (bool, error) {

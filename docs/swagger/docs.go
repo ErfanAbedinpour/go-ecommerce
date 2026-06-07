@@ -60,6 +60,305 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/admin/brands": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a paginated list of product brands.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "brands"
+                ],
+                "summary": "List brands",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filter by active status",
+                        "name": "is_active",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.BrandListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new product brand.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "brands"
+                ],
+                "summary": "Create brand",
+                "parameters": [
+                    {
+                        "description": "Brand data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_request.CreateBrandRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.BrandResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/brands/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a brand by ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "brands"
+                ],
+                "summary": "Get brand",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Brand ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.BrandResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an existing brand.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "brands"
+                ],
+                "summary": "Update brand",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Brand ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Brand data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_request.UpdateBrandRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.BrandResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft-delete a brand.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "brands"
+                ],
+                "summary": "Delete brand",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Brand ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/admin/categories": {
             "get": {
                 "security": [
@@ -1775,6 +2074,346 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/admin/product-attribute-values": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a paginated list of attribute values, optionally filtered by attribute_id.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "product-attribute-values"
+                ],
+                "summary": "List attribute values",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by attribute definition ID",
+                        "name": "attribute_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeValueListResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a value for a global product attribute.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "product-attribute-values"
+                ],
+                "summary": "Create attribute value",
+                "parameters": [
+                    {
+                        "description": "Value data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_request.CreateProductAttributeValueRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeValueResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/product-attribute-values/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "product-attribute-values"
+                ],
+                "summary": "Get attribute value",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Value ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeValueResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "product-attribute-values"
+                ],
+                "summary": "Update attribute value",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Value ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Value data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_request.UpdateProductAttributeValueRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeValueResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "product-attribute-values"
+                ],
+                "summary": "Delete attribute value",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Value ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/product-attributes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a paginated list of global attribute definitions.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "product-attributes"
+                ],
+                "summary": "List product attributes",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeListResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a global product attribute definition.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "product-attributes"
+                ],
+                "summary": "Create product attribute",
+                "parameters": [
+                    {
+                        "description": "Attribute data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_request.CreateProductAttributeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/product-attributes/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "product-attributes"
+                ],
+                "summary": "Get product attribute",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Attribute ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "product-attributes"
+                ],
+                "summary": "Update product attribute",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Attribute ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Attribute data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_request.UpdateProductAttributeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "product-attributes"
+                ],
+                "summary": "Delete product attribute",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Attribute ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/api/v1/admin/products": {
             "get": {
                 "security": [
@@ -1854,6 +2493,16 @@ const docTemplate = `{
                         "type": "boolean",
                         "description": "Filter featured products",
                         "name": "is_featured",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "low",
+                            "out"
+                        ],
+                        "type": "string",
+                        "description": "Filter by stock level",
+                        "name": "stock_level",
                         "in": "query"
                     }
                 ],
@@ -1989,6 +2638,43 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ProductListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/products/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get product catalog KPI counts for dashboard cards.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "products"
+                ],
+                "summary": "Product statistics",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ProductStatsResponse"
                         }
                     },
                     "401": {
@@ -2623,6 +3309,61 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/admin/uploads": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Upload an image file (product image, logo, favicon). Returns a public URL.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "uploads"
+                ],
+                "summary": "Upload file",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Image file (jpeg, png, webp, gif)",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.UploadResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/forgot-password": {
             "post": {
                 "description": "Request a password reset email. Always returns success to avoid email enumeration.",
@@ -2979,6 +3720,30 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "app_internal_interfaces_http_dto_request.CreateBrandRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 1000
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                },
+                "slug": {
+                    "type": "string",
+                    "maxLength": 100
+                }
+            }
+        },
         "app_internal_interfaces_http_dto_request.CreateCategoryRequest": {
             "type": "object",
             "required": [
@@ -3052,6 +3817,54 @@ const docTemplate = `{
                 "note": {
                     "type": "string",
                     "maxLength": 500
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_request.CreateProductAttributeRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                },
+                "slug": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "sort_order": {
+                    "type": "integer",
+                    "minimum": 0
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_request.CreateProductAttributeValueRequest": {
+            "type": "object",
+            "required": [
+                "attribute_id",
+                "value"
+            ],
+            "properties": {
+                "attribute_id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "sort_order": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "value": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
                 }
             }
         },
@@ -3323,6 +4136,27 @@ const docTemplate = `{
                 }
             }
         },
+        "app_internal_interfaces_http_dto_request.UpdateBrandRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 1000
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                },
+                "slug": {
+                    "type": "string",
+                    "maxLength": 100
+                }
+            }
+        },
         "app_internal_interfaces_http_dto_request.UpdateCategoryRequest": {
             "type": "object",
             "properties": {
@@ -3467,6 +4301,44 @@ const docTemplate = `{
                         "cancelled",
                         "refunded"
                     ]
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_request.UpdateProductAttributeRequest": {
+            "type": "object",
+            "properties": {
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                },
+                "slug": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "sort_order": {
+                    "type": "integer",
+                    "minimum": 0
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_request.UpdateProductAttributeValueRequest": {
+            "type": "object",
+            "properties": {
+                "is_active": {
+                    "type": "boolean"
+                },
+                "sort_order": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "value": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
                 }
             }
         },
@@ -3621,6 +4493,126 @@ const docTemplate = `{
                 }
             }
         },
+        "app_internal_interfaces_http_dto_response.BrandListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/app_internal_interfaces_http_dto_response.BrandResponse"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/app_pkg_pagination.Meta"
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_response.BrandResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_response.CatalogAttributeListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeResponse"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/app_pkg_pagination.Meta"
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_response.CatalogAttributeResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_response.CatalogAttributeValueListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CatalogAttributeValueResponse"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/app_pkg_pagination.Meta"
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_response.CatalogAttributeValueResponse": {
+            "type": "object",
+            "properties": {
+                "attribute_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "sort_order": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "app_internal_interfaces_http_dto_response.CategoryListResponse": {
             "type": "object",
             "properties": {
@@ -3664,6 +4656,9 @@ const docTemplate = `{
                 },
                 "parent_id": {
                     "type": "string"
+                },
+                "products_count": {
+                    "type": "integer"
                 },
                 "slug": {
                     "type": "string"
@@ -4464,6 +5459,23 @@ const docTemplate = `{
                 }
             }
         },
+        "app_internal_interfaces_http_dto_response.ProductStatsResponse": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "integer"
+                },
+                "draft": {
+                    "type": "integer"
+                },
+                "out_of_stock": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "app_internal_interfaces_http_dto_response.ReadinessResponse": {
             "type": "object",
             "properties": {
@@ -4635,6 +5647,23 @@ const docTemplate = `{
                 "token_type": {
                     "type": "string",
                     "example": "Bearer"
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_response.UploadResponse": {
+            "type": "object",
+            "properties": {
+                "content_type": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "url": {
+                    "type": "string"
                 }
             }
         },

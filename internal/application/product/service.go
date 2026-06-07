@@ -256,11 +256,20 @@ func (s *Service) GetByID(ctx context.Context, id uuid.UUID) (*domain.Product, e
 
 // List returns a paginated product list.
 func (s *Service) List(ctx context.Context, filter domain.ListFilter, page pagination.Params) (pagination.Paginated[domain.Product], error) {
+	if err := validateStockLevel(filter.StockLevel); err != nil {
+		return pagination.Paginated[domain.Product]{}, err
+	}
+
 	items, total, err := s.repo.List(ctx, filter, page)
 	if err != nil {
 		return pagination.Paginated[domain.Product]{}, err
 	}
 	return pagination.NewPaginated(items, page.Page, page.PerPage, total), nil
+}
+
+// GetStats returns product catalog KPI counts.
+func (s *Service) GetStats(ctx context.Context) (*domain.Stats, error) {
+	return s.repo.GetStats(ctx)
 }
 
 // Search searches products by name, SKU, or description.
@@ -346,6 +355,15 @@ func toImages(productID uuid.UUID, inputs []ImageInput) []domain.Image {
 		}
 	}
 	return images
+}
+
+func validateStockLevel(level string) error {
+	switch level {
+	case "", "low", "out":
+		return nil
+	default:
+		return domain.ErrInvalidStockLevel
+	}
 }
 
 func toAttributes(productID uuid.UUID, inputs []AttributeInput) []domain.Attribute {
