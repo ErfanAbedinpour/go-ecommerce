@@ -16,3 +16,11 @@ type Summary struct {
 	ItemCount     int
 	CreatedAt     time.Time
 }
+
+// ListItem extends Summary with customer info for admin order lists.
+type ListItem struct {
+	Summary
+	CustomerID    uuid.UUID
+	CustomerName  string
+	CustomerEmail string
+}

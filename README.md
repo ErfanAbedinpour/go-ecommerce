@@ -1225,13 +1225,13 @@ ecommerce/
 - [x] HTTP handlers
 - [x] Tests
 
-### Phase 5: Order Management ⬜
+### Phase 5: Order Management ✅
 
-- [ ] Domain: Order, OrderItem, OrderStatusHistory
-- [ ] Status state machine
-- [ ] List, detail, update status, cancel, refund use cases
-- [ ] HTTP handlers
-- [ ] Tests
+- [x] Domain: Order, OrderItem, OrderStatusHistory
+- [x] Status state machine
+- [x] List, detail, update status, cancel, refund use cases
+- [x] HTTP handlers
+- [x] Tests
 
 ### Phase 6: Coupon Management ✅
 

@@ -4,4 +4,18 @@ import "app/pkg/apperror"
 
 var (
 	ErrNotFound = apperror.NotFound("order")
+
+	ErrInvalidStatusTransition = apperror.New(
+		apperror.CodeInvalidStatus,
+		"invalid order status transition",
+		422,
+	)
+
+	ErrCannotCancel = apperror.Unprocessable("order cannot be cancelled in its current state")
+
+	ErrCannotRefund = apperror.Unprocessable("order cannot be refunded in its current state")
+
+	ErrInvalidRefundAmount = apperror.Validation("invalid refund amount", map[string]string{
+		"amount": "must be greater than 0 and not exceed order total",
+	})
 )

@@ -78,6 +78,7 @@ func registerAdminRoutes(r chi.Router, c *di.Container) {
 		registerCategoryRoutes(r, c)
 		registerCouponRoutes(r, c)
 		registerCustomerRoutes(r, c)
+		registerOrderRoutes(r, c)
 	})
 }
 
@@ -117,6 +118,16 @@ func registerCustomerRoutes(r chi.Router, c *di.Container) {
 		r.Get("/", c.Customer.List)
 		r.Get("/{id}/orders", c.Customer.ListOrders)
 		r.Get("/{id}", c.Customer.Get)
+	})
+}
+
+func registerOrderRoutes(r chi.Router, c *di.Container) {
+	r.Route("/orders", func(r chi.Router) {
+		r.Get("/", c.Order.List)
+		r.Patch("/{id}/status", c.Order.UpdateStatus)
+		r.Post("/{id}/cancel", c.Order.Cancel)
+		r.Post("/{id}/refund", c.Order.Refund)
+		r.Get("/{id}", c.Order.Get)
 	})
 }
 

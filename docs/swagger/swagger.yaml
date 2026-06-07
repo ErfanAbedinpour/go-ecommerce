@@ -165,6 +165,18 @@ definitions:
     required:
     - refresh_token
     type: object
+  app_internal_interfaces_http_dto_request.RefundOrderRequest:
+    properties:
+      amount:
+        type: number
+      reason:
+        maxLength: 500
+        minLength: 3
+        type: string
+    required:
+    - amount
+    - reason
+    type: object
   app_internal_interfaces_http_dto_request.UpdateCategoryRequest:
     properties:
       description:
@@ -226,6 +238,23 @@ definitions:
         type: integer
     required:
     - quantity
+    type: object
+  app_internal_interfaces_http_dto_request.UpdateOrderStatusRequest:
+    properties:
+      note:
+        maxLength: 500
+        type: string
+      status:
+        enum:
+        - pending
+        - processing
+        - shipped
+        - delivered
+        - cancelled
+        - refunded
+        type: string
+    required:
+    - status
     type: object
   app_internal_interfaces_http_dto_request.UpdateProductRequest:
     properties:
@@ -533,6 +562,128 @@ definitions:
         example: ecommerce admin API v1
         type: string
     type: object
+  app_internal_interfaces_http_dto_response.OrderAddressResponse:
+    properties:
+      city:
+        type: string
+      country:
+        type: string
+      postal_code:
+        type: string
+      state:
+        type: string
+      street:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.OrderCustomerResponse:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      phone:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.OrderDetailResponse:
+    properties:
+      billing_address:
+        $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderAddressResponse'
+      coupon_id:
+        type: string
+      created_at:
+        type: string
+      customer:
+        $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderCustomerResponse'
+      customer_id:
+        type: string
+      discount_amount:
+        type: number
+      id:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderItemResponse'
+        type: array
+      notes:
+        type: string
+      order_number:
+        type: string
+      payment_status:
+        type: string
+      shipping_address:
+        $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderAddressResponse'
+      shipping_amount:
+        type: number
+      status:
+        type: string
+      subtotal:
+        type: number
+      tax_amount:
+        type: number
+      timeline:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderTimelineResponse'
+        type: array
+      total:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.OrderItemResponse:
+    properties:
+      id:
+        type: string
+      product_id:
+        type: string
+      product_name:
+        type: string
+      product_sku:
+        type: string
+      quantity:
+        type: integer
+      total_price:
+        type: number
+      unit_price:
+        type: number
+    type: object
+  app_internal_interfaces_http_dto_response.OrderListItemResponse:
+    properties:
+      created_at:
+        type: string
+      customer_email:
+        type: string
+      customer_id:
+        type: string
+      customer_name:
+        type: string
+      id:
+        type: string
+      item_count:
+        type: integer
+      order_number:
+        type: string
+      payment_status:
+        type: string
+      status:
+        type: string
+      total:
+        type: number
+    type: object
+  app_internal_interfaces_http_dto_response.OrderListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderListItemResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
   app_internal_interfaces_http_dto_response.OrderSummaryResponse:
     properties:
       created_at:
@@ -549,6 +700,21 @@ definitions:
         type: string
       total:
         type: number
+    type: object
+  app_internal_interfaces_http_dto_response.OrderTimelineResponse:
+    properties:
+      changed_by:
+        type: string
+      created_at:
+        type: string
+      from_status:
+        type: string
+      id:
+        type: string
+      note:
+        type: string
+      to_status:
+        type: string
     type: object
   app_internal_interfaces_http_dto_response.ProductAttributeResponse:
     properties:
@@ -1523,6 +1689,239 @@ paths:
       summary: Dashboard statistics
       tags:
       - dashboard
+  /api/v1/admin/orders:
+    get:
+      description: Get a paginated list of orders with optional search and filters.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Sort field
+        enum:
+        - created_at
+        - order_number
+        - total
+        - status
+        - payment_status
+        in: query
+        name: sort
+        type: string
+      - description: Sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        type: string
+      - description: Filter by order status
+        in: query
+        name: status
+        type: string
+      - description: Filter by payment status
+        in: query
+        name: payment_status
+        type: string
+      - description: Search by order number or customer
+        in: query
+        name: q
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List orders
+      tags:
+      - orders
+  /api/v1/admin/orders/{id}:
+    get:
+      description: Get full order detail with items, customer, addresses, and status
+        timeline.
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderDetailResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get order
+      tags:
+      - orders
+  /api/v1/admin/orders/{id}/cancel:
+    post:
+      description: Cancel a pending or processing order and restore product inventory.
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderDetailResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel order
+      tags:
+      - orders
+  /api/v1/admin/orders/{id}/refund:
+    post:
+      consumes:
+      - application/json
+      description: Process a full or partial refund on a delivered, paid order.
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Refund data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.RefundOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Refund order
+      tags:
+      - orders
+  /api/v1/admin/orders/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Transition order through the fulfillment workflow. Invalid transitions
+        return 422.
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Status update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateOrderStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update order status
+      tags:
+      - orders
   /api/v1/admin/products:
     get:
       description: Get a paginated list of products with optional filters.
