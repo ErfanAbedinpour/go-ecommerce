@@ -1240,12 +1240,12 @@ ecommerce/
 - [x] HTTP handlers
 - [x] Tests
 
-### Phase 7: Dashboard Analytics ⬜
+### Phase 7: Dashboard Analytics ✅
 
-- [ ] Read-model queries (raw SQL aggregations)
-- [ ] Dashboard stats, revenue analytics, low stock, recent orders
-- [ ] HTTP handlers
-- [ ] Tests
+- [x] Read-model queries (raw SQL aggregations)
+- [x] Dashboard stats, revenue analytics, low stock, recent orders
+- [x] HTTP handlers
+- [x] Tests
 
 ### Phase 8: Customer Management ✅
 

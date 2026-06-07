@@ -73,10 +73,20 @@ func registerAdminRoutes(r chi.Router, c *di.Container) {
 
 		r.Get("/", handler.AdminIndex)
 
+		registerDashboardRoutes(r, c)
 		registerProductRoutes(r, c)
 		registerCategoryRoutes(r, c)
 		registerCouponRoutes(r, c)
 		registerCustomerRoutes(r, c)
+	})
+}
+
+func registerDashboardRoutes(r chi.Router, c *di.Container) {
+	r.Route("/dashboard", func(r chi.Router) {
+		r.Get("/stats", c.Dashboard.Stats)
+		r.Get("/revenue", c.Dashboard.Revenue)
+		r.Get("/low-stock", c.Dashboard.LowStock)
+		r.Get("/recent-orders", c.Dashboard.RecentOrders)
 	})
 }
 

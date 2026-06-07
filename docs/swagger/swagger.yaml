@@ -479,6 +479,21 @@ definitions:
       total_spent:
         type: number
     type: object
+  app_internal_interfaces_http_dto_response.DashboardStatsResponse:
+    properties:
+      low_stock_count:
+        type: integer
+      pending_orders:
+        type: integer
+      total_customers:
+        type: integer
+      total_orders:
+        type: integer
+      total_products:
+        type: integer
+      total_revenue:
+        type: number
+    type: object
   app_internal_interfaces_http_dto_response.ErrorBody:
     properties:
       code:
@@ -628,6 +643,29 @@ definitions:
       version:
         example: 1.0.0
         type: string
+    type: object
+  app_internal_interfaces_http_dto_response.RecentOrdersResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderSummaryResponse'
+        type: array
+    type: object
+  app_internal_interfaces_http_dto_response.RevenueAnalyticsResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.RevenueDataPointResponse'
+        type: array
+    type: object
+  app_internal_interfaces_http_dto_response.RevenueDataPointResponse:
+    properties:
+      date:
+        type: string
+      orders:
+        type: integer
+      revenue:
+        type: number
     type: object
   app_internal_interfaces_http_dto_response.TokenResponse:
     properties:
@@ -1331,6 +1369,160 @@ paths:
       summary: Customer purchase history
       tags:
       - customers
+  /api/v1/admin/dashboard/low-stock:
+    get:
+      description: Get paginated products where quantity is at or below the low-stock
+        threshold.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Sort field
+        enum:
+        - created_at
+        - name
+        - quantity
+        in: query
+        name: sort
+        type: string
+      - description: Sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Low stock products
+      tags:
+      - dashboard
+  /api/v1/admin/dashboard/recent-orders:
+    get:
+      description: Get the latest orders for the dashboard feed.
+      parameters:
+      - default: 10
+        description: Number of orders to return (max 50)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.RecentOrdersResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Recent orders
+      tags:
+      - dashboard
+  /api/v1/admin/dashboard/revenue:
+    get:
+      description: Get time-series revenue and order counts. Use period preset or
+        custom from/to dates.
+      parameters:
+      - default: month
+        description: Preset period
+        enum:
+        - today
+        - week
+        - month
+        - year
+        in: query
+        name: period
+        type: string
+      - description: Custom start date (YYYY-MM-DD)
+        in: query
+        name: from
+        type: string
+      - description: Custom end date (YYYY-MM-DD)
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.RevenueAnalyticsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Revenue analytics
+      tags:
+      - dashboard
+  /api/v1/admin/dashboard/stats:
+    get:
+      description: 'Get aggregated KPIs: revenue, orders, customers, products, pending
+        orders, and low stock count.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.DashboardStatsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Dashboard statistics
+      tags:
+      - dashboard
   /api/v1/admin/products:
     get:
       description: Get a paginated list of products with optional filters.
