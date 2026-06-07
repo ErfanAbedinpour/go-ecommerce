@@ -12,10 +12,11 @@ import (
 )
 
 type mockRepo struct {
-	stats  *domain.Stats
-	revenue []domain.RevenueDataPoint
+	stats    *domain.Stats
+	revenue  []domain.RevenueDataPoint
 	lowStock []domainproduct.Product
-	orders  []domainorder.Summary
+	orders   []domainorder.DashboardSummary
+	featured []domainproduct.Product
 }
 
 func (m *mockRepo) GetStats(_ context.Context) (*domain.Stats, error) {
@@ -30,11 +31,18 @@ func (m *mockRepo) ListLowStockProducts(_ context.Context, _ pagination.Params) 
 	return m.lowStock, int64(len(m.lowStock)), nil
 }
 
-func (m *mockRepo) ListRecentOrders(_ context.Context, limit int) ([]domainorder.Summary, error) {
+func (m *mockRepo) ListRecentOrders(_ context.Context, limit int) ([]domainorder.DashboardSummary, error) {
 	if limit > len(m.orders) {
 		limit = len(m.orders)
 	}
 	return m.orders[:limit], nil
+}
+
+func (m *mockRepo) ListFeaturedProducts(_ context.Context, limit int) ([]domainproduct.Product, error) {
+	if limit > len(m.featured) {
+		limit = len(m.featured)
+	}
+	return m.featured[:limit], nil
 }
 
 func TestService_GetStats(t *testing.T) {
@@ -72,9 +80,9 @@ func TestService_GetRevenueAnalytics(t *testing.T) {
 
 func TestService_GetRecentOrders_DefaultLimit(t *testing.T) {
 	svc := NewService(&mockRepo{
-		orders: []domainorder.Summary{
-			{OrderNumber: "ORD-1", CreatedAt: time.Now()},
-			{OrderNumber: "ORD-2", CreatedAt: time.Now()},
+		orders: []domainorder.DashboardSummary{
+			{Summary: domainorder.Summary{OrderNumber: "ORD-1", CreatedAt: time.Now()}},
+			{Summary: domainorder.Summary{OrderNumber: "ORD-2", CreatedAt: time.Now()}},
 		},
 	})
 

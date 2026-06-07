@@ -10,8 +10,10 @@ import (
 )
 
 const (
-	defaultRecentLimit = 10
-	maxRecentLimit     = 50
+	defaultRecentLimit    = 10
+	maxRecentLimit        = 50
+	defaultFeaturedLimit  = 5
+	maxFeaturedLimit      = 20
 )
 
 // Service handles dashboard analytics use cases.
@@ -48,7 +50,7 @@ func (s *Service) GetLowStockProducts(ctx context.Context, page pagination.Param
 }
 
 // GetRecentOrders returns the latest orders for the dashboard feed.
-func (s *Service) GetRecentOrders(ctx context.Context, limit int) ([]domainorder.Summary, error) {
+func (s *Service) GetRecentOrders(ctx context.Context, limit int) ([]domainorder.DashboardSummary, error) {
 	if limit <= 0 {
 		limit = defaultRecentLimit
 	}
@@ -56,4 +58,15 @@ func (s *Service) GetRecentOrders(ctx context.Context, limit int) ([]domainorder
 		return nil, domain.ErrInvalidLimit
 	}
 	return s.repo.ListRecentOrders(ctx, limit)
+}
+
+// GetFeaturedProducts returns active featured products for the dashboard widget.
+func (s *Service) GetFeaturedProducts(ctx context.Context, limit int) ([]domainproduct.Product, error) {
+	if limit <= 0 {
+		limit = defaultFeaturedLimit
+	}
+	if limit > maxFeaturedLimit {
+		return nil, domain.ErrInvalidLimit
+	}
+	return s.repo.ListFeaturedProducts(ctx, limit)
 }

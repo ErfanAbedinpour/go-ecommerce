@@ -11,6 +11,7 @@ import (
 	appdashboard "app/internal/application/dashboard"
 	apporder "app/internal/application/order"
 	appproduct "app/internal/application/product"
+	appsettings "app/internal/application/settings"
 	"app/internal/config"
 	infraauth "app/internal/infrastructure/auth"
 	"app/internal/infrastructure/email"
@@ -38,6 +39,7 @@ type Container struct {
 	CustomerService  *appcustomer.Service
 	DashboardService *appdashboard.Service
 	OrderService     *apporder.Service
+	SettingsService  *appsettings.Service
 
 	// Handlers
 	Health   *handler.HealthHandler
@@ -48,6 +50,7 @@ type Container struct {
 	Customer  *handler.CustomerHandler
 	Dashboard *handler.DashboardHandler
 	Order     *handler.OrderHandler
+	Settings  *handler.SettingsHandler
 }
 
 // New creates and wires the dependency injection container.
@@ -96,6 +99,9 @@ func New(cfg *config.Config) (*Container, error) {
 	orderRepo := postgres.NewOrderRepository(db.DB)
 	orderService := apporder.NewService(orderRepo)
 
+	settingsRepo := postgres.NewSettingsRepository(db.DB)
+	settingsService := appsettings.NewService(settingsRepo)
+
 	c := &Container{
 		Config:          cfg,
 		Log:             log,
@@ -110,6 +116,7 @@ func New(cfg *config.Config) (*Container, error) {
 		CustomerService:  customerService,
 		DashboardService: dashboardService,
 		OrderService:     orderService,
+		SettingsService:  settingsService,
 		Health:           handler.NewHealthHandler(db, cfg.App.Version),
 		Auth:            handler.NewAuthHandler(authService, v, log),
 		Product:         handler.NewProductHandler(productService, v, log),
@@ -118,6 +125,7 @@ func New(cfg *config.Config) (*Container, error) {
 		Customer:        handler.NewCustomerHandler(customerService, v, log),
 		Dashboard:       handler.NewDashboardHandler(dashboardService, v, log),
 		Order:           handler.NewOrderHandler(orderService, v, log),
+		Settings:        handler.NewSettingsHandler(settingsService, v, log),
 	}
 
 	return c, nil

@@ -9,13 +9,13 @@
 | Area | UI pages | Backend coverage | Notes |
 |------|----------|------------------|-------|
 | Authentication | `/signin` | ✅ | Login, signup, forgot/reset password |
-| Dashboard `/` | KPIs, chart, recent orders, low stock | ✅ Mostly | Missing growth %, featured products, richer recent-order rows |
+| Dashboard `/` | KPIs, chart, recent orders, low stock | ✅ | Growth %, featured products, enriched recent orders |
 | Products | `/products`, `/products/create`, `/products/settings` | ✅ Partial | CRUD + search OK; settings catalog APIs missing |
 | Orders | `/orders`, `/orders/:id`, `/orders/:id/invoice`, `/orders/create` | ✅ Partial | List/detail/actions OK; create order + invoice endpoint missing |
 | Users | `/users`, `/users/:id` | ✅ Partial | Read-only customers; no admin-user CRUD, no customer edit/delete |
 | Coupons | `/coupons` | ✅ Full | All CRUD + activate/deactivate |
-| General settings | `/general-setting`, `/navigation` | ❌ None | Store settings & menu APIs not implemented |
-| SEO | `/setting-seo` | ❌ None | SEO settings API not implemented |
+| General settings | `/general-setting`, `/navigation` | ✅ | Site, contact, social, navigation APIs |
+| SEO | `/setting-seo` | ✅ | SEO settings API |
 | Blog | `/weblog/*` | ❌ Out of scope | Marked out-of-scope in README |
 | Contact | `/contact` | ❌ Out of scope | Marked out-of-scope in README |
 | Categories | (used in product forms / settings) | ✅ Full | No dedicated sidebar page; API exists |
@@ -175,11 +175,19 @@ The home page renders **6 KPI cards**, a **sales & revenue chart**, **featured p
   "total_customers": 3782,
   "total_products": 245,
   "pending_orders": 32,
-  "low_stock_count": 14
+  "low_stock_count": 14,
+  "growth": {
+    "total_revenue": 12.5,
+    "total_orders": 8.3,
+    "total_customers": 5.1,
+    "total_products": 2.0,
+    "pending_orders": -4.2,
+    "low_stock_count": 10.0
+  }
 }
 ```
 
-**Gap:** UI shows growth badges (e.g. `+12.5%`). Stats API does not return period-over-period growth.
+`growth` values are % change for the last 30 days vs the prior 30 days.
 
 ### Sales & revenue chart → `GET /api/v1/admin/dashboard/revenue`
 
@@ -218,13 +226,13 @@ The home page renders **6 KPI cards**, a **sales & revenue chart**, **featured p
       "payment_status": "paid",
       "total": 129.99,
       "item_count": 2,
+      "customer_name": "John Doe",
+      "product_name": "Nike Air Max",
       "created_at": "2026-06-01T10:00:00Z"
     }
   ]
 }
 ```
-
-**Gap:** UI columns include product name and category. This endpoint does not return product/category/customer name. Use `GET /admin/orders` list (has `customer_name`) or extend recent-orders response.
 
 ### Low stock widget → `GET /api/v1/admin/dashboard/low-stock`
 
@@ -254,13 +262,11 @@ The home page renders **6 KPI cards**, a **sales & revenue chart**, **featured p
 }
 ```
 
-### Featured products section
+### Featured products section → `GET /api/v1/admin/dashboard/featured-products`
 
-| API | Status |
-|-----|--------|
-| `GET /api/v1/admin/dashboard/featured-products` | ❌ Not implemented |
+**Query:** `limit` (default 5, max 20)
 
-**Workaround:** `GET /api/v1/admin/products?is_featured=true&status=active&per_page=5`
+**Response:** `{ "data": [ProductResponse] }` — active featured products only.
 
 ---
 
@@ -589,32 +595,47 @@ The UI **Users** section maps to **storefront customers** (not admin panel accou
 
 ### `/general-setting` — Base Information
 
-Site info, contact info, social links. **No backend APIs.**
+| API | Method | Path |
+|-----|--------|------|
+| Site settings | `GET/PUT` | `/api/v1/admin/settings/site` |
+| Contact settings | `GET/PUT` | `/api/v1/admin/settings/contact` |
+| Social settings | `GET/PUT` | `/api/v1/admin/settings/social` |
+| File upload (logo) | `POST` | `/api/v1/admin/uploads` ❌ not yet |
 
-| Needed | Status |
-|--------|--------|
-| `GET/PUT /api/v1/admin/settings/site` | ❌ |
-| `GET/PUT /api/v1/admin/settings/contact` | ❌ |
-| `GET/PUT /api/v1/admin/settings/social` | ❌ |
-| `POST /api/v1/admin/uploads` (logo, favicon) | ❌ |
+**Site settings (PUT body)**
+
+```json
+{
+  "name": "My Shop",
+  "url": "https://shop.example.com",
+  "logo_url": "https://cdn.example.com/logo.png",
+  "favicon_url": "https://cdn.example.com/favicon.ico"
+}
+```
 
 ### `/navigation` — Navigation Settings
 
-Menu tree CRUD. **No backend APIs.**
+| API | Method | Path |
+|-----|--------|------|
+| Menu tree | `GET/PUT` | `/api/v1/admin/navigation` |
 
-| Needed | Status |
-|--------|--------|
-| `GET/PUT /api/v1/admin/navigation` | ❌ |
+**Navigation (PUT body)**
+
+```json
+{
+  "items": [
+    { "label": "Home", "url": "/", "sort_order": 0, "is_active": true, "children": [] }
+  ]
+}
+```
 
 ---
 
 ## 8. SEO — `/setting-seo`
 
-Full SEO configuration (meta, Open Graph, schema, sitemap, robots, analytics). **No backend APIs.**
-
-| Needed | Status |
-|--------|--------|
-| `GET/PUT /api/v1/admin/settings/seo` | ❌ |
+| API | Method | Path |
+|-----|--------|------|
+| SEO settings | `GET/PUT` | `/api/v1/admin/settings/seo` |
 
 ---
 
@@ -671,8 +692,7 @@ No dedicated sidebar page, but required for product forms and settings.
 
 ```
 /signin          → POST /auth/login, GET /auth/me
-/                → GET /dashboard/stats, /revenue, /recent-orders, /low-stock
-                 → GET /products?is_featured=true (featured workaround)
+/                → GET /dashboard/stats, /revenue, /recent-orders, /low-stock, /featured-products
 /products        → GET /products, GET /products/search, DELETE /products/{id}
 /products/create → POST /products, GET /categories?tree=true
 /products/settings → GET/POST/PUT/DELETE /categories (+ missing attribute/brand APIs)
@@ -683,9 +703,9 @@ No dedicated sidebar page, but required for product forms and settings.
 /users           → GET /customers
 /users/:id       → GET /customers/{id}, GET /customers/{id}/orders
 /coupons         → Full /coupons CRUD + activate/deactivate
-/general-setting → ❌ settings APIs
-/navigation      → ❌ navigation API
-/setting-seo     → ❌ SEO settings API
+/general-setting → GET/PUT /settings/site, /contact, /social
+/navigation      → GET/PUT /navigation
+/setting-seo     → GET/PUT /settings/seo
 /signup          → POST /auth/signup
 ```
 

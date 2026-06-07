@@ -82,6 +82,7 @@ func registerAdminRoutes(r chi.Router, c *di.Container) {
 		registerCouponRoutes(r, c)
 		registerCustomerRoutes(r, c)
 		registerOrderRoutes(r, c)
+		registerSettingsRoutes(r, c)
 	})
 }
 
@@ -91,6 +92,7 @@ func registerDashboardRoutes(r chi.Router, c *di.Container) {
 		r.Get("/revenue", c.Dashboard.Revenue)
 		r.Get("/low-stock", c.Dashboard.LowStock)
 		r.Get("/recent-orders", c.Dashboard.RecentOrders)
+		r.Get("/featured-products", c.Dashboard.FeaturedProducts)
 	})
 }
 
@@ -131,6 +133,23 @@ func registerOrderRoutes(r chi.Router, c *di.Container) {
 		r.Post("/{id}/cancel", c.Order.Cancel)
 		r.Post("/{id}/refund", c.Order.Refund)
 		r.Get("/{id}", c.Order.Get)
+	})
+}
+
+func registerSettingsRoutes(r chi.Router, c *di.Container) {
+	r.Route("/settings", func(r chi.Router) {
+		r.Get("/site", c.Settings.GetSite)
+		r.Put("/site", c.Settings.UpdateSite)
+		r.Get("/contact", c.Settings.GetContact)
+		r.Put("/contact", c.Settings.UpdateContact)
+		r.Get("/social", c.Settings.GetSocial)
+		r.Put("/social", c.Settings.UpdateSocial)
+		r.Get("/seo", c.Settings.GetSEO)
+		r.Put("/seo", c.Settings.UpdateSEO)
+	})
+	r.Route("/navigation", func(r chi.Router) {
+		r.Get("/", c.Settings.GetNavigation)
+		r.Put("/", c.Settings.UpdateNavigation)
 	})
 }
 

@@ -725,7 +725,8 @@ CREATE INDEX idx_refresh_tokens_hash ON refresh_tokens(token_hash);
 |                  |                                                                                                                 |
 | ---------------- | --------------------------------------------------------------------------------------------------------------- |
 | **Auth**         | Admin role                                                                                                      |
-| **Response 200** | `{ "total_revenue", "total_orders", "total_customers", "total_products", "pending_orders", "low_stock_count" }` |
+| **Response 200** | `{ "total_revenue", "total_orders", "total_customers", "total_products", "pending_orders", "low_stock_count", "growth": { ... } }` |
+| **Growth**       | Period-over-period % change (last 30 days vs prior 30 days) for each KPI                                      |
 
 #### GET `/dashboard/revenue`
 
@@ -749,7 +750,15 @@ CREATE INDEX idx_refresh_tokens_hash ON refresh_tokens(token_hash);
 | ---------------- | ---------------------------- |
 | **Auth**         | `orders:read`                |
 | **Query**        | `limit` (default 10, max 50) |
-| **Response 200** | `{ "data": [OrderSummary] }` |
+| **Response 200** | `{ "data": [{ "id", "order_number", "status", "payment_status", "total", "item_count", "customer_name", "product_name", "created_at" }] }` |
+
+#### GET `/dashboard/featured-products`
+
+|                  |                                                              |
+| ---------------- | ------------------------------------------------------------ |
+| **Auth**         | Admin role                                                   |
+| **Query**        | `limit` (default 5, max 20)                                  |
+| **Response 200** | `{ "data": [ProductResponse] }` — active featured products   |
 
 ---
 
@@ -1060,7 +1069,48 @@ CREATE INDEX idx_refresh_tokens_hash ON refresh_tokens(token_hash);
 
 ---
 
-### 5.9 Audit Logs
+### 5.9 Store Settings
+
+Singleton row in `store_settings` (JSONB per section). All endpoints require admin role.
+
+#### GET/PUT `/settings/site`
+
+|                  |                                                                      |
+| ---------------- | -------------------------------------------------------------------- |
+| **Request (PUT)**| `{ "name", "url", "logo_url", "favicon_url" }`                       |
+| **Response 200** | Site identity settings                                               |
+
+#### GET/PUT `/settings/contact`
+
+|                  |                                                                      |
+| ---------------- | -------------------------------------------------------------------- |
+| **Request (PUT)**| `{ "email", "phone", "address", "city", "country" }`                 |
+| **Response 200** | Public contact information                                           |
+
+#### GET/PUT `/settings/social`
+
+|                  |                                                                      |
+| ---------------- | -------------------------------------------------------------------- |
+| **Request (PUT)**| `{ "facebook", "twitter", "instagram", "linkedin", "youtube", "tiktok" }` |
+| **Response 200** | Social media profile URLs                                            |
+
+#### GET/PUT `/settings/seo`
+
+|                  |                                                                                      |
+| ---------------- | ------------------------------------------------------------------------------------ |
+| **Request (PUT)**| `{ "meta_title", "meta_description", "meta_keywords", "og_image_url", "robots_txt", "google_analytics_id", "sitemap_enabled" }` |
+| **Response 200** | SEO and metadata configuration                                                       |
+
+#### GET/PUT `/navigation`
+
+|                  |                                                                      |
+| ---------------- | -------------------------------------------------------------------- |
+| **Request (PUT)**| `{ "items": [{ "id", "label", "url", "sort_order", "is_active", "children": [] }] }` |
+| **Response 200** | `{ "items": [NavItem] }` — menu tree; empty `id` auto-assigned on PUT |
+
+---
+
+### 5.10 Audit Logs
 
 #### GET `/audit-logs`
 
@@ -1077,7 +1127,7 @@ CREATE INDEX idx_refresh_tokens_hash ON refresh_tokens(token_hash);
 
 ---
 
-### 5.10 Standard Error Response
+### 5.11 Standard Error Response
 
 ```json
 {
@@ -1317,9 +1367,9 @@ ecommerce/
 
 #### Dashboard enhancements
 
-- [ ] `GET /api/v1/admin/dashboard/featured-products` — featured products widget (workaround: `GET /products?is_featured=true`)
-- [ ] KPI growth percentages on `GET /dashboard/stats` (UI shows `+12.5%` badges)
-- [ ] Enrich `GET /dashboard/recent-orders` with `customer_name` and first product name
+- [x] `GET /api/v1/admin/dashboard/featured-products` — featured products widget (workaround: `GET /products?is_featured=true`)
+- [x] KPI growth percentages on `GET /dashboard/stats` (UI shows `+12.5%` badges)
+- [x] Enrich `GET /dashboard/recent-orders` with `customer_name` and first product name
 
 #### Products & catalog settings
 
@@ -1348,11 +1398,11 @@ ecommerce/
 
 #### Store settings
 
-- [ ] `GET/PUT /api/v1/admin/settings/site` — site name, URL, logo, favicon (`/general-setting`)
-- [ ] `GET/PUT /api/v1/admin/settings/contact` — contact email, phone, address
-- [ ] `GET/PUT /api/v1/admin/settings/social` — social media links
-- [ ] `GET/PUT /api/v1/admin/navigation` — menu tree CRUD (`/navigation`)
-- [ ] `GET/PUT /api/v1/admin/settings/seo` — SEO configuration (`/setting-seo`)
+- [x] `GET/PUT /api/v1/admin/settings/site` — site name, URL, logo, favicon (`/general-setting`)
+- [x] `GET/PUT /api/v1/admin/settings/contact` — contact email, phone, address
+- [x] `GET/PUT /api/v1/admin/settings/social` — social media links
+- [x] `GET/PUT /api/v1/admin/navigation` — menu tree CRUD (`/navigation`)
+- [x] `GET/PUT /api/v1/admin/settings/seo` — SEO configuration (`/setting-seo`)
 
 #### Audit (Phase 9 — also required by admin panel activity tracking)
 

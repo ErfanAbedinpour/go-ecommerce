@@ -131,6 +131,37 @@ func (h *DashboardHandler) RecentOrders(w http.ResponseWriter, r *http.Request) 
 	response.OK(w, dtoresponse.ToRecentOrdersResponse(orders))
 }
 
+// FeaturedProducts godoc
+// @Summary      Featured products
+// @Description  Get active featured products for the dashboard widget.
+// @Tags         dashboard
+// @Produce      json
+// @Security     BearerAuth
+// @Param        limit  query  int  false  "Number of products to return (max 20)"  default(5)
+// @Success      200  {object}  dtoresponse.FeaturedProductsResponse
+// @Failure      400  {object}  dtoresponse.ErrorResponse
+// @Failure      401  {object}  dtoresponse.ErrorResponse
+// @Failure      403  {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/admin/dashboard/featured-products [get]
+func (h *DashboardHandler) FeaturedProducts(w http.ResponseWriter, r *http.Request) {
+	limit := 5
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil {
+			response.Error(w, r, h.log, domain.ErrInvalidLimit)
+			return
+		}
+		limit = parsed
+	}
+
+	products, err := h.service.GetFeaturedProducts(r.Context(), limit)
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.OK(w, dtoresponse.ToFeaturedProductsResponse(products))
+}
+
 func parseRevenueFilter(r *http.Request) (domain.RevenueFilter, error) {
 	q := r.URL.Query()
 	filter := domain.RevenueFilter{

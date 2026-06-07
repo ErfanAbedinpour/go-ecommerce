@@ -24,8 +24,24 @@ func NewDashboardRepository(db *gorm.DB) *DashboardRepository {
 	return &DashboardRepository{db: db}
 }
 
+type statsRow struct {
+	dashboard.Stats
+	RevenueCurrent30d    float64 `gorm:"column:revenue_current_30d"`
+	RevenuePrevious30d   float64 `gorm:"column:revenue_previous_30d"`
+	OrdersCurrent30d     int64   `gorm:"column:orders_current_30d"`
+	OrdersPrevious30d    int64   `gorm:"column:orders_previous_30d"`
+	CustomersCurrent30d  int64   `gorm:"column:customers_current_30d"`
+	CustomersPrevious30d int64   `gorm:"column:customers_previous_30d"`
+	ProductsCurrent30d   int64   `gorm:"column:products_current_30d"`
+	ProductsPrevious30d  int64   `gorm:"column:products_previous_30d"`
+	PendingCurrent30d    int64   `gorm:"column:pending_current_30d"`
+	PendingPrevious30d   int64   `gorm:"column:pending_previous_30d"`
+	LowStockCurrent30d   int64   `gorm:"column:low_stock_current_30d"`
+	LowStockPrevious30d  int64   `gorm:"column:low_stock_previous_30d"`
+}
+
 func (r *DashboardRepository) GetStats(ctx context.Context) (*dashboard.Stats, error) {
-	var stats dashboard.Stats
+	var row statsRow
 
 	err := r.db.WithContext(ctx).Raw(`
 		SELECT
@@ -44,10 +60,74 @@ func (r *DashboardRepository) GetStats(ctx context.Context) (*dashboard.Stats, e
 				INNER JOIN products p ON p.id = i.product_id
 				WHERE p.deleted_at IS NULL
 				  AND i.quantity <= i.low_stock_threshold
-			), 0) AS low_stock_count
-	`).Scan(&stats).Error
+			), 0) AS low_stock_count,
+			COALESCE((
+				SELECT SUM(total)
+				FROM orders
+				WHERE payment_status = 'paid'
+				  AND created_at >= NOW() - INTERVAL '30 days'
+			), 0) AS revenue_current_30d,
+			COALESCE((
+				SELECT SUM(total)
+				FROM orders
+				WHERE payment_status = 'paid'
+				  AND created_at >= NOW() - INTERVAL '60 days'
+				  AND created_at < NOW() - INTERVAL '30 days'
+			), 0) AS revenue_previous_30d,
+			(SELECT COUNT(*) FROM orders
+			 WHERE created_at >= NOW() - INTERVAL '30 days') AS orders_current_30d,
+			(SELECT COUNT(*) FROM orders
+			 WHERE created_at >= NOW() - INTERVAL '60 days'
+			   AND created_at < NOW() - INTERVAL '30 days') AS orders_previous_30d,
+			(SELECT COUNT(*) FROM customers
+			 WHERE created_at >= NOW() - INTERVAL '30 days') AS customers_current_30d,
+			(SELECT COUNT(*) FROM customers
+			 WHERE created_at >= NOW() - INTERVAL '60 days'
+			   AND created_at < NOW() - INTERVAL '30 days') AS customers_previous_30d,
+			(SELECT COUNT(*) FROM products
+			 WHERE deleted_at IS NULL
+			   AND created_at >= NOW() - INTERVAL '30 days') AS products_current_30d,
+			(SELECT COUNT(*) FROM products
+			 WHERE deleted_at IS NULL
+			   AND created_at >= NOW() - INTERVAL '60 days'
+			   AND created_at < NOW() - INTERVAL '30 days') AS products_previous_30d,
+			(SELECT COUNT(*) FROM orders
+			 WHERE status = 'pending'
+			   AND created_at >= NOW() - INTERVAL '30 days') AS pending_current_30d,
+			(SELECT COUNT(*) FROM orders
+			 WHERE status = 'pending'
+			   AND created_at >= NOW() - INTERVAL '60 days'
+			   AND created_at < NOW() - INTERVAL '30 days') AS pending_previous_30d,
+			COALESCE((
+				SELECT COUNT(*)
+				FROM inventories i
+				INNER JOIN products p ON p.id = i.product_id
+				WHERE p.deleted_at IS NULL
+				  AND i.quantity <= i.low_stock_threshold
+				  AND p.updated_at >= NOW() - INTERVAL '30 days'
+			), 0) AS low_stock_current_30d,
+			COALESCE((
+				SELECT COUNT(*)
+				FROM inventories i
+				INNER JOIN products p ON p.id = i.product_id
+				WHERE p.deleted_at IS NULL
+				  AND i.quantity <= i.low_stock_threshold
+				  AND p.updated_at >= NOW() - INTERVAL '60 days'
+				  AND p.updated_at < NOW() - INTERVAL '30 days'
+			), 0) AS low_stock_previous_30d
+	`).Scan(&row).Error
 	if err != nil {
 		return nil, err
+	}
+
+	stats := row.Stats
+	stats.Growth = dashboard.StatsGrowth{
+		TotalRevenue:   dashboard.CalcGrowthPercent(row.RevenueCurrent30d, row.RevenuePrevious30d),
+		TotalOrders:    dashboard.CalcGrowthPercent(float64(row.OrdersCurrent30d), float64(row.OrdersPrevious30d)),
+		TotalCustomers: dashboard.CalcGrowthPercent(float64(row.CustomersCurrent30d), float64(row.CustomersPrevious30d)),
+		TotalProducts:  dashboard.CalcGrowthPercent(float64(row.ProductsCurrent30d), float64(row.ProductsPrevious30d)),
+		PendingOrders:  dashboard.CalcGrowthPercent(float64(row.PendingCurrent30d), float64(row.PendingPrevious30d)),
+		LowStockCount:  dashboard.CalcGrowthPercent(float64(row.LowStockCurrent30d), float64(row.LowStockPrevious30d)),
 	}
 	return &stats, nil
 }
@@ -116,18 +196,32 @@ func (r *DashboardRepository) ListLowStockProducts(ctx context.Context, page pag
 	return toProductsDomain(items), total, nil
 }
 
-func (r *DashboardRepository) ListRecentOrders(ctx context.Context, limit int) ([]domainorder.Summary, error) {
+func (r *DashboardRepository) ListRecentOrders(ctx context.Context, limit int) ([]domainorder.DashboardSummary, error) {
 	type orderRow struct {
 		models.OrderModel
-		ItemCount int64 `gorm:"column:item_count"`
+		ItemCount    int64  `gorm:"column:item_count"`
+		CustomerName string `gorm:"column:customer_name"`
+		ProductName  string `gorm:"column:product_name"`
 	}
 
 	var rows []orderRow
 	err := r.db.WithContext(ctx).
 		Table("orders").
-		Select("orders.*, COUNT(order_items.id) AS item_count").
+		Select(`
+			orders.*,
+			COUNT(order_items.id) AS item_count,
+			TRIM(CONCAT(customers.first_name, ' ', customers.last_name)) AS customer_name,
+			(
+				SELECT oi.product_name
+				FROM order_items oi
+				WHERE oi.order_id = orders.id
+				ORDER BY oi.id ASC
+				LIMIT 1
+			) AS product_name
+		`).
+		Joins("LEFT JOIN customers ON customers.id = orders.customer_id").
 		Joins("LEFT JOIN order_items ON order_items.order_id = orders.id").
-		Group("orders.id").
+		Group("orders.id, customers.first_name, customers.last_name").
 		Order("orders.created_at DESC").
 		Limit(limit).
 		Scan(&rows).Error
@@ -135,19 +229,41 @@ func (r *DashboardRepository) ListRecentOrders(ctx context.Context, limit int) (
 		return nil, err
 	}
 
-	result := make([]domainorder.Summary, len(rows))
+	result := make([]domainorder.DashboardSummary, len(rows))
 	for i, row := range rows {
-		result[i] = domainorder.Summary{
-			ID:            row.ID,
-			OrderNumber:   row.OrderNumber,
-			Status:        row.Status,
-			PaymentStatus: row.PaymentStatus,
-			Total:         row.Total,
-			ItemCount:     int(row.ItemCount),
-			CreatedAt:     row.CreatedAt,
+		result[i] = domainorder.DashboardSummary{
+			Summary: domainorder.Summary{
+				ID:            row.ID,
+				OrderNumber:   row.OrderNumber,
+				Status:        row.Status,
+				PaymentStatus: row.PaymentStatus,
+				Total:         row.Total,
+				ItemCount:     int(row.ItemCount),
+				CreatedAt:     row.CreatedAt,
+			},
+			CustomerName: row.CustomerName,
+			ProductName:  row.ProductName,
 		}
 	}
 	return result, nil
+}
+
+func (r *DashboardRepository) ListFeaturedProducts(ctx context.Context, limit int) ([]domainproduct.Product, error) {
+	var items []models.ProductModel
+	err := r.db.WithContext(ctx).
+		Where("is_featured = ? AND status = ? AND deleted_at IS NULL", true, "active").
+		Preload("Images", func(db *gorm.DB) *gorm.DB {
+			return db.Order("sort_order ASC")
+		}).
+		Preload("Attributes").
+		Preload("Inventory").
+		Order("updated_at DESC").
+		Limit(limit).
+		Find(&items).Error
+	if err != nil {
+		return nil, err
+	}
+	return toProductsDomain(items), nil
 }
 
 func (r *DashboardRepository) lowStockOrderClause(page pagination.Params) string {

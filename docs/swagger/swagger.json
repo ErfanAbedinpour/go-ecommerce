@@ -1036,6 +1036,58 @@
                 }
             }
         },
+        "/api/v1/admin/dashboard/featured-products": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get active featured products for the dashboard widget.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dashboard"
+                ],
+                "summary": "Featured products",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 5,
+                        "description": "Number of products to return (max 20)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.FeaturedProductsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/admin/dashboard/low-stock": {
             "get": {
                 "security": [
@@ -1252,6 +1304,98 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/app_internal_interfaces_http_dto_response.DashboardStatsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/navigation": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the storefront navigation menu tree.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Get navigation menu",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.NavigationResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Replaces the storefront navigation menu tree.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Update navigation menu",
+                "parameters": [
+                    {
+                        "description": "Navigation tree",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_request.UpdateNavigationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.NavigationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
                         }
                     },
                     "401": {
@@ -2105,6 +2249,374 @@
                 }
             }
         },
+        "/api/v1/admin/settings/contact": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns public contact information.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Get contact settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ContactSettingsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates public contact information.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Update contact settings",
+                "parameters": [
+                    {
+                        "description": "Contact settings",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_request.UpdateContactSettingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ContactSettingsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/settings/seo": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns search-engine and metadata configuration.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Get SEO settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.SEOSettingsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates search-engine and metadata configuration.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Update SEO settings",
+                "parameters": [
+                    {
+                        "description": "SEO settings",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_request.UpdateSEOSettingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.SEOSettingsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/settings/site": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns storefront identity settings (name, URL, logo, favicon).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Get site settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.SiteSettingsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates storefront identity settings.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Update site settings",
+                "parameters": [
+                    {
+                        "description": "Site settings",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_request.UpdateSiteSettingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.SiteSettingsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/settings/social": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns social media profile URLs.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Get social settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.SocialSettingsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates social media profile URLs.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Update social settings",
+                "parameters": [
+                    {
+                        "description": "Social settings",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_request.UpdateSocialSettingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.SocialSettingsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/forgot-password": {
             "post": {
                 "description": "Request a password reset email. Always returns success to avoid email enumeration.",
@@ -2645,6 +3157,40 @@
                 }
             }
         },
+        "app_internal_interfaces_http_dto_request.NavItemRequest": {
+            "type": "object",
+            "required": [
+                "label",
+                "url"
+            ],
+            "properties": {
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/app_internal_interfaces_http_dto_request.NavItemRequest"
+                    }
+                },
+                "id": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "label": {
+                    "type": "string",
+                    "maxLength": 200
+                },
+                "sort_order": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "url": {
+                    "type": "string",
+                    "maxLength": 500
+                }
+            }
+        },
         "app_internal_interfaces_http_dto_request.ProductAttributeRequest": {
             "type": "object",
             "required": [
@@ -2802,6 +3348,31 @@
                 }
             }
         },
+        "app_internal_interfaces_http_dto_request.UpdateContactSettingsRequest": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "city": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "country": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "email": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "phone": {
+                    "type": "string",
+                    "maxLength": 30
+                }
+            }
+        },
         "app_internal_interfaces_http_dto_request.UpdateCouponRequest": {
             "type": "object",
             "properties": {
@@ -2856,6 +3427,17 @@
                 "quantity": {
                     "type": "integer",
                     "minimum": 0
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_request.UpdateNavigationRequest": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/app_internal_interfaces_http_dto_request.NavItemRequest"
+                    }
                 }
             }
         },
@@ -2947,6 +3529,92 @@
                 }
             }
         },
+        "app_internal_interfaces_http_dto_request.UpdateSEOSettingsRequest": {
+            "type": "object",
+            "properties": {
+                "google_analytics_id": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "meta_description": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "meta_keywords": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "meta_title": {
+                    "type": "string",
+                    "maxLength": 200
+                },
+                "og_image_url": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "robots_txt": {
+                    "type": "string",
+                    "maxLength": 5000
+                },
+                "sitemap_enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_request.UpdateSiteSettingsRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "url"
+            ],
+            "properties": {
+                "favicon_url": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "logo_url": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 200
+                },
+                "url": {
+                    "type": "string",
+                    "maxLength": 500
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_request.UpdateSocialSettingsRequest": {
+            "type": "object",
+            "properties": {
+                "facebook": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "instagram": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "linkedin": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "tiktok": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "twitter": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "youtube": {
+                    "type": "string",
+                    "maxLength": 500
+                }
+            }
+        },
         "app_internal_interfaces_http_dto_response.CategoryListResponse": {
             "type": "object",
             "properties": {
@@ -2998,6 +3666,26 @@
                     "type": "integer"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_response.ContactSettingsResponse": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "phone": {
                     "type": "string"
                 }
             }
@@ -3257,9 +3945,35 @@
                 }
             }
         },
+        "app_internal_interfaces_http_dto_response.DashboardStatsGrowthResponse": {
+            "type": "object",
+            "properties": {
+                "low_stock_count": {
+                    "type": "number"
+                },
+                "pending_orders": {
+                    "type": "number"
+                },
+                "total_customers": {
+                    "type": "number"
+                },
+                "total_orders": {
+                    "type": "number"
+                },
+                "total_products": {
+                    "type": "number"
+                },
+                "total_revenue": {
+                    "type": "number"
+                }
+            }
+        },
         "app_internal_interfaces_http_dto_response.DashboardStatsResponse": {
             "type": "object",
             "properties": {
+                "growth": {
+                    "$ref": "#/definitions/app_internal_interfaces_http_dto_response.DashboardStatsGrowthResponse"
+                },
                 "low_stock_count": {
                     "type": "integer"
                 },
@@ -3315,6 +4029,17 @@
                 }
             }
         },
+        "app_internal_interfaces_http_dto_response.FeaturedProductsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ProductResponse"
+                    }
+                }
+            }
+        },
         "app_internal_interfaces_http_dto_response.HealthResponse": {
             "type": "object",
             "properties": {
@@ -3334,6 +4059,43 @@
                 "message": {
                     "type": "string",
                     "example": "ecommerce admin API v1"
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_response.NavItemResponse": {
+            "type": "object",
+            "properties": {
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/app_internal_interfaces_http_dto_response.NavItemResponse"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "integer"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_response.NavigationResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/app_internal_interfaces_http_dto_response.NavItemResponse"
+                    }
                 }
             }
         },
@@ -3715,13 +4477,45 @@
                 }
             }
         },
+        "app_internal_interfaces_http_dto_response.RecentOrderResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "customer_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "item_count": {
+                    "type": "integer"
+                },
+                "order_number": {
+                    "type": "string"
+                },
+                "payment_status": {
+                    "type": "string"
+                },
+                "product_name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total": {
+                    "type": "number"
+                }
+            }
+        },
         "app_internal_interfaces_http_dto_response.RecentOrdersResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/app_internal_interfaces_http_dto_response.OrderSummaryResponse"
+                        "$ref": "#/definitions/app_internal_interfaces_http_dto_response.RecentOrderResponse"
                     }
                 }
             }
@@ -3748,6 +4542,72 @@
                 },
                 "revenue": {
                     "type": "number"
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_response.SEOSettingsResponse": {
+            "type": "object",
+            "properties": {
+                "google_analytics_id": {
+                    "type": "string"
+                },
+                "meta_description": {
+                    "type": "string"
+                },
+                "meta_keywords": {
+                    "type": "string"
+                },
+                "meta_title": {
+                    "type": "string"
+                },
+                "og_image_url": {
+                    "type": "string"
+                },
+                "robots_txt": {
+                    "type": "string"
+                },
+                "sitemap_enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_response.SiteSettingsResponse": {
+            "type": "object",
+            "properties": {
+                "favicon_url": {
+                    "type": "string"
+                },
+                "logo_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_response.SocialSettingsResponse": {
+            "type": "object",
+            "properties": {
+                "facebook": {
+                    "type": "string"
+                },
+                "instagram": {
+                    "type": "string"
+                },
+                "linkedin": {
+                    "type": "string"
+                },
+                "tiktok": {
+                    "type": "string"
+                },
+                "twitter": {
+                    "type": "string"
+                },
+                "youtube": {
+                    "type": "string"
                 }
             }
         },

@@ -130,6 +130,30 @@ definitions:
       refresh_token:
         type: string
     type: object
+  app_internal_interfaces_http_dto_request.NavItemRequest:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.NavItemRequest'
+        type: array
+      id:
+        maxLength: 100
+        type: string
+      is_active:
+        type: boolean
+      label:
+        maxLength: 200
+        type: string
+      sort_order:
+        minimum: 0
+        type: integer
+      url:
+        maxLength: 500
+        type: string
+    required:
+    - label
+    - url
+    type: object
   app_internal_interfaces_http_dto_request.ProductAttributeRequest:
     properties:
       name:
@@ -241,6 +265,24 @@ definitions:
         minimum: 0
         type: integer
     type: object
+  app_internal_interfaces_http_dto_request.UpdateContactSettingsRequest:
+    properties:
+      address:
+        maxLength: 500
+        type: string
+      city:
+        maxLength: 100
+        type: string
+      country:
+        maxLength: 100
+        type: string
+      email:
+        maxLength: 255
+        type: string
+      phone:
+        maxLength: 30
+        type: string
+    type: object
   app_internal_interfaces_http_dto_request.UpdateCouponRequest:
     properties:
       code:
@@ -280,6 +322,13 @@ definitions:
         type: integer
     required:
     - quantity
+    type: object
+  app_internal_interfaces_http_dto_request.UpdateNavigationRequest:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.NavItemRequest'
+        type: array
     type: object
   app_internal_interfaces_http_dto_request.UpdateOrderStatusRequest:
     properties:
@@ -345,6 +394,68 @@ definitions:
         - archived
         type: string
     type: object
+  app_internal_interfaces_http_dto_request.UpdateSEOSettingsRequest:
+    properties:
+      google_analytics_id:
+        maxLength: 100
+        type: string
+      meta_description:
+        maxLength: 500
+        type: string
+      meta_keywords:
+        maxLength: 500
+        type: string
+      meta_title:
+        maxLength: 200
+        type: string
+      og_image_url:
+        maxLength: 500
+        type: string
+      robots_txt:
+        maxLength: 5000
+        type: string
+      sitemap_enabled:
+        type: boolean
+    type: object
+  app_internal_interfaces_http_dto_request.UpdateSiteSettingsRequest:
+    properties:
+      favicon_url:
+        maxLength: 500
+        type: string
+      logo_url:
+        maxLength: 500
+        type: string
+      name:
+        maxLength: 200
+        type: string
+      url:
+        maxLength: 500
+        type: string
+    required:
+    - name
+    - url
+    type: object
+  app_internal_interfaces_http_dto_request.UpdateSocialSettingsRequest:
+    properties:
+      facebook:
+        maxLength: 500
+        type: string
+      instagram:
+        maxLength: 500
+        type: string
+      linkedin:
+        maxLength: 500
+        type: string
+      tiktok:
+        maxLength: 500
+        type: string
+      twitter:
+        maxLength: 500
+        type: string
+      youtube:
+        maxLength: 500
+        type: string
+    type: object
   app_internal_interfaces_http_dto_response.CategoryListResponse:
     properties:
       data:
@@ -379,6 +490,19 @@ definitions:
       sort_order:
         type: integer
       updated_at:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.ContactSettingsResponse:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      email:
+        type: string
+      phone:
         type: string
     type: object
   app_internal_interfaces_http_dto_response.CouponActiveResponse:
@@ -550,8 +674,25 @@ definitions:
       total_spent:
         type: number
     type: object
+  app_internal_interfaces_http_dto_response.DashboardStatsGrowthResponse:
+    properties:
+      low_stock_count:
+        type: number
+      pending_orders:
+        type: number
+      total_customers:
+        type: number
+      total_orders:
+        type: number
+      total_products:
+        type: number
+      total_revenue:
+        type: number
+    type: object
   app_internal_interfaces_http_dto_response.DashboardStatsResponse:
     properties:
+      growth:
+        $ref: '#/definitions/app_internal_interfaces_http_dto_response.DashboardStatsGrowthResponse'
       low_stock_count:
         type: integer
       pending_orders:
@@ -589,6 +730,13 @@ definitions:
         example: 400
         type: integer
     type: object
+  app_internal_interfaces_http_dto_response.FeaturedProductsResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductResponse'
+        type: array
+    type: object
   app_internal_interfaces_http_dto_response.HealthResponse:
     properties:
       status:
@@ -603,6 +751,30 @@ definitions:
       message:
         example: ecommerce admin API v1
         type: string
+    type: object
+  app_internal_interfaces_http_dto_response.NavItemResponse:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.NavItemResponse'
+        type: array
+      id:
+        type: string
+      is_active:
+        type: boolean
+      label:
+        type: string
+      sort_order:
+        type: integer
+      url:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.NavigationResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.NavItemResponse'
+        type: array
     type: object
   app_internal_interfaces_http_dto_response.OrderAddressResponse:
     properties:
@@ -852,11 +1024,32 @@ definitions:
         example: 1.0.0
         type: string
     type: object
+  app_internal_interfaces_http_dto_response.RecentOrderResponse:
+    properties:
+      created_at:
+        type: string
+      customer_name:
+        type: string
+      id:
+        type: string
+      item_count:
+        type: integer
+      order_number:
+        type: string
+      payment_status:
+        type: string
+      product_name:
+        type: string
+      status:
+        type: string
+      total:
+        type: number
+    type: object
   app_internal_interfaces_http_dto_response.RecentOrdersResponse:
     properties:
       data:
         items:
-          $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderSummaryResponse'
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.RecentOrderResponse'
         type: array
     type: object
   app_internal_interfaces_http_dto_response.RevenueAnalyticsResponse:
@@ -874,6 +1067,49 @@ definitions:
         type: integer
       revenue:
         type: number
+    type: object
+  app_internal_interfaces_http_dto_response.SEOSettingsResponse:
+    properties:
+      google_analytics_id:
+        type: string
+      meta_description:
+        type: string
+      meta_keywords:
+        type: string
+      meta_title:
+        type: string
+      og_image_url:
+        type: string
+      robots_txt:
+        type: string
+      sitemap_enabled:
+        type: boolean
+    type: object
+  app_internal_interfaces_http_dto_response.SiteSettingsResponse:
+    properties:
+      favicon_url:
+        type: string
+      logo_url:
+        type: string
+      name:
+        type: string
+      url:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.SocialSettingsResponse:
+    properties:
+      facebook:
+        type: string
+      instagram:
+        type: string
+      linkedin:
+        type: string
+      tiktok:
+        type: string
+      twitter:
+        type: string
+      youtube:
+        type: string
     type: object
   app_internal_interfaces_http_dto_response.TokenResponse:
     properties:
@@ -1577,6 +1813,39 @@ paths:
       summary: Customer purchase history
       tags:
       - customers
+  /api/v1/admin/dashboard/featured-products:
+    get:
+      description: Get active featured products for the dashboard widget.
+      parameters:
+      - default: 5
+        description: Number of products to return (max 20)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.FeaturedProductsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Featured products
+      tags:
+      - dashboard
   /api/v1/admin/dashboard/low-stock:
     get:
       description: Get paginated products where quantity is at or below the low-stock
@@ -1731,6 +2000,64 @@ paths:
       summary: Dashboard statistics
       tags:
       - dashboard
+  /api/v1/admin/navigation:
+    get:
+      description: Returns the storefront navigation menu tree.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.NavigationResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get navigation menu
+      tags:
+      - settings
+    put:
+      consumes:
+      - application/json
+      description: Replaces the storefront navigation menu tree.
+      parameters:
+      - description: Navigation tree
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateNavigationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.NavigationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update navigation menu
+      tags:
+      - settings
   /api/v1/admin/orders:
     get:
       description: Get a paginated list of orders with optional search and filters.
@@ -2276,6 +2603,238 @@ paths:
       summary: Search products
       tags:
       - products
+  /api/v1/admin/settings/contact:
+    get:
+      description: Returns public contact information.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ContactSettingsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get contact settings
+      tags:
+      - settings
+    put:
+      consumes:
+      - application/json
+      description: Updates public contact information.
+      parameters:
+      - description: Contact settings
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateContactSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ContactSettingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update contact settings
+      tags:
+      - settings
+  /api/v1/admin/settings/seo:
+    get:
+      description: Returns search-engine and metadata configuration.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.SEOSettingsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get SEO settings
+      tags:
+      - settings
+    put:
+      consumes:
+      - application/json
+      description: Updates search-engine and metadata configuration.
+      parameters:
+      - description: SEO settings
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateSEOSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.SEOSettingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update SEO settings
+      tags:
+      - settings
+  /api/v1/admin/settings/site:
+    get:
+      description: Returns storefront identity settings (name, URL, logo, favicon).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.SiteSettingsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get site settings
+      tags:
+      - settings
+    put:
+      consumes:
+      - application/json
+      description: Updates storefront identity settings.
+      parameters:
+      - description: Site settings
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateSiteSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.SiteSettingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update site settings
+      tags:
+      - settings
+  /api/v1/admin/settings/social:
+    get:
+      description: Returns social media profile URLs.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.SocialSettingsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get social settings
+      tags:
+      - settings
+    put:
+      consumes:
+      - application/json
+      description: Updates social media profile URLs.
+      parameters:
+      - description: Social settings
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateSocialSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.SocialSettingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update social settings
+      tags:
+      - settings
   /api/v1/auth/forgot-password:
     post:
       consumes:
