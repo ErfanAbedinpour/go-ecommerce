@@ -1247,12 +1247,12 @@ ecommerce/
 - [ ] HTTP handlers
 - [ ] Tests
 
-### Phase 8: Customer Management ⬜
+### Phase 8: Customer Management ✅
 
-- [ ] Domain: Customer, CustomerAddress
-- [ ] List, detail, purchase history use cases
-- [ ] HTTP handlers
-- [ ] Tests
+- [x] Domain: Customer, CustomerAddress
+- [x] List, detail, purchase history use cases
+- [x] HTTP handlers
+- [x] Tests
 
 ### Phase 9: Audit Logging ⬜
 

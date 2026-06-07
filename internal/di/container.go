@@ -7,6 +7,7 @@ import (
 	appauth "app/internal/application/auth"
 	appcategory "app/internal/application/category"
 	appcoupon "app/internal/application/coupon"
+	appcustomer "app/internal/application/customer"
 	appproduct "app/internal/application/product"
 	"app/internal/config"
 	infraauth "app/internal/infrastructure/auth"
@@ -30,7 +31,8 @@ type Container struct {
 	AuthService     *appauth.AuthService
 	ProductService  *appproduct.Service
 	CategoryService *appcategory.Service
-	CouponService   *appcoupon.Service
+	CouponService    *appcoupon.Service
+	CustomerService  *appcustomer.Service
 
 	// Handlers
 	Health   *handler.HealthHandler
@@ -38,6 +40,7 @@ type Container struct {
 	Product  *handler.ProductHandler
 	Category *handler.CategoryHandler
 	Coupon   *handler.CouponHandler
+	Customer *handler.CustomerHandler
 }
 
 // New creates and wires the dependency injection container.
@@ -67,6 +70,9 @@ func New(cfg *config.Config) (*Container, error) {
 	couponRepo := postgres.NewCouponRepository(db.DB)
 	couponService := appcoupon.NewService(couponRepo)
 
+	customerRepo := postgres.NewCustomerRepository(db.DB)
+	customerService := appcustomer.NewService(customerRepo)
+
 	c := &Container{
 		Config:          cfg,
 		Log:             log,
@@ -77,12 +83,14 @@ func New(cfg *config.Config) (*Container, error) {
 		AuthService:     authService,
 		ProductService:  productService,
 		CategoryService: categoryService,
-		CouponService:   couponService,
-		Health:          handler.NewHealthHandler(db, cfg.App.Version),
+		CouponService:    couponService,
+		CustomerService:  customerService,
+		Health:           handler.NewHealthHandler(db, cfg.App.Version),
 		Auth:            handler.NewAuthHandler(authService, v, log),
 		Product:         handler.NewProductHandler(productService, v, log),
 		Category:        handler.NewCategoryHandler(categoryService, v, log),
 		Coupon:          handler.NewCouponHandler(couponService, v, log),
+		Customer:        handler.NewCustomerHandler(customerService, v, log),
 	}
 
 	return c, nil
