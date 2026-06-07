@@ -13,6 +13,7 @@ import (
 	appproduct "app/internal/application/product"
 	"app/internal/config"
 	infraauth "app/internal/infrastructure/auth"
+	"app/internal/infrastructure/email"
 	"app/internal/infrastructure/persistence/postgres"
 	"app/internal/interfaces/http/handler"
 	"app/pkg/validator"
@@ -65,7 +66,17 @@ func New(cfg *config.Config) (*Container, error) {
 
 	userRepo := postgres.NewUserRepository(db.DB)
 	refreshTokenRepo := postgres.NewRefreshTokenRepository(db.DB)
-	authService := appauth.NewAuthService(userRepo, refreshTokenRepo, hasher, jwtService)
+	resetTokenRepo := postgres.NewPasswordResetRepository(db.DB)
+	mailer := email.NewSMTPMailer(cfg.SMTP, log)
+	authService := appauth.NewAuthService(
+		userRepo,
+		refreshTokenRepo,
+		resetTokenRepo,
+		hasher,
+		jwtService,
+		mailer,
+		cfg.Auth,
+	)
 
 	productRepo := postgres.NewProductRepository(db.DB)
 	productService := appproduct.NewService(productRepo)

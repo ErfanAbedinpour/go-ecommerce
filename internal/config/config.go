@@ -14,6 +14,8 @@ type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	JWT      JWTConfig
+	Auth     AuthConfig
+	SMTP     SMTPConfig
 	CORS     CORSConfig
 	Log      LogConfig
 }
@@ -55,6 +57,27 @@ type JWTConfig struct {
 	AccessTokenTTL   time.Duration `env:"JWT_ACCESS_TTL" envDefault:"15m"`
 	RefreshTokenTTL  time.Duration `env:"JWT_REFRESH_TTL" envDefault:"168h"`
 	Issuer           string        `env:"JWT_ISSUER" envDefault:"ecommerce-api"`
+}
+
+// AuthConfig holds account registration and password reset settings.
+type AuthConfig struct {
+	SignupEnabled     bool          `env:"AUTH_SIGNUP_ENABLED" envDefault:"true"`
+	SignupDefaultRole string        `env:"AUTH_SIGNUP_DEFAULT_ROLE" envDefault:"customer"`
+	ResetTokenTTL     time.Duration `env:"AUTH_RESET_TOKEN_TTL" envDefault:"1h"`
+	AppURL            string        `env:"AUTH_APP_URL" envDefault:"http://localhost:5173"`
+	ResetPath         string        `env:"AUTH_RESET_PATH" envDefault:"/reset-password"`
+}
+
+// SMTPConfig holds outbound email settings for transactional messages.
+type SMTPConfig struct {
+	Enabled  bool   `env:"SMTP_ENABLED" envDefault:"false"`
+	Host     string `env:"SMTP_HOST" envDefault:"localhost"`
+	Port     int    `env:"SMTP_PORT" envDefault:"587"`
+	Username string `env:"SMTP_USER"`
+	Password string `env:"SMTP_PASSWORD"`
+	FromEmail string `env:"SMTP_FROM_EMAIL" envDefault:"noreply@shop.com"`
+	FromName  string `env:"SMTP_FROM_NAME" envDefault:"Shop Admin"`
+	UseTLS    bool   `env:"SMTP_TLS" envDefault:"true"`
 }
 
 // CORSConfig holds CORS settings.

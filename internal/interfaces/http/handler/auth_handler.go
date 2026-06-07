@@ -140,6 +140,98 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, user)
 }
 
+// Signup godoc
+// @Summary      Sign up
+// @Description  Register a new account. Returns JWT tokens on success. Role is assigned from AUTH_SIGNUP_DEFAULT_ROLE.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      request.SignupRequest  true  "Registration details"
+// @Success      201   {object}  dtoresponse.TokenResponse
+// @Failure      400   {object}  dtoresponse.ErrorResponse
+// @Failure      403   {object}  dtoresponse.ErrorResponse
+// @Failure      409   {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/auth/signup [post]
+func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
+	var req request.SignupRequest
+	if err := decodeAndValidate(r, &req, h.validator); err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	tokens, err := h.authService.Signup(r.Context(), auth.SignupInput{
+		Email:     req.Email,
+		Password:  req.Password,
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		Phone:     req.Phone,
+	})
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	response.Created(w, tokens)
+}
+
+// ForgotPassword godoc
+// @Summary      Forgot password
+// @Description  Request a password reset email. Always returns success to avoid email enumeration.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      request.ForgotPasswordRequest  true  "Account email"
+// @Success      200   {object}  dtoresponse.MessageResponse
+// @Failure      400   {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/auth/forgot-password [post]
+func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var req request.ForgotPasswordRequest
+	if err := decodeAndValidate(r, &req, h.validator); err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	result, err := h.authService.ForgotPassword(r.Context(), auth.ForgotPasswordInput{
+		Email: req.Email,
+	})
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	response.OK(w, result)
+}
+
+// ResetPassword godoc
+// @Summary      Reset password
+// @Description  Set a new password using the token from the reset email link.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      request.ResetPasswordRequest  true  "Reset token and new password"
+// @Success      200   {object}  dtoresponse.MessageResponse
+// @Failure      400   {object}  dtoresponse.ErrorResponse
+// @Failure      403   {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/auth/reset-password [post]
+func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var req request.ResetPasswordRequest
+	if err := decodeAndValidate(r, &req, h.validator); err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	result, err := h.authService.ResetPassword(r.Context(), auth.ResetPasswordInput{
+		Token:    req.Token,
+		Password: req.Password,
+	})
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	response.OK(w, result)
+}
+
 func decodeAndValidate[T any](r *http.Request, req *T, v *validator.Validator) error {
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		return err

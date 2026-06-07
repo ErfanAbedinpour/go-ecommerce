@@ -53,6 +53,9 @@ func registerPublicRoutes(r chi.Router, c *di.Container) {
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/login", c.Auth.Login)
 		r.Post("/refresh", c.Auth.Refresh)
+		r.Post("/signup", c.Auth.Signup)
+		r.Post("/forgot-password", c.Auth.ForgotPassword)
+		r.Post("/reset-password", c.Auth.ResetPassword)
 	})
 }
 

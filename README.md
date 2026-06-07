@@ -16,6 +16,7 @@
 6. [Project Structure](#6-project-structure)
 7. [Implementation Phases](#7-implementation-phases)
 8. [Observability & Production Concerns](#8-observability--production-concerns)
+9. [Frontend API Mapping (`front.md`)](#frontend-api-mapping)
 
 ---
 
@@ -178,7 +179,7 @@ Authorization is enforced at the **router/application layer**, not the database 
 
 | Guard             | Applied To                                               | Roles Allowed       |
 | ----------------- | -------------------------------------------------------- | ------------------- |
-| **Public**        | `/healthz`, `/api/v1/auth/login`, `/api/v1/auth/refresh` | None (no token)     |
+| **Public**        | `/healthz`, `/api/v1/auth/login`, `/api/v1/auth/refresh`, `/api/v1/auth/signup`, `/api/v1/auth/forgot-password`, `/api/v1/auth/reset-password` | None (no token) |
 | **Authenticated** | `/api/v1/auth/logout`, `/api/v1/auth/me`                 | `admin`, `customer` |
 | **Admin**         | `/api/v1/admin/*`                                        | `admin` only        |
 
@@ -639,7 +640,7 @@ CREATE INDEX idx_refresh_tokens_hash ON refresh_tokens(token_hash);
 
 | Tier          | Base Path                                    | Guard Middleware                      | Description                    |
 | ------------- | -------------------------------------------- | ------------------------------------- | ------------------------------ |
-| Public        | `/api/v1/auth/login`, `/api/v1/auth/refresh` | None                                  | No token required              |
+| Public        | `/api/v1/auth/login`, `/api/v1/auth/refresh`, `/api/v1/auth/signup`, `/api/v1/auth/forgot-password`, `/api/v1/auth/reset-password` | None | No token required |
 | Authenticated | `/api/v1/auth/logout`, `/api/v1/auth/me`     | `Authenticate`                        | Any role (`admin`, `customer`) |
 | Admin         | `/api/v1/admin/*`                            | `Authenticate` + `RequireRole(admin)` | Admin panel APIs               |
 
@@ -682,6 +683,38 @@ CREATE INDEX idx_refresh_tokens_hash ON refresh_tokens(token_hash);
 | ---------------- | --------------------------------------------------------------- |
 | **Auth**         | Bearer token                                                    |
 | **Response 200** | `{ "id", "email", "first_name", "last_name", "role": "admin" }` |
+
+#### POST `/auth/signup`
+
+|                    |                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------ |
+| **Auth**           | Public                                                                               |
+| **Request**        | `{ "email", "password", "first_name", "last_name", "phone" }`                        |
+| **Validation**     | email: required, valid; password: min 8, letter + number; names: required            |
+| **Response 201**   | Token pair (same shape as login)                                                     |
+| **Business Rules** | Controlled by `AUTH_SIGNUP_ENABLED`; role from `AUTH_SIGNUP_DEFAULT_ROLE`            |
+| **Errors**         | 403 SIGNUP_DISABLED, 409 CONFLICT (email taken)                                    |
+
+#### POST `/auth/forgot-password`
+
+|                    |                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------ |
+| **Auth**           | Public                                                                               |
+| **Request**        | `{ "email": "user@shop.com" }`                                                       |
+| **Response 200**   | `{ "message": "If an account with that email exists, a password reset link has been sent." }` |
+| **Business Rules** | Always returns success; sends SMTP email when account exists; link logged if `SMTP_ENABLED=false` |
+| **Env**            | `SMTP_*`, `AUTH_APP_URL`, `AUTH_RESET_PATH`, `AUTH_RESET_TOKEN_TTL`                  |
+
+#### POST `/auth/reset-password`
+
+|                    |                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------ |
+| **Auth**           | Public                                                                               |
+| **Request**        | `{ "token": "string", "password": "string" }`                                        |
+| **Validation**     | token: required; password: min 8, letter + number                                    |
+| **Response 200**   | `{ "message": "Password has been reset successfully..." }`                         |
+| **Business Rules** | Token single-use; revokes all refresh tokens for user                                |
+| **Errors**         | 400 INVALID_TOKEN, 403 ACCOUNT_DISABLED                                              |
 
 ---
 
@@ -1272,6 +1305,65 @@ ecommerce/
 - [ ] README with setup instructions
 - [ ] Seed data for development
 
+### Phase 11: Frontend Integration Gaps ([shop-panel-react.vercel.app](https://shop-panel-react.vercel.app/)) ⬜
+
+> Cross-reference: see [`front.md`](./front.md) for page-by-page API mapping and response shapes.
+
+#### Authentication & account
+
+- [x] `POST /api/v1/auth/signup` — admin/staff registration (`/signup`)
+- [x] `POST /api/v1/auth/forgot-password` — password reset request
+- [x] `POST /api/v1/auth/reset-password` — password reset confirm (`/reset-password`)
+
+#### Dashboard enhancements
+
+- [ ] `GET /api/v1/admin/dashboard/featured-products` — featured products widget (workaround: `GET /products?is_featured=true`)
+- [ ] KPI growth percentages on `GET /dashboard/stats` (UI shows `+12.5%` badges)
+- [ ] Enrich `GET /dashboard/recent-orders` with `customer_name` and first product name
+
+#### Products & catalog settings
+
+- [ ] `POST /api/v1/admin/uploads` — image/logo file upload (product images, site logo)
+- [ ] `GET/POST/PUT/DELETE /api/v1/admin/brands` — brand catalog (`/products/settings`)
+- [ ] `GET/POST/PUT/DELETE /api/v1/admin/product-attributes` — global attribute definitions
+- [ ] `GET/POST/PUT/DELETE /api/v1/admin/product-attribute-values` — attribute value catalog
+- [ ] `products_count` on category list — settings page shows products per category
+- [ ] `GET /api/v1/admin/products/stats` — KPI cards (total/active/draft/out-of-stock counts)
+- [ ] `stock_level` query filter on product list (`low`, `out`)
+
+#### Orders
+
+- [ ] `POST /api/v1/admin/orders` — manual order creation (`/orders/create`)
+- [ ] `GET /api/v1/admin/orders/{id}/invoice` — printable invoice payload (`/orders/:id/invoice`)
+- [ ] `PATCH /api/v1/admin/orders/{id}/notes` — save internal note without status change
+- [ ] `from` / `to` date filters on `GET /orders` (UI: today / this week / this month)
+- [ ] Payment method + transaction ID fields on order detail
+
+#### Users & customers
+
+- [ ] `GET/POST/PUT/DELETE /api/v1/admin/users` — admin staff accounts (distinct from storefront customers)
+- [ ] `PUT /api/v1/admin/customers/{id}` — edit customer (`/users/:id`)
+- [ ] `DELETE /api/v1/admin/customers/{id}` — delete customer
+- [ ] `last_order_at` on customer detail response
+
+#### Store settings
+
+- [ ] `GET/PUT /api/v1/admin/settings/site` — site name, URL, logo, favicon (`/general-setting`)
+- [ ] `GET/PUT /api/v1/admin/settings/contact` — contact email, phone, address
+- [ ] `GET/PUT /api/v1/admin/settings/social` — social media links
+- [ ] `GET/PUT /api/v1/admin/navigation` — menu tree CRUD (`/navigation`)
+- [ ] `GET/PUT /api/v1/admin/settings/seo` — SEO configuration (`/setting-seo`)
+
+#### Audit (Phase 9 — also required by admin panel activity tracking)
+
+- [ ] `GET /api/v1/admin/audit-logs` — list with filters
+- [ ] `GET /api/v1/admin/audit-logs/{id}` — detail
+
+#### Out of v1 scope (UI present, backend intentionally deferred)
+
+- Blog/CMS (`/weblog/*`) — posts, categories, comments
+- Contact messages (`/contact`)
+
 ---
 
 ## 8. Observability & Production Concerns
@@ -1308,4 +1400,10 @@ ecommerce/
 
 ---
 
-_Document version: 1.0 — Generated from admin panel analysis of shop-panel-react.vercel.app_
+## Frontend API Mapping
+
+See **[`front.md`](./front.md)** for a full page-by-page map of [shop-panel-react.vercel.app](https://shop-panel-react.vercel.app/) routes to backend APIs, response field reference, coverage gaps, and workarounds.
+
+---
+
+_Document version: 1.1 — Generated from admin panel analysis of shop-panel-react.vercel.app_

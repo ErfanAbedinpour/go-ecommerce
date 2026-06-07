@@ -6,14 +6,11 @@ import (
 
 	"github.com/google/uuid"
 
+	"app/internal/config"
 	"app/internal/domain/user"
 	"app/internal/infrastructure/auth"
+	"app/internal/infrastructure/email"
 )
-
-// PasswordVerifier verifies passwords against hashes.
-type PasswordVerifier interface {
-	Verify(hash, password string) bool
-}
 
 // TokenGenerator generates JWT token pairs.
 type TokenGenerator interface {
@@ -26,22 +23,31 @@ type TokenGenerator interface {
 type AuthService struct {
 	users         user.Repository
 	refreshTokens user.RefreshTokenRepository
-	hasher        PasswordVerifier
+	resetTokens   user.PasswordResetRepository
+	hasher        PasswordHasher
 	jwt           TokenGenerator
+	mailer        email.Sender
+	cfg           config.AuthConfig
 }
 
 // NewAuthService creates a new AuthService.
 func NewAuthService(
 	users user.Repository,
 	refreshTokens user.RefreshTokenRepository,
-	hasher PasswordVerifier,
+	resetTokens user.PasswordResetRepository,
+	hasher PasswordHasher,
 	jwt TokenGenerator,
+	mailer email.Sender,
+	cfg config.AuthConfig,
 ) *AuthService {
 	return &AuthService{
 		users:         users,
 		refreshTokens: refreshTokens,
+		resetTokens:   resetTokens,
 		hasher:        hasher,
 		jwt:           jwt,
+		mailer:        mailer,
+		cfg:           cfg,
 	}
 }
 

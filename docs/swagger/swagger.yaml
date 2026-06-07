@@ -107,6 +107,13 @@ definitions:
     - price
     - sku
     type: object
+  app_internal_interfaces_http_dto_request.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
   app_internal_interfaces_http_dto_request.LoginRequest:
     properties:
       email:
@@ -176,6 +183,41 @@ definitions:
     required:
     - amount
     - reason
+    type: object
+  app_internal_interfaces_http_dto_request.ResetPasswordRequest:
+    properties:
+      password:
+        minLength: 8
+        type: string
+      token:
+        type: string
+    required:
+    - password
+    - token
+    type: object
+  app_internal_interfaces_http_dto_request.SignupRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        maxLength: 100
+        minLength: 1
+        type: string
+      last_name:
+        maxLength: 100
+        minLength: 1
+        type: string
+      password:
+        minLength: 8
+        type: string
+      phone:
+        maxLength: 20
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
     type: object
   app_internal_interfaces_http_dto_request.UpdateCategoryRequest:
     properties:
@@ -2234,6 +2276,33 @@ paths:
       summary: Search products
       tags:
       - products
+  /api/v1/auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Request a password reset email. Always returns success to avoid
+        email enumeration.
+      parameters:
+      - description: Account email
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      summary: Forgot password
+      tags:
+      - auth
   /api/v1/auth/login:
     post:
       consumes:
@@ -2341,6 +2410,71 @@ paths:
           schema:
             $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
       summary: Refresh token
+      tags:
+      - auth
+  /api/v1/auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Set a new password using the token from the reset email link.
+      parameters:
+      - description: Reset token and new password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      summary: Reset password
+      tags:
+      - auth
+  /api/v1/auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: Register a new account. Returns JWT tokens on success. Role is
+        assigned from AUTH_SIGNUP_DEFAULT_ROLE.
+      parameters:
+      - description: Registration details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.SignupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      summary: Sign up
       tags:
       - auth
   /healthz:
