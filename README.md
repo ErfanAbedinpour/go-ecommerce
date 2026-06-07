@@ -1218,12 +1218,12 @@ ecommerce/
 - [ ] Audit log on mutations (Phase 9)
 - [x] Tests
 
-### Phase 4: Category Management ⬜
+### Phase 4: Category Management ✅
 
-- [ ] Domain: Category (hierarchical)
-- [ ] CRUD use cases with tree support
-- [ ] HTTP handlers
-- [ ] Tests
+- [x] Domain: Category (hierarchical)
+- [x] CRUD use cases with tree support
+- [x] HTTP handlers
+- [x] Tests
 
 ### Phase 5: Order Management ⬜
 
@@ -1233,12 +1233,12 @@ ecommerce/
 - [ ] HTTP handlers
 - [ ] Tests
 
-### Phase 6: Coupon Management ⬜
+### Phase 6: Coupon Management ✅
 
-- [ ] Domain: Coupon with discount value objects
-- [ ] CRUD + activate/deactivate use cases
-- [ ] HTTP handlers
-- [ ] Tests
+- [x] Domain: Coupon with discount value objects
+- [x] CRUD + activate/deactivate use cases
+- [x] HTTP handlers
+- [x] Tests
 
 ### Phase 7: Dashboard Analytics ⬜
 

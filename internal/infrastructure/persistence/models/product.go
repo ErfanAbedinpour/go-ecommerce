@@ -63,11 +63,3 @@ type InventoryModel struct {
 }
 
 func (InventoryModel) TableName() string { return "inventories" }
-
-// CategoryModel is a minimal GORM model for category existence checks.
-type CategoryModel struct {
-	ID        uuid.UUID      `gorm:"type:uuid;primaryKey"`
-	DeletedAt gorm.DeletedAt `gorm:"index"`
-}
-
-func (CategoryModel) TableName() string { return "categories" }

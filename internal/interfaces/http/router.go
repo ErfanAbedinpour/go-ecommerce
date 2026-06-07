@@ -74,6 +74,8 @@ func registerAdminRoutes(r chi.Router, c *di.Container) {
 		r.Get("/", handler.AdminIndex)
 
 		registerProductRoutes(r, c)
+		registerCategoryRoutes(r, c)
+		registerCouponRoutes(r, c)
 	})
 }
 
@@ -86,6 +88,28 @@ func registerProductRoutes(r chi.Router, c *di.Container) {
 		r.Put("/{id}", c.Product.Update)
 		r.Delete("/{id}", c.Product.Delete)
 		r.Patch("/{id}/inventory", c.Product.UpdateInventory)
+	})
+}
+
+func registerCategoryRoutes(r chi.Router, c *di.Container) {
+	r.Route("/categories", func(r chi.Router) {
+		r.Get("/", c.Category.List)
+		r.Post("/", c.Category.Create)
+		r.Get("/{id}", c.Category.Get)
+		r.Put("/{id}", c.Category.Update)
+		r.Delete("/{id}", c.Category.Delete)
+	})
+}
+
+func registerCouponRoutes(r chi.Router, c *di.Container) {
+	r.Route("/coupons", func(r chi.Router) {
+		r.Get("/", c.Coupon.List)
+		r.Post("/", c.Coupon.Create)
+		r.Get("/{id}", c.Coupon.Get)
+		r.Put("/{id}", c.Coupon.Update)
+		r.Delete("/{id}", c.Coupon.Delete)
+		r.Patch("/{id}/activate", c.Coupon.Activate)
+		r.Patch("/{id}/deactivate", c.Coupon.Deactivate)
 	})
 }
 

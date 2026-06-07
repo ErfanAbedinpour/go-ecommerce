@@ -1,5 +1,59 @@
 basePath: /
 definitions:
+  app_internal_interfaces_http_dto_request.CreateCategoryRequest:
+    properties:
+      description:
+        type: string
+      image_url:
+        maxLength: 500
+        type: string
+      is_active:
+        type: boolean
+      name:
+        maxLength: 200
+        minLength: 1
+        type: string
+      parent_id:
+        type: string
+      slug:
+        maxLength: 200
+        type: string
+      sort_order:
+        minimum: 0
+        type: integer
+    required:
+    - name
+    type: object
+  app_internal_interfaces_http_dto_request.CreateCouponRequest:
+    properties:
+      code:
+        maxLength: 50
+        minLength: 3
+        type: string
+      discount_type:
+        enum:
+        - percentage
+        - fixed_amount
+        type: string
+      discount_value:
+        type: number
+      expires_at:
+        type: string
+      is_active:
+        type: boolean
+      max_usage:
+        type: integer
+      min_order_amount:
+        minimum: 0
+        type: number
+      note:
+        maxLength: 500
+        type: string
+    required:
+    - code
+    - discount_type
+    - discount_value
+    type: object
   app_internal_interfaces_http_dto_request.CreateProductRequest:
     properties:
       attributes:
@@ -111,6 +165,54 @@ definitions:
     required:
     - refresh_token
     type: object
+  app_internal_interfaces_http_dto_request.UpdateCategoryRequest:
+    properties:
+      description:
+        type: string
+      image_url:
+        maxLength: 500
+        type: string
+      is_active:
+        type: boolean
+      name:
+        maxLength: 200
+        minLength: 1
+        type: string
+      parent_id:
+        type: string
+      slug:
+        maxLength: 200
+        type: string
+      sort_order:
+        minimum: 0
+        type: integer
+    type: object
+  app_internal_interfaces_http_dto_request.UpdateCouponRequest:
+    properties:
+      code:
+        maxLength: 50
+        minLength: 3
+        type: string
+      discount_type:
+        enum:
+        - percentage
+        - fixed_amount
+        type: string
+      discount_value:
+        type: number
+      expires_at:
+        type: string
+      is_active:
+        type: boolean
+      max_usage:
+        type: integer
+      min_order_amount:
+        minimum: 0
+        type: number
+      note:
+        maxLength: 500
+        type: string
+    type: object
   app_internal_interfaces_http_dto_request.UpdateInventoryRequest:
     properties:
       adjustment_reason:
@@ -171,6 +273,87 @@ definitions:
         - active
         - archived
         type: string
+    type: object
+  app_internal_interfaces_http_dto_response.CategoryListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.CategoryResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.CategoryResponse:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.CategoryResponse'
+        type: array
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      image_url:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      parent_id:
+        type: string
+      slug:
+        type: string
+      sort_order:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.CouponActiveResponse:
+    properties:
+      is_active:
+        type: boolean
+    type: object
+  app_internal_interfaces_http_dto_response.CouponListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.CouponResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.CouponResponse:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      discount_type:
+        type: string
+      discount_value:
+        type: number
+      expires_at:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      is_exhausted:
+        type: boolean
+      is_expired:
+        type: boolean
+      max_usage:
+        type: integer
+      min_order_amount:
+        type: number
+      note:
+        type: string
+      updated_at:
+        type: string
+      usage_count:
+        type: integer
     type: object
   app_internal_interfaces_http_dto_response.CurrentUserResponse:
     properties:
@@ -392,6 +575,488 @@ paths:
       summary: Admin API root
       tags:
       - admin
+  /api/v1/admin/categories:
+    get:
+      description: Get paginated categories or a nested tree with tree=true.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Sort field
+        enum:
+        - created_at
+        - name
+        - sort_order
+        - updated_at
+        in: query
+        name: sort
+        type: string
+      - description: Sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        type: string
+      - description: Filter by parent category ID
+        in: query
+        name: parent_id
+        type: string
+      - description: Filter by active status
+        in: query
+        name: is_active
+        type: boolean
+      - description: Return nested tree structure
+        in: query
+        name: tree
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CategoryListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List categories
+      tags:
+      - categories
+    post:
+      consumes:
+      - application/json
+      description: Create a new product category with optional parent for hierarchy.
+      parameters:
+      - description: Category data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.CreateCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CategoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create category
+      tags:
+      - categories
+  /api/v1/admin/categories/{id}:
+    delete:
+      description: Soft-delete a category. Fails if it has children or assigned products.
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete category
+      tags:
+      - categories
+    get:
+      description: Get a category by ID.
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CategoryResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get category
+      tags:
+      - categories
+    put:
+      consumes:
+      - application/json
+      description: Update an existing category. Cannot set parent to self or descendant.
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Category data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CategoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update category
+      tags:
+      - categories
+  /api/v1/admin/coupons:
+    get:
+      description: Get a paginated list of coupons with optional search.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Filter by active status
+        in: query
+        name: is_active
+        type: boolean
+      - description: Search by code or note
+        in: query
+        name: q
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CouponListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List coupons
+      tags:
+      - coupons
+    post:
+      consumes:
+      - application/json
+      description: Create a new discount coupon.
+      parameters:
+      - description: Coupon data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.CreateCouponRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CouponResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create coupon
+      tags:
+      - coupons
+  /api/v1/admin/coupons/{id}:
+    delete:
+      description: Soft-delete a coupon.
+      parameters:
+      - description: Coupon ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete coupon
+      tags:
+      - coupons
+    get:
+      description: Get a coupon by ID.
+      parameters:
+      - description: Coupon ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CouponResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get coupon
+      tags:
+      - coupons
+    put:
+      consumes:
+      - application/json
+      description: Update an existing coupon.
+      parameters:
+      - description: Coupon ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Coupon data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateCouponRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CouponResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update coupon
+      tags:
+      - coupons
+  /api/v1/admin/coupons/{id}/activate:
+    patch:
+      description: Enable a coupon for use.
+      parameters:
+      - description: Coupon ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CouponActiveResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Activate coupon
+      tags:
+      - coupons
+  /api/v1/admin/coupons/{id}/deactivate:
+    patch:
+      description: Disable a coupon.
+      parameters:
+      - description: Coupon ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CouponActiveResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Deactivate coupon
+      tags:
+      - coupons
   /api/v1/admin/products:
     get:
       description: Get a paginated list of products with optional filters.

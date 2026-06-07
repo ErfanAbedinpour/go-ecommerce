@@ -60,6 +60,754 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/admin/categories": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get paginated categories or a nested tree with tree=true.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "List categories",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "created_at",
+                            "name",
+                            "sort_order",
+                            "updated_at"
+                        ],
+                        "type": "string",
+                        "description": "Sort field",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "Sort order",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by parent category ID",
+                        "name": "parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filter by active status",
+                        "name": "is_active",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Return nested tree structure",
+                        "name": "tree",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CategoryListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new product category with optional parent for hierarchy.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Create category",
+                "parameters": [
+                    {
+                        "description": "Category data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_request.CreateCategoryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CategoryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/categories/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a category by ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Get category",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Category ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CategoryResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an existing category. Cannot set parent to self or descendant.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Update category",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Category ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Category data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_request.UpdateCategoryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CategoryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft-delete a category. Fails if it has children or assigned products.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Delete category",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Category ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/coupons": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a paginated list of coupons with optional search.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "coupons"
+                ],
+                "summary": "List coupons",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filter by active status",
+                        "name": "is_active",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search by code or note",
+                        "name": "q",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CouponListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new discount coupon.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "coupons"
+                ],
+                "summary": "Create coupon",
+                "parameters": [
+                    {
+                        "description": "Coupon data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_request.CreateCouponRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CouponResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/coupons/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a coupon by ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "coupons"
+                ],
+                "summary": "Get coupon",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Coupon ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CouponResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an existing coupon.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "coupons"
+                ],
+                "summary": "Update coupon",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Coupon ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Coupon data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_request.UpdateCouponRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CouponResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft-delete a coupon.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "coupons"
+                ],
+                "summary": "Delete coupon",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Coupon ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/coupons/{id}/activate": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Enable a coupon for use.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "coupons"
+                ],
+                "summary": "Activate coupon",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Coupon ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CouponActiveResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/coupons/{id}/deactivate": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Disable a coupon.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "coupons"
+                ],
+                "summary": "Deactivate coupon",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Coupon ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CouponActiveResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/admin/products": {
             "get": {
                 "security": [
@@ -758,6 +1506,82 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "app_internal_interfaces_http_dto_request.CreateCategoryRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                },
+                "parent_id": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string",
+                    "maxLength": 200
+                },
+                "sort_order": {
+                    "type": "integer",
+                    "minimum": 0
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_request.CreateCouponRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "discount_type",
+                "discount_value"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3
+                },
+                "discount_type": {
+                    "type": "string",
+                    "enum": [
+                        "percentage",
+                        "fixed_amount"
+                    ]
+                },
+                "discount_value": {
+                    "type": "number"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "max_usage": {
+                    "type": "integer"
+                },
+                "min_order_amount": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "note": {
+                    "type": "string",
+                    "maxLength": 500
+                }
+            }
+        },
         "app_internal_interfaces_http_dto_request.CreateProductRequest": {
             "type": "object",
             "required": [
@@ -916,6 +1740,74 @@ const docTemplate = `{
                 }
             }
         },
+        "app_internal_interfaces_http_dto_request.UpdateCategoryRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                },
+                "parent_id": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string",
+                    "maxLength": 200
+                },
+                "sort_order": {
+                    "type": "integer",
+                    "minimum": 0
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_request.UpdateCouponRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3
+                },
+                "discount_type": {
+                    "type": "string",
+                    "enum": [
+                        "percentage",
+                        "fixed_amount"
+                    ]
+                },
+                "discount_value": {
+                    "type": "number"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "max_usage": {
+                    "type": "integer"
+                },
+                "min_order_amount": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "note": {
+                    "type": "string",
+                    "maxLength": 500
+                }
+            }
+        },
         "app_internal_interfaces_http_dto_request.UpdateInventoryRequest": {
             "type": "object",
             "required": [
@@ -998,6 +1890,130 @@ const docTemplate = `{
                         "active",
                         "archived"
                     ]
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_response.CategoryListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CategoryResponse"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/app_pkg_pagination.Meta"
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_response.CategoryResponse": {
+            "type": "object",
+            "properties": {
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CategoryResponse"
+                    }
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parent_id": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_response.CouponActiveResponse": {
+            "type": "object",
+            "properties": {
+                "is_active": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_response.CouponListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/app_internal_interfaces_http_dto_response.CouponResponse"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/app_pkg_pagination.Meta"
+                }
+            }
+        },
+        "app_internal_interfaces_http_dto_response.CouponResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "discount_type": {
+                    "type": "string"
+                },
+                "discount_value": {
+                    "type": "number"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "is_exhausted": {
+                    "type": "boolean"
+                },
+                "is_expired": {
+                    "type": "boolean"
+                },
+                "max_usage": {
+                    "type": "integer"
+                },
+                "min_order_amount": {
+                    "type": "number"
+                },
+                "note": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "usage_count": {
+                    "type": "integer"
                 }
             }
         },
