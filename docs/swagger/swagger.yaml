@@ -379,6 +379,106 @@ definitions:
         example: admin
         type: string
     type: object
+  app_internal_interfaces_http_dto_response.CustomerAddressResponse:
+    properties:
+      city:
+        type: string
+      country:
+        type: string
+      id:
+        type: string
+      is_default:
+        type: boolean
+      postal_code:
+        type: string
+      state:
+        type: string
+      street:
+        type: string
+      type:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.CustomerDetailResponse:
+    properties:
+      addresses:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.CustomerAddressResponse'
+        type: array
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      phone:
+        type: string
+      stats:
+        $ref: '#/definitions/app_internal_interfaces_http_dto_response.CustomerStatsResponse'
+      total_orders:
+        type: integer
+      total_spent:
+        type: number
+      type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.CustomerListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.CustomerResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.CustomerOrderListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderSummaryResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.CustomerResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      phone:
+        type: string
+      total_orders:
+        type: integer
+      total_spent:
+        type: number
+      type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.CustomerStatsResponse:
+    properties:
+      total_orders:
+        type: integer
+      total_spent:
+        type: number
+    type: object
   app_internal_interfaces_http_dto_response.ErrorBody:
     properties:
       code:
@@ -417,6 +517,23 @@ definitions:
       message:
         example: ecommerce admin API v1
         type: string
+    type: object
+  app_internal_interfaces_http_dto_response.OrderSummaryResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      item_count:
+        type: integer
+      order_number:
+        type: string
+      payment_status:
+        type: string
+      status:
+        type: string
+      total:
+        type: number
     type: object
   app_internal_interfaces_http_dto_response.ProductAttributeResponse:
     properties:
@@ -1057,6 +1174,163 @@ paths:
       summary: Deactivate coupon
       tags:
       - coupons
+  /api/v1/admin/customers:
+    get:
+      description: Get a paginated list of customers with optional search by name
+        or email.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Sort field
+        enum:
+        - created_at
+        - email
+        - first_name
+        - last_name
+        - total_orders
+        - total_spent
+        - updated_at
+        in: query
+        name: sort
+        type: string
+      - description: Sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        type: string
+      - description: Search by name or email
+        in: query
+        name: q
+        type: string
+      - description: Filter by customer type
+        enum:
+        - registered
+        - guest
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CustomerListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List customers
+      tags:
+      - customers
+  /api/v1/admin/customers/{id}:
+    get:
+      description: Get a customer by ID with addresses and purchase statistics.
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CustomerDetailResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get customer
+      tags:
+      - customers
+  /api/v1/admin/customers/{id}/orders:
+    get:
+      description: Get paginated order history for a customer.
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Sort field
+        enum:
+        - created_at
+        - order_number
+        - total
+        - status
+        in: query
+        name: sort
+        type: string
+      - description: Sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CustomerOrderListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Customer purchase history
+      tags:
+      - customers
   /api/v1/admin/products:
     get:
       description: Get a paginated list of products with optional filters.
