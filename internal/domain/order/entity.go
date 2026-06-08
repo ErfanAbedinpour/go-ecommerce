@@ -18,9 +18,11 @@ type Order struct {
 	DiscountAmount float64
 	ShippingAmount float64
 	TaxAmount      float64
-	Total          float64
-	Notes          string
-	BillingAddress Address
+	Total           float64
+	Notes           string
+	PaymentMethod   string
+	TransactionID   string
+	BillingAddress  Address
 	ShippingAddress Address
 	Items          []Item
 	Customer       *CustomerSnapshot

@@ -67,6 +67,26 @@ type OrderListResponse struct {
 	Meta pagination.Meta         `json:"meta"`
 }
 
+// OrderInvoiceStoreResponse is merchant info shown on printable invoices.
+type OrderInvoiceStoreResponse struct {
+	Name    string `json:"name"`
+	URL     string `json:"url,omitempty"`
+	LogoURL string `json:"logo_url,omitempty"`
+	Email   string `json:"email,omitempty"`
+	Phone   string `json:"phone,omitempty"`
+	Address string `json:"address,omitempty"`
+	City    string `json:"city,omitempty"`
+	Country string `json:"country,omitempty"`
+}
+
+// OrderInvoiceResponse is the printable invoice payload.
+type OrderInvoiceResponse struct {
+	InvoiceNumber string                    `json:"invoice_number"`
+	IssuedAt      time.Time                 `json:"issued_at"`
+	Store         OrderInvoiceStoreResponse `json:"store"`
+	Order         OrderDetailResponse       `json:"order"`
+}
+
 // OrderDetailResponse is the full order detail view.
 type OrderDetailResponse struct {
 	ID              string                  `json:"id"`
@@ -75,6 +95,8 @@ type OrderDetailResponse struct {
 	CouponID        *string                 `json:"coupon_id,omitempty"`
 	Status          string                  `json:"status"`
 	PaymentStatus   string                  `json:"payment_status"`
+	PaymentMethod   string                  `json:"payment_method,omitempty"`
+	TransactionID   string                  `json:"transaction_id,omitempty"`
 	Subtotal        float64                 `json:"subtotal"`
 	DiscountAmount  float64                 `json:"discount_amount"`
 	ShippingAmount  float64                 `json:"shipping_amount"`
@@ -129,6 +151,8 @@ func ToOrderDetailResponse(o *domain.Order) OrderDetailResponse {
 		TaxAmount:       o.TaxAmount,
 		Total:           o.Total,
 		Notes:           o.Notes,
+		PaymentMethod:   o.PaymentMethod,
+		TransactionID:   o.TransactionID,
 		BillingAddress:  toOrderAddressResponse(o.BillingAddress),
 		ShippingAddress: toOrderAddressResponse(o.ShippingAddress),
 		CreatedAt:       o.CreatedAt,
@@ -179,6 +203,25 @@ func ToOrderDetailResponse(o *domain.Order) OrderDetailResponse {
 		resp.Timeline[i] = tl
 	}
 	return resp
+}
+
+// ToOrderInvoiceResponse maps a domain invoice to API response.
+func ToOrderInvoiceResponse(inv *domain.Invoice) OrderInvoiceResponse {
+	return OrderInvoiceResponse{
+		InvoiceNumber: inv.InvoiceNumber,
+		IssuedAt:      inv.IssuedAt,
+		Store: OrderInvoiceStoreResponse{
+			Name:    inv.Store.Name,
+			URL:     inv.Store.URL,
+			LogoURL: inv.Store.LogoURL,
+			Email:   inv.Store.Email,
+			Phone:   inv.Store.Phone,
+			Address: inv.Store.Address,
+			City:    inv.Store.City,
+			Country: inv.Store.Country,
+		},
+		Order: ToOrderDetailResponse(inv.Order),
+	}
 }
 
 func toOrderAddressResponse(a domain.Address) OrderAddressResponse {

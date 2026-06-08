@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -72,6 +73,83 @@ func (r *CustomerRepository) List(ctx context.Context, filter customer.ListFilte
 		return nil, 0, err
 	}
 	return toCustomersDomain(items), total, nil
+}
+
+func (r *CustomerRepository) FindByEmail(ctx context.Context, email string) (*customer.Customer, error) {
+	var m models.CustomerModel
+	err := r.db.WithContext(ctx).Where("email = ?", strings.ToLower(strings.TrimSpace(email))).First(&m).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, customer.ErrNotFound
+		}
+		return nil, err
+	}
+	return toCustomerDomain(&m), nil
+}
+
+func (r *CustomerRepository) Update(ctx context.Context, c *customer.Customer) error {
+	m := toCustomerModel(c)
+	result := r.db.WithContext(ctx).
+		Model(&models.CustomerModel{}).
+		Where("id = ?", c.ID).
+		Updates(map[string]any{
+			"email":      m.Email,
+			"first_name": m.FirstName,
+			"last_name":  m.LastName,
+			"phone":      m.Phone,
+			"type":       m.Type,
+			"updated_at": m.UpdatedAt,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return customer.ErrNotFound
+	}
+	return nil
+}
+
+func (r *CustomerRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("customer_id = ?", id).Delete(&models.CustomerAddressModel{}).Error; err != nil {
+			return err
+		}
+		result := tx.Delete(&models.CustomerModel{}, "id = ?", id)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return customer.ErrNotFound
+		}
+		return nil
+	})
+}
+
+func (r *CustomerRepository) HasOrders(ctx context.Context, customerID uuid.UUID) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&models.OrderModel{}).
+		Where("customer_id = ?", customerID).
+		Count(&count).Error
+	return count > 0, err
+}
+
+func (r *CustomerRepository) GetLastOrderAt(ctx context.Context, customerID uuid.UUID) (*time.Time, error) {
+	var createdAt time.Time
+	err := r.db.WithContext(ctx).
+		Model(&models.OrderModel{}).
+		Select("created_at").
+		Where("customer_id = ?", customerID).
+		Order("created_at DESC").
+		Limit(1).
+		Scan(&createdAt).Error
+	if err != nil {
+		return nil, err
+	}
+	if createdAt.IsZero() {
+		return nil, nil
+	}
+	return &createdAt, nil
 }
 
 func (r *CustomerRepository) ListAddresses(ctx context.Context, customerID uuid.UUID) ([]customer.Address, error) {
@@ -168,3 +246,5 @@ func (r *CustomerRepository) orderOrderClause(page pagination.Params) string {
 	}
 	return fmt.Sprintf("%s %s", column, order)
 }
+
+var _ customer.Repository = (*CustomerRepository)(nil)

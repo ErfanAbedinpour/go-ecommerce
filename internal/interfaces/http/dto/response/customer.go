@@ -37,8 +37,9 @@ type CustomerAddressResponse struct {
 
 // CustomerStatsResponse holds aggregate purchase statistics.
 type CustomerStatsResponse struct {
-	TotalOrders int     `json:"total_orders"`
-	TotalSpent  float64 `json:"total_spent"`
+	TotalOrders int        `json:"total_orders"`
+	TotalSpent  float64    `json:"total_spent"`
+	LastOrderAt *time.Time `json:"last_order_at,omitempty"`
 }
 
 // CustomerDetailResponse is the detailed customer view with addresses and stats.
@@ -114,6 +115,7 @@ func ToCustomerDetailResponse(c *domain.Customer) CustomerDetailResponse {
 		Stats: CustomerStatsResponse{
 			TotalOrders: c.TotalOrders,
 			TotalSpent:  c.TotalSpent,
+			LastOrderAt: c.LastOrderAt,
 		},
 	}
 }

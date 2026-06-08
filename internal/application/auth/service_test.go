@@ -10,6 +10,7 @@ import (
 	"app/internal/config"
 	"app/internal/domain/user"
 	infraauth "app/internal/infrastructure/auth"
+	"app/pkg/pagination"
 )
 
 type mockUserRepo struct {
@@ -60,6 +61,17 @@ func (m *mockUserRepo) UpdatePassword(_ context.Context, id uuid.UUID, passwordH
 	}
 	u.PasswordHash = passwordHash
 	return nil
+}
+
+func (m *mockUserRepo) List(context.Context, user.ListFilter, pagination.Params) ([]user.User, int64, error) {
+	return nil, 0, nil
+}
+func (m *mockUserRepo) Update(context.Context, *user.User) error { return nil }
+func (m *mockUserRepo) SoftDelete(context.Context, uuid.UUID) error {
+	return nil
+}
+func (m *mockUserRepo) CountByRole(context.Context, user.Role) (int64, error) {
+	return 0, nil
 }
 
 type mockRefreshRepo struct {

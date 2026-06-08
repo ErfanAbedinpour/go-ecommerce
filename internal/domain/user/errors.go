@@ -12,4 +12,6 @@ var (
 	ErrEmailTaken         = apperror.Conflict("email is already registered")
 	ErrSignupDisabled     = apperror.Forbidden("signup is currently disabled")
 	ErrInvalidResetToken  = apperror.New(apperror.CodeInvalidToken, "invalid or expired reset token", 400)
+	ErrCannotDeleteSelf   = apperror.Unprocessable("cannot delete your own account")
+	ErrLastAdmin          = apperror.Unprocessable("cannot delete the last active admin account")
 )

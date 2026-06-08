@@ -18,4 +18,14 @@ var (
 	ErrInvalidRefundAmount = apperror.Validation("invalid refund amount", map[string]string{
 		"amount": "must be greater than 0 and not exceed order total",
 	})
+
+	ErrInsufficientStock = apperror.Unprocessable("insufficient product stock")
+
+	ErrEmptyOrder = apperror.Validation("order must contain at least one item", map[string]string{
+		"items": "required",
+	})
+
+	ErrInvalidDateRange = apperror.Validation("invalid date range", map[string]string{
+		"from": "must be before or equal to to",
+	})
 )

@@ -28,6 +28,12 @@ func toOrderDomain(m *models.OrderModel, customer *order.CustomerSnapshot) (*ord
 	if m.Notes != nil {
 		o.Notes = *m.Notes
 	}
+	if m.PaymentMethod != nil {
+		o.PaymentMethod = *m.PaymentMethod
+	}
+	if m.TransactionID != nil {
+		o.TransactionID = *m.TransactionID
+	}
 
 	billing, err := parseAddressJSON(m.BillingAddress)
 	if err != nil {
@@ -101,6 +107,58 @@ func toStatusHistoryModel(h *order.StatusHistory) *models.OrderStatusHistoryMode
 		m.Note = &h.Note
 	}
 	return m
+}
+
+func toOrderModel(o *order.Order) (*models.OrderModel, error) {
+	billing, err := json.Marshal(o.BillingAddress)
+	if err != nil {
+		return nil, fmt.Errorf("billing address: %w", err)
+	}
+	shipping, err := json.Marshal(o.ShippingAddress)
+	if err != nil {
+		return nil, fmt.Errorf("shipping address: %w", err)
+	}
+
+	m := &models.OrderModel{
+		ID:              o.ID,
+		OrderNumber:     o.OrderNumber,
+		CustomerID:      o.CustomerID,
+		CouponID:        o.CouponID,
+		Status:          o.Status.String(),
+		PaymentStatus:   o.PaymentStatus.String(),
+		Subtotal:        o.Subtotal,
+		DiscountAmount:  o.DiscountAmount,
+		ShippingAmount:  o.ShippingAmount,
+		TaxAmount:       o.TaxAmount,
+		Total:           o.Total,
+		BillingAddress:  billing,
+		ShippingAddress: shipping,
+		CreatedAt:       o.CreatedAt,
+		UpdatedAt:       o.UpdatedAt,
+	}
+	if o.Notes != "" {
+		m.Notes = &o.Notes
+	}
+	if o.PaymentMethod != "" {
+		m.PaymentMethod = &o.PaymentMethod
+	}
+	if o.TransactionID != "" {
+		m.TransactionID = &o.TransactionID
+	}
+	return m, nil
+}
+
+func toOrderItemModel(item *order.Item) *models.OrderItemModel {
+	return &models.OrderItemModel{
+		ID:          item.ID,
+		OrderID:     item.OrderID,
+		ProductID:   item.ProductID,
+		ProductName: item.ProductName,
+		ProductSKU:  item.ProductSKU,
+		Quantity:    item.Quantity,
+		UnitPrice:   item.UnitPrice,
+		TotalPrice:  item.TotalPrice,
+	}
 }
 
 func parseAddressJSON(raw json.RawMessage) (order.Address, error) {

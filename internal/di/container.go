@@ -10,6 +10,7 @@ import (
 	appbrand "app/internal/application/brand"
 	appcategory "app/internal/application/category"
 	appcoupon "app/internal/application/coupon"
+	appadminuser "app/internal/application/adminuser"
 	appcustomer "app/internal/application/customer"
 	appdashboard "app/internal/application/dashboard"
 	apporder "app/internal/application/order"
@@ -55,6 +56,7 @@ type Container struct {
 	Category *handler.CategoryHandler
 	Coupon   *handler.CouponHandler
 	Customer  *handler.CustomerHandler
+	User      *handler.UserHandler
 	Dashboard *handler.DashboardHandler
 	Order     *handler.OrderHandler
 	Settings  *handler.SettingsHandler
@@ -102,15 +104,16 @@ func New(cfg *config.Config) (*Container, error) {
 
 	customerRepo := postgres.NewCustomerRepository(db.DB)
 	customerService := appcustomer.NewService(customerRepo)
+	adminUserService := appadminuser.NewService(userRepo, refreshTokenRepo, hasher)
 
 	dashboardRepo := postgres.NewDashboardRepository(db.DB)
 	dashboardService := appdashboard.NewService(dashboardRepo)
 
-	orderRepo := postgres.NewOrderRepository(db.DB)
-	orderService := apporder.NewService(orderRepo)
-
 	settingsRepo := postgres.NewSettingsRepository(db.DB)
 	settingsService := appsettings.NewService(settingsRepo)
+
+	orderRepo := postgres.NewOrderRepository(db.DB)
+	orderService := apporder.NewService(orderRepo, productRepo, customerRepo, couponRepo, settingsRepo)
 
 	brandRepo := postgres.NewBrandRepository(db.DB)
 	brandService := appbrand.NewService(brandRepo)
@@ -147,6 +150,7 @@ func New(cfg *config.Config) (*Container, error) {
 		Category:        handler.NewCategoryHandler(categoryService, v, log),
 		Coupon:          handler.NewCouponHandler(couponService, v, log),
 		Customer:        handler.NewCustomerHandler(customerService, v, log),
+		User:            handler.NewUserHandler(adminUserService, v, log),
 		Dashboard:       handler.NewDashboardHandler(dashboardService, v, log),
 		Order:           handler.NewOrderHandler(orderService, v, log),
 		Settings:        handler.NewSettingsHandler(settingsService, v, log),

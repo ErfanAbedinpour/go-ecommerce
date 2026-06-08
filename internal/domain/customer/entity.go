@@ -16,6 +16,7 @@ type Customer struct {
 	Type        CustomerType
 	TotalOrders int
 	TotalSpent  float64
+	LastOrderAt *time.Time
 	Addresses   []Address
 	CreatedAt   time.Time
 	UpdatedAt   time.Time

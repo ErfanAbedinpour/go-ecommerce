@@ -9,7 +9,8 @@ import (
 	"app/pkg/apperror"
 )
 
-func validatePassword(password string) error {
+// ValidatePassword checks password length and complexity rules.
+func ValidatePassword(password string) error {
 	if len(password) < 8 {
 		return apperror.Validation("request validation failed", map[string]string{
 			"password": "must be at least 8 characters",

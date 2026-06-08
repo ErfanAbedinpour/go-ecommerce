@@ -32,7 +32,7 @@ func (s *AuthService) Signup(ctx context.Context, input SignupInput) (*TokenOutp
 		return nil, user.ErrSignupDisabled
 	}
 
-	if err := validatePassword(input.Password); err != nil {
+	if err := ValidatePassword(input.Password); err != nil {
 		return nil, err
 	}
 
@@ -143,7 +143,7 @@ const resetPasswordMessage = "Password has been reset successfully. You can now 
 
 // ResetPassword validates a reset token and updates the user's password.
 func (s *AuthService) ResetPassword(ctx context.Context, input ResetPasswordInput) (*MessageOutput, error) {
-	if err := validatePassword(input.Password); err != nil {
+	if err := ValidatePassword(input.Password); err != nil {
 		return nil, err
 	}
 

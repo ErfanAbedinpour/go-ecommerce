@@ -4,13 +4,25 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+
+	"app/pkg/pagination"
 )
+
+// ListFilter holds optional filters for admin user listing.
+type ListFilter struct {
+	Query string
+	Role  *Role
+}
 
 // Repository defines the port for user persistence.
 type Repository interface {
 	Create(ctx context.Context, u *User) error
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*User, error)
+	List(ctx context.Context, filter ListFilter, page pagination.Params) ([]User, int64, error)
+	Update(ctx context.Context, u *User) error
+	SoftDelete(ctx context.Context, id uuid.UUID) error
+	CountByRole(ctx context.Context, role Role) (int64, error)
 	UpdateLastLogin(ctx context.Context, id uuid.UUID) error
 	UpdatePassword(ctx context.Context, id uuid.UUID, passwordHash string) error
 }

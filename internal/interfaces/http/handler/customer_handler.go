@@ -6,6 +6,7 @@ import (
 
 	appsvc "app/internal/application/customer"
 	domain "app/internal/domain/customer"
+	"app/internal/interfaces/http/dto/request"
 	dtoresponse "app/internal/interfaces/http/dto/response"
 	"app/internal/interfaces/http/response"
 	"app/pkg/pagination"
@@ -114,6 +115,76 @@ func (h *CustomerHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.OK(w, dtoresponse.ToCustomerOrderListResponse(result))
+}
+
+// Update godoc
+// @Summary      Update customer
+// @Description  Update a storefront customer profile.
+// @Tags         customers
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path  string                       true  "Customer ID"
+// @Param        body  body  request.UpdateCustomerRequest  true  "Customer data"
+// @Success      200   {object}  dtoresponse.CustomerDetailResponse
+// @Failure      400   {object}  dtoresponse.ErrorResponse
+// @Failure      401   {object}  dtoresponse.ErrorResponse
+// @Failure      403   {object}  dtoresponse.ErrorResponse
+// @Failure      404   {object}  dtoresponse.ErrorResponse
+// @Failure      409   {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/admin/customers/{id} [put]
+func (h *CustomerHandler) Update(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	var req request.UpdateCustomerRequest
+	if err := decodeAndValidate(r, &req, h.validator); err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	customer, err := h.service.Update(r.Context(), id, appsvc.UpdateInput{
+		Email:     req.Email,
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		Phone:     req.Phone,
+		Type:      req.Type,
+	})
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.OK(w, dtoresponse.ToCustomerDetailResponse(customer))
+}
+
+// Delete godoc
+// @Summary      Delete customer
+// @Description  Delete a customer without existing orders.
+// @Tags         customers
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  string  true  "Customer ID"
+// @Success      204
+// @Failure      401  {object}  dtoresponse.ErrorResponse
+// @Failure      403  {object}  dtoresponse.ErrorResponse
+// @Failure      404  {object}  dtoresponse.ErrorResponse
+// @Failure      422  {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/admin/customers/{id} [delete]
+func (h *CustomerHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	if err := h.service.Delete(r.Context(), id); err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.NoContent(w)
 }
 
 func parseCustomerListFilter(r *http.Request) domain.ListFilter {

@@ -123,6 +123,81 @@ func (r *OrderRepository) List(ctx context.Context, filter order.ListFilter, pag
 	return result, total, nil
 }
 
+func (r *OrderRepository) Create(ctx context.Context, o *order.Order) error {
+	m, err := toOrderModel(o)
+	if err != nil {
+		return err
+	}
+
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(m).Error; err != nil {
+			return err
+		}
+
+		for _, item := range o.Items {
+			itemModel := toOrderItemModel(&item)
+			if err := tx.Create(itemModel).Error; err != nil {
+				return err
+			}
+
+			result := tx.Exec(
+				"UPDATE inventories SET quantity = quantity - ?, updated_at = NOW() WHERE product_id = ? AND quantity >= ?",
+				item.Quantity, item.ProductID, item.Quantity,
+			)
+			if result.Error != nil {
+				return result.Error
+			}
+			if result.RowsAffected == 0 {
+				return order.ErrInsufficientStock
+			}
+		}
+		return nil
+	})
+}
+
+func (r *OrderRepository) UpdateNotes(ctx context.Context, id uuid.UUID, notes string, updatedAt time.Time) error {
+	result := r.db.WithContext(ctx).
+		Model(&models.OrderModel{}).
+		Where("id = ?", id).
+		Updates(map[string]any{
+			"notes":      notes,
+			"updated_at": updatedAt,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return order.ErrNotFound
+	}
+	return nil
+}
+
+func (r *OrderRepository) NextOrderNumber(ctx context.Context) (string, error) {
+	var maxNum int
+	err := r.db.WithContext(ctx).Raw(`
+		SELECT COALESCE(MAX(CAST(NULLIF(regexp_replace(order_number, '[^0-9]', '', 'g'), '') AS INTEGER)), 0)
+		FROM orders
+	`).Scan(&maxNum).Error
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("ORD-%06d", maxNum+1), nil
+}
+
+func (r *OrderRepository) IncrementCouponUsage(ctx context.Context, couponID uuid.UUID) error {
+	result := r.db.WithContext(ctx).Exec(
+		"UPDATE coupons SET usage_count = usage_count + 1, updated_at = NOW() WHERE id = ?",
+		couponID,
+	)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("coupon not found")
+	}
+	return nil
+}
+
 func (r *OrderRepository) Update(ctx context.Context, o *order.Order) error {
 	result := r.db.WithContext(ctx).
 		Model(&models.OrderModel{}).
@@ -198,6 +273,13 @@ func (r *OrderRepository) applyListFilters(query *gorm.DB, filter order.ListFilt
 			"LOWER(orders.order_number) LIKE ? OR LOWER(customers.email) LIKE ? OR LOWER(customers.first_name) LIKE ? OR LOWER(customers.last_name) LIKE ? OR LOWER(CONCAT(customers.first_name, ' ', customers.last_name)) LIKE ?",
 			pattern, pattern, pattern, pattern, pattern,
 		)
+	}
+	if filter.From != nil {
+		query = query.Where("orders.created_at >= ?", filter.From.UTC())
+	}
+	if filter.To != nil {
+		to := filter.To.UTC().Add(24*time.Hour - time.Nanosecond)
+		query = query.Where("orders.created_at <= ?", to)
 	}
 	return query
 }

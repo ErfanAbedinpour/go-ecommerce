@@ -86,6 +86,7 @@ func registerAdminRoutes(r chi.Router, c *di.Container) {
 		registerCategoryRoutes(r, c)
 		registerCouponRoutes(r, c)
 		registerCustomerRoutes(r, c)
+		registerUserRoutes(r, c)
 		registerOrderRoutes(r, c)
 		registerSettingsRoutes(r, c)
 	})
@@ -156,16 +157,31 @@ func registerCustomerRoutes(r chi.Router, c *di.Container) {
 	r.Route("/customers", func(r chi.Router) {
 		r.Get("/", c.Customer.List)
 		r.Get("/{id}/orders", c.Customer.ListOrders)
+		r.Put("/{id}", c.Customer.Update)
+		r.Delete("/{id}", c.Customer.Delete)
 		r.Get("/{id}", c.Customer.Get)
+	})
+}
+
+func registerUserRoutes(r chi.Router, c *di.Container) {
+	r.Route("/users", func(r chi.Router) {
+		r.Get("/", c.User.List)
+		r.Post("/", c.User.Create)
+		r.Get("/{id}", c.User.Get)
+		r.Put("/{id}", c.User.Update)
+		r.Delete("/{id}", c.User.Delete)
 	})
 }
 
 func registerOrderRoutes(r chi.Router, c *di.Container) {
 	r.Route("/orders", func(r chi.Router) {
 		r.Get("/", c.Order.List)
+		r.Post("/", c.Order.Create)
 		r.Patch("/{id}/status", c.Order.UpdateStatus)
+		r.Patch("/{id}/notes", c.Order.UpdateNotes)
 		r.Post("/{id}/cancel", c.Order.Cancel)
 		r.Post("/{id}/refund", c.Order.Refund)
+		r.Get("/{id}/invoice", c.Order.GetInvoice)
 		r.Get("/{id}", c.Order.Get)
 	})
 }

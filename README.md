@@ -553,6 +553,8 @@ coupons (standalone)
 | tax_amount       | DECIMAL(12,2) | DEFAULT 0              |
 | total            | DECIMAL(12,2) | NOT NULL               |
 | notes            | TEXT          | NULLABLE               |
+| payment_method   | VARCHAR(50)   | NULLABLE               |
+| transaction_id   | VARCHAR(100)  | NULLABLE               |
 | billing_address  | JSONB         | NOT NULL               |
 | shipping_address | JSONB         | NOT NULL               |
 | created_at       | TIMESTAMPTZ   | NOT NULL               |
@@ -922,7 +924,7 @@ Category list/tree responses include `products_count` per category.
 |                  |                                                                                |
 | ---------------- | ------------------------------------------------------------------------------ |
 | **Auth**         | `orders:read`                                                                  |
-| **Query**        | `page`, `per_page`, `status`, `payment_status`, `q` (order number or customer) |
+| **Query**        | `page`, `per_page`, `status`, `payment_status`, `q` (order number or customer), `from`, `to` (YYYY-MM-DD) |
 | **Response 200** | Paginated OrderSummary list                                                    |
 
 #### GET `/orders/{id}`
@@ -930,7 +932,7 @@ Category list/tree responses include `products_count` per category.
 |                  |                                                               |
 | ---------------- | ------------------------------------------------------------- |
 | **Auth**         | `orders:read`                                                 |
-| **Response 200** | OrderDetailResponse with items, customer, timeline, addresses |
+| **Response 200** | OrderDetailResponse with items, customer, timeline, addresses, payment method, transaction ID |
 
 #### PATCH `/orders/{id}/status`
 
@@ -956,6 +958,30 @@ Category list/tree responses include `products_count` per category.
 | **Auth**           | `orders:refund`                                     |
 | **Request**        | `{ "amount": 99.99, "reason": "Customer request" }` |
 | **Business Rules** | Only paid/delivered orders; partial or full refund  |
+
+#### POST `/orders`
+
+|                  |                                                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Auth**         | `orders:write`                                                                                                                  |
+| **Request**      | `{ "customer_id", "items": [{ "product_id", "quantity" }], "coupon_code", "shipping_amount", "tax_amount", "billing_address", "shipping_address", "payment_method", "transaction_id", "payment_status", "notes" }` |
+| **Business Rules** | Validates customer and products; deducts inventory; optional coupon discount                                                    |
+| **Response 201** | OrderDetailResponse                                                                                                             |
+
+#### GET `/orders/{id}/invoice`
+
+|                  |                                                      |
+| ---------------- | ---------------------------------------------------- |
+| **Auth**         | `orders:read`                                        |
+| **Response 200** | Invoice payload with store info and full order detail |
+
+#### PATCH `/orders/{id}/notes`
+
+|                  |                                      |
+| ---------------- | ------------------------------------ |
+| **Auth**         | `orders:write`                       |
+| **Request**      | `{ "notes": "Internal note text" }`  |
+| **Response 200** | OrderDetailResponse                  |
 
 ---
 
@@ -1026,7 +1052,7 @@ Category list/tree responses include `products_count` per category.
 |                  |                                      |
 | ---------------- | ------------------------------------ |
 | **Auth**         | `customers:read`                     |
-| **Response 200** | CustomerDetail with addresses, stats |
+| **Response 200** | CustomerDetail with addresses, stats, and `last_order_at` |
 
 #### GET `/customers/{id}/orders`
 
@@ -1035,6 +1061,22 @@ Category list/tree responses include `products_count` per category.
 | **Auth**         | `customers:read`        |
 | **Query**        | `page`, `per_page`      |
 | **Response 200** | Paginated order history |
+
+#### PUT `/customers/{id}`
+
+|                  |                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------- |
+| **Auth**         | `customers:write`                                                                |
+| **Request**      | `{ "email", "first_name", "last_name", "phone", "type" }` (partial update)       |
+| **Response 200** | CustomerDetail with addresses, stats, and `last_order_at`                        |
+
+#### DELETE `/customers/{id}`
+
+|                    |                                      |
+| ------------------ | ------------------------------------ |
+| **Auth**           | `customers:delete`                   |
+| **Business Rules** | Cannot delete customers with orders  |
+| **Response 204**   |                                      |
 
 ---
 
@@ -1045,7 +1087,7 @@ Category list/tree responses include `products_count` per category.
 |                  |                                                                               |
 | ---------------- | ----------------------------------------------------------------------------- |
 | **Auth**         | `users:write`                                                                 |
-| **Request**      | `{ "email", "password", "first_name", "last_name", "phone", "role_ids": [] }` |
+| **Request**      | `{ "email", "password", "first_name", "last_name", "phone", "role", "is_active" }` |
 | **Validation**   | email: unique; password: min 8, complexity rules                              |
 | **Response 201** | AdminUserResponse (no password)                                               |
 
@@ -1411,18 +1453,18 @@ ecommerce/
 
 #### Orders
 
-- [ ] `POST /api/v1/admin/orders` — manual order creation (`/orders/create`)
-- [ ] `GET /api/v1/admin/orders/{id}/invoice` — printable invoice payload (`/orders/:id/invoice`)
-- [ ] `PATCH /api/v1/admin/orders/{id}/notes` — save internal note without status change
-- [ ] `from` / `to` date filters on `GET /orders` (UI: today / this week / this month)
-- [ ] Payment method + transaction ID fields on order detail
+- [x] `POST /api/v1/admin/orders` — manual order creation (`/orders/create`)
+- [x] `GET /api/v1/admin/orders/{id}/invoice` — printable invoice payload (`/orders/:id/invoice`)
+- [x] `PATCH /api/v1/admin/orders/{id}/notes` — save internal note without status change
+- [x] `from` / `to` date filters on `GET /orders` (UI: today / this week / this month)
+- [x] Payment method + transaction ID fields on order detail
 
 #### Users & customers
 
-- [ ] `GET/POST/PUT/DELETE /api/v1/admin/users` — admin staff accounts (distinct from storefront customers)
-- [ ] `PUT /api/v1/admin/customers/{id}` — edit customer (`/users/:id`)
-- [ ] `DELETE /api/v1/admin/customers/{id}` — delete customer
-- [ ] `last_order_at` on customer detail response
+- [x] `GET/POST/PUT/DELETE /api/v1/admin/users` — admin staff accounts (distinct from storefront customers)
+- [x] `PUT /api/v1/admin/customers/{id}` — edit customer (`/users/:id`)
+- [x] `DELETE /api/v1/admin/customers/{id}` — delete customer
+- [x] `last_order_at` on customer detail response
 
 #### Store settings
 

@@ -24,6 +24,33 @@ func toUserDomain(m *models.UserModel) *user.User {
 	return u
 }
 
+func toUserModel(u *user.User) *models.UserModel {
+	m := &models.UserModel{
+		ID:           u.ID,
+		Email:        u.Email,
+		PasswordHash: u.PasswordHash,
+		FirstName:    u.FirstName,
+		LastName:     u.LastName,
+		Role:         u.Role.String(),
+		IsActive:     u.IsActive,
+		LastLoginAt:  u.LastLoginAt,
+		CreatedAt:    u.CreatedAt,
+		UpdatedAt:    u.UpdatedAt,
+	}
+	if u.Phone != "" {
+		m.Phone = &u.Phone
+	}
+	return m
+}
+
+func toUsersDomain(items []models.UserModel) []user.User {
+	result := make([]user.User, len(items))
+	for i, m := range items {
+		result[i] = *toUserDomain(&m)
+	}
+	return result
+}
+
 func toRefreshTokenDomain(m *models.RefreshTokenModel) *user.RefreshToken {
 	return &user.RefreshToken{
 		ID:        m.ID,

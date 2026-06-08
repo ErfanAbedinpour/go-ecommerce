@@ -48,6 +48,24 @@ func toAddressDomain(m *models.CustomerAddressModel) customer.Address {
 	return a
 }
 
+func toCustomerModel(c *customer.Customer) *models.CustomerModel {
+	m := &models.CustomerModel{
+		ID:          c.ID,
+		Email:       c.Email,
+		FirstName:   c.FirstName,
+		LastName:    c.LastName,
+		Type:        c.Type.String(),
+		TotalOrders: c.TotalOrders,
+		TotalSpent:  c.TotalSpent,
+		CreatedAt:   c.CreatedAt,
+		UpdatedAt:   c.UpdatedAt,
+	}
+	if c.Phone != "" {
+		m.Phone = &c.Phone
+	}
+	return m
+}
+
 func toAddressesDomain(items []models.CustomerAddressModel) []customer.Address {
 	result := make([]customer.Address, len(items))
 	for i, m := range items {

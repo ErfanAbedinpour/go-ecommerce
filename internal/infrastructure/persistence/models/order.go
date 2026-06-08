@@ -21,6 +21,8 @@ type OrderModel struct {
 	TaxAmount       float64         `gorm:"type:decimal(12,2);not null;default:0"`
 	Total           float64         `gorm:"type:decimal(12,2);not null"`
 	Notes           *string         `gorm:"type:text"`
+	PaymentMethod   *string         `gorm:"type:varchar(50)"`
+	TransactionID   *string         `gorm:"type:varchar(100)"`
 	BillingAddress  json.RawMessage `gorm:"type:jsonb;not null"`
 	ShippingAddress json.RawMessage `gorm:"type:jsonb;not null"`
 	CreatedAt       time.Time       `gorm:"type:timestamptz;not null;autoCreateTime"`
