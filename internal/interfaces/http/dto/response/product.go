@@ -13,7 +13,6 @@ type ProductResponse struct {
 	CategoryID       *string                   `json:"category_id,omitempty"`
 	Name             string                    `json:"name"`
 	Slug             string                    `json:"slug"`
-	SKU              string                    `json:"sku"`
 	Description      string                    `json:"description,omitempty"`
 	ShortDescription string                    `json:"short_description,omitempty"`
 	Price            float64                   `json:"price"`
@@ -21,9 +20,10 @@ type ProductResponse struct {
 	Brand            string                    `json:"brand,omitempty"`
 	IsFeatured       bool                      `json:"is_featured"`
 	Status           string                    `json:"status"`
-	Images           []ProductImageResponse    `json:"images"`
+	Images           []ProductImageResponse     `json:"images"`
 	Attributes       []ProductAttributeResponse `json:"attributes"`
-	Inventory        ProductInventoryResponse  `json:"inventory"`
+	SKUs             []SkuResponse              `json:"skus"`
+	Inventory        ProductInventoryResponse   `json:"inventory"`
 	CreatedAt        time.Time                 `json:"created_at"`
 	UpdatedAt        time.Time                 `json:"updated_at"`
 }
@@ -38,9 +38,16 @@ type ProductImageResponse struct {
 
 // ProductAttributeResponse is a product attribute in API responses.
 type ProductAttributeResponse struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Value string `json:"value"`
+	ID     string   `json:"id"`
+	Name   string   `json:"name"`
+	Values []string `json:"values"`
+}
+
+// SkuResponse is a product SKU variant in API responses.
+type SkuResponse struct {
+	ID         string            `json:"id"`
+	Code       string            `json:"code"`
+	Attributes map[string]string `json:"attributes"`
 }
 
 // ProductInventoryResponse is inventory data in API responses.
@@ -63,7 +70,6 @@ func ToProductResponse(p *domain.Product) ProductResponse {
 		ID:               p.ID.String(),
 		Name:             p.Name,
 		Slug:             p.Slug,
-		SKU:              p.SKU,
 		Description:      p.Description,
 		ShortDescription: p.ShortDescription,
 		Price:            p.Price,
@@ -96,14 +102,28 @@ func ToProductResponse(p *domain.Product) ProductResponse {
 		resp.Images = []ProductImageResponse{}
 	}
 	for _, attr := range p.Attributes {
+		var values []string
+		for _, v := range attr.Values {
+			values = append(values, v.Value)
+		}
 		resp.Attributes = append(resp.Attributes, ProductAttributeResponse{
-			ID:    attr.ID.String(),
-			Name:  attr.Name,
-			Value: attr.Value,
+			ID:     attr.ID.String(),
+			Name:   attr.Name,
+			Values: values,
 		})
 	}
 	if resp.Attributes == nil {
 		resp.Attributes = []ProductAttributeResponse{}
+	}
+	for _, sku := range p.SKUs {
+		resp.SKUs = append(resp.SKUs, SkuResponse{
+			ID:         sku.ID.String(),
+			Code:       sku.Code,
+			Attributes: sku.Attributes,
+		})
+	}
+	if resp.SKUs == nil {
+		resp.SKUs = []SkuResponse{}
 	}
 	return resp
 }

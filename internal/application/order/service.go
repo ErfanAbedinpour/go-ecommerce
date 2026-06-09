@@ -222,10 +222,15 @@ func (s *Service) buildLineItems(ctx context.Context, inputs []CreateItemInput) 
 		lineTotal := roundMoney(unitPrice * float64(input.Quantity))
 		subtotal += lineTotal
 
+		var skuCode string
+		if len(product.SKUs) > 0 {
+			skuCode = product.SKUs[0].Code
+		}
+
 		items = append(items, domain.Item{
 			ProductID:   product.ID,
 			ProductName: product.Name,
-			ProductSKU:  product.SKU,
+			ProductSKU:  skuCode,
 			Quantity:    input.Quantity,
 			UnitPrice:   unitPrice,
 			TotalPrice:  lineTotal,

@@ -2,6 +2,7 @@ package product
 
 import (
 	"context"
+	"strconv"
 	"testing"
 
 	"github.com/google/uuid"
@@ -29,14 +30,18 @@ func (m *mockRepo) Create(_ context.Context, p *domain.Product) error {
 	cp := *p
 	m.products[p.ID] = &cp
 	m.slugs[p.Slug] = p.ID
-	m.skus[p.SKU] = p.ID
+	for _, sku := range p.SKUs {
+		m.skus[sku.Code] = p.ID
+	}
 	return nil
 }
 
 func (m *mockRepo) Update(_ context.Context, p *domain.Product) error {
 	m.products[p.ID] = p
 	m.slugs[p.Slug] = p.ID
-	m.skus[p.SKU] = p.ID
+	for _, sku := range p.SKUs {
+		m.skus[sku.Code] = p.ID
+	}
 	return nil
 }
 
@@ -107,9 +112,12 @@ func TestService_Create(t *testing.T) {
 	svc := NewService(newMockRepo())
 	p, err := svc.Create(context.Background(), CreateInput{
 		Name:  "Nike Air Max",
-		SKU:   "PROD-001",
 		Price: 129.99,
 		Inventory: InventoryInput{Quantity: 50, LowStockThreshold: 10},
+		Attributes: []AttributeInput{
+			{Name: "Color", Values: []string{"Red", "Blue"}},
+			{Name: "Size", Values: []string{"9", "10"}},
+		},
 	})
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
@@ -120,18 +128,21 @@ func TestService_Create(t *testing.T) {
 	if p.Status != domain.StatusDraft {
 		t.Errorf("Status = %q, want draft", p.Status)
 	}
+	if len(p.SKUs) != 4 {
+		t.Errorf("Expected 4 SKUs, got %d", len(p.SKUs))
+	}
 }
 
 func TestService_Create_SlugConflict(t *testing.T) {
 	repo := newMockRepo()
 	svc := NewService(repo)
 
-	_, err := svc.Create(context.Background(), CreateInput{Name: "Test", SKU: "SKU-1", Price: 10})
+	_, err := svc.Create(context.Background(), CreateInput{Name: "Test", Price: 10})
 	if err != nil {
 		t.Fatalf("first Create() error = %v", err)
 	}
 
-	_, err = svc.Create(context.Background(), CreateInput{Name: "Other", Slug: "test", SKU: "SKU-2", Price: 10})
+	_, err = svc.Create(context.Background(), CreateInput{Name: "Other", Slug: "test", Price: 10})
 	if err != domain.ErrSlugConflict {
 		t.Errorf("expected slug conflict, got %v", err)
 	}
@@ -142,7 +153,7 @@ func TestService_Delete_ActiveOrders(t *testing.T) {
 	repo.activeOrder = true
 	svc := NewService(repo)
 
-	p, _ := svc.Create(context.Background(), CreateInput{Name: "Test", SKU: "SKU-1", Price: 10})
+	p, _ := svc.Create(context.Background(), CreateInput{Name: "Test", Price: 10})
 	err := svc.Delete(context.Background(), p.ID)
 	if err != domain.ErrHasActiveOrders {
 		t.Errorf("expected ErrHasActiveOrders, got %v", err)
@@ -154,7 +165,7 @@ func TestService_UpdateInventory(t *testing.T) {
 	svc := NewService(repo)
 
 	p, _ := svc.Create(context.Background(), CreateInput{
-		Name: "Test", SKU: "SKU-1", Price: 10,
+		Name: "Test", Price: 10,
 		Inventory: InventoryInput{Quantity: 5},
 	})
 
@@ -171,9 +182,120 @@ func TestService_InvalidSalePrice(t *testing.T) {
 	svc := NewService(newMockRepo())
 	sale := 150.0
 	_, err := svc.Create(context.Background(), CreateInput{
-		Name: "Test", SKU: "SKU-1", Price: 100, SalePrice: &sale,
+		Name: "Test", Price: 100, SalePrice: &sale,
 	})
 	if err != domain.ErrInvalidSalePrice {
 		t.Errorf("expected invalid sale price, got %v", err)
+	}
+}
+
+func TestGenerateSKUs(t *testing.T) {
+	productID := uuid.New()
+	inputs := []AttributeInput{
+		{Name: "Color", Values: []string{"Red", "Blue"}},
+		{Name: "Size", Values: []string{"S", "M", "L"}},
+	}
+
+	attributes, skus, err := generateSKUs(productID, "test-slug", inputs)
+	if err != nil {
+		t.Fatalf("generateSKUs() error = %v", err)
+	}
+
+	if len(attributes) != 2 {
+		t.Errorf("Expected 2 attributes, got %d", len(attributes))
+	}
+	if len(skus) != 6 {
+		t.Errorf("Expected 6 SKUs, got %d", len(skus))
+	}
+
+	// Check if all combinations are generated
+	expectedCodes := map[string]bool{
+		"TEST-SLUG-RED-S": false, "TEST-SLUG-RED-M": false, "TEST-SLUG-RED-L": false,
+		"TEST-SLUG-BLUE-S": false, "TEST-SLUG-BLUE-M": false, "TEST-SLUG-BLUE-L": false,
+	}
+
+	for _, sku := range skus {
+		if _, ok := expectedCodes[sku.Code]; !ok {
+			t.Errorf("Unexpected SKU code: %s", sku.Code)
+		}
+		expectedCodes[sku.Code] = true
+	}
+
+	for code, found := range expectedCodes {
+		if !found {
+			t.Errorf("Missing SKU code: %s", code)
+		}
+	}
+}
+
+func TestGenerateSKUs_Validation(t *testing.T) {
+	productID := uuid.New()
+
+	tests := []struct {
+		name        string
+		inputs      []AttributeInput
+		expectedErr error
+	}{
+		{
+			name: "Empty attribute name",
+			inputs: []AttributeInput{
+				{Name: "", Values: []string{"Red"}},
+			},
+			expectedErr: domain.ErrEmptyAttributeName,
+		},
+		{
+			name: "Duplicate attribute name",
+			inputs: []AttributeInput{
+				{Name: "Color", Values: []string{"Red"}},
+				{Name: "color", Values: []string{"Blue"}},
+			},
+			expectedErr: domain.ErrDuplicateAttributeName,
+		},
+		{
+			name: "Empty attribute values",
+			inputs: []AttributeInput{
+				{Name: "Color", Values: []string{}},
+			},
+			expectedErr: domain.ErrEmptyAttributeValues,
+		},
+		{
+			name: "Empty attribute value",
+			inputs: []AttributeInput{
+				{Name: "Color", Values: []string{"Red", ""}},
+			},
+			expectedErr: domain.ErrEmptyAttributeValue,
+		},
+		{
+			name: "Duplicate attribute value",
+			inputs: []AttributeInput{
+				{Name: "Color", Values: []string{"Red", "red"}},
+			},
+			expectedErr: domain.ErrDuplicateAttributeValue,
+		},
+		{
+			name: "Max variants exceeded",
+			inputs: []AttributeInput{
+				{Name: "A", Values: make([]string, 11)},
+				{Name: "B", Values: make([]string, 100)},
+			},
+			expectedErr: domain.ErrMaxVariantsExceeded,
+		},
+	}
+
+	// Fill the slices for the last test
+	for i := 0; i < 11; i++ {
+		tests[5].inputs[0].Values[i] = "A" + strconv.Itoa(i)
+	}
+	for i := 0; i < 100; i++ {
+		tests[5].inputs[1].Values[i] = "B" + strconv.Itoa(i)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := generateSKUs(productID, "test-slug", tt.inputs)
+			if err != tt.expectedErr {
+				t.Errorf("Expected error %v, got %v", tt.expectedErr, err)
+			}
+		})
 	}
 }

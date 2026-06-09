@@ -30,8 +30,8 @@ type ImageInput struct {
 
 // AttributeInput holds attribute data for create/update operations.
 type AttributeInput struct {
-	Name  string
-	Value string
+	Name   string
+	Values []string
 }
 
 // InventoryInput holds inventory data for create/update operations.
@@ -44,7 +44,6 @@ type InventoryInput struct {
 type CreateInput struct {
 	Name             string
 	Slug             string
-	SKU              string
 	Description      string
 	ShortDescription string
 	Price            float64
@@ -62,7 +61,6 @@ type CreateInput struct {
 type UpdateInput struct {
 	Name             *string
 	Slug             *string
-	SKU              *string
 	Description      *string
 	ShortDescription *string
 	Price            *float64
@@ -115,19 +113,31 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*domain.Produc
 	if err := s.ensureUniqueSlug(ctx, slug, uuid.Nil); err != nil {
 		return nil, err
 	}
-	if err := s.ensureUniqueSKU(ctx, input.SKU, uuid.Nil); err != nil {
-		return nil, err
-	}
 
 	now := time.Now().UTC()
 	productID := uuid.New()
+
+	attributes, skus, err := generateSKUs(productID, slug, input.Attributes)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Ensure generated SKUs are unique across the system
+	for _, sku := range skus {
+		existing, err := s.repo.FindBySKU(ctx, sku.Code)
+		if err != nil && err != domain.ErrNotFound {
+			return nil, err
+		}
+		if existing != nil {
+			return nil, domain.ErrSKUConflict
+		}
+	}
 
 	product := &domain.Product{
 		ID:               productID,
 		CategoryID:       input.CategoryID,
 		Name:             input.Name,
 		Slug:             slug,
-		SKU:              input.SKU,
 		Description:      input.Description,
 		ShortDescription: input.ShortDescription,
 		Price:            input.Price,
@@ -136,7 +146,8 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*domain.Produc
 		IsFeatured:       input.IsFeatured,
 		Status:           status,
 		Images:           toImages(productID, input.Images),
-		Attributes:       toAttributes(productID, input.Attributes),
+		Attributes:       attributes,
+		SKUs:             skus,
 		Inventory: domain.Inventory{
 			ID:                uuid.New(),
 			ProductID:         productID,
@@ -170,12 +181,6 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, input UpdateInput) (
 			return nil, err
 		}
 		product.Slug = *input.Slug
-	}
-	if input.SKU != nil {
-		if err := s.ensureUniqueSKU(ctx, *input.SKU, id); err != nil {
-			return nil, err
-		}
-		product.SKU = *input.SKU
 	}
 	if input.Description != nil {
 		product.Description = *input.Description
@@ -216,7 +221,24 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, input UpdateInput) (
 		product.Images = toImages(id, *input.Images)
 	}
 	if input.Attributes != nil {
-		product.Attributes = toAttributes(id, *input.Attributes)
+		attributes, skus, err := generateSKUs(id, product.Slug, *input.Attributes)
+		if err != nil {
+			return nil, err
+		}
+		
+		// Ensure generated SKUs are unique across the system
+		for _, sku := range skus {
+			existing, err := s.repo.FindBySKU(ctx, sku.Code)
+			if err != nil && err != domain.ErrNotFound {
+				return nil, err
+			}
+			if existing != nil && existing.ID != id {
+				return nil, domain.ErrSKUConflict
+			}
+		}
+		
+		product.Attributes = attributes
+		product.SKUs = skus
 	}
 
 	if err := validatePricing(product.Price, product.SalePrice); err != nil {
@@ -318,17 +340,6 @@ func (s *Service) ensureUniqueSlug(ctx context.Context, slug string, excludeID u
 	return nil
 }
 
-func (s *Service) ensureUniqueSKU(ctx context.Context, sku string, excludeID uuid.UUID) error {
-	existing, err := s.repo.FindBySKU(ctx, sku)
-	if err != nil && err != domain.ErrNotFound {
-		return err
-	}
-	if existing != nil && existing.ID != excludeID {
-		return domain.ErrSKUConflict
-	}
-	return nil
-}
-
 func validatePricing(price float64, salePrice *float64) error {
 	if salePrice != nil && *salePrice > price {
 		return domain.ErrInvalidSalePrice
@@ -366,15 +377,115 @@ func validateStockLevel(level string) error {
 	}
 }
 
-func toAttributes(productID uuid.UUID, inputs []AttributeInput) []domain.Attribute {
-	attrs := make([]domain.Attribute, len(inputs))
-	for i, in := range inputs {
-		attrs[i] = domain.Attribute{
+const maxVariantCount = 1000
+
+func generateSKUs(productID uuid.UUID, slug string, inputs []AttributeInput) ([]domain.ProductAttribute, []domain.Sku, error) {
+	if len(inputs) == 0 {
+		return nil, nil, nil
+	}
+
+	var attributes []domain.ProductAttribute
+	seenNames := make(map[string]bool)
+	totalCombinations := 1
+
+	for _, in := range inputs {
+		name := strings.TrimSpace(in.Name)
+		if name == "" {
+			return nil, nil, domain.ErrEmptyAttributeName
+		}
+		nameUpper := strings.ToUpper(name)
+		if seenNames[nameUpper] {
+			return nil, nil, domain.ErrDuplicateAttributeName
+		}
+		seenNames[nameUpper] = true
+
+		if len(in.Values) == 0 {
+			return nil, nil, domain.ErrEmptyAttributeValues
+		}
+
+		var values []domain.ProductAttributeValue
+		seenValues := make(map[string]bool)
+		for _, v := range in.Values {
+			val := strings.TrimSpace(v)
+			if val == "" {
+				return nil, nil, domain.ErrEmptyAttributeValue
+			}
+			valUpper := strings.ToUpper(val)
+			if seenValues[valUpper] {
+				return nil, nil, domain.ErrDuplicateAttributeValue
+			}
+			seenValues[valUpper] = true
+
+			values = append(values, domain.ProductAttributeValue{
+				ID:    uuid.New(),
+				Value: val,
+			})
+		}
+
+		totalCombinations *= len(values)
+		if totalCombinations > maxVariantCount {
+			return nil, nil, domain.ErrMaxVariantsExceeded
+		}
+
+		attr := domain.ProductAttribute{
 			ID:        uuid.New(),
 			ProductID: productID,
-			Name:      in.Name,
-			Value:     in.Value,
+			Name:      name,
+			Values:    values,
 		}
+		for i := range attr.Values {
+			attr.Values[i].AttributeID = attr.ID
+		}
+		attributes = append(attributes, attr)
 	}
-	return attrs
+
+	// Generate cartesian product iteratively to avoid recursion stack issues
+	var skus []domain.Sku
+	
+	// Initialize combinations with an empty combination
+	combinations := [][]domain.ProductAttributeValue{{}}
+	
+	for _, attr := range attributes {
+		var nextCombinations [][]domain.ProductAttributeValue
+		for _, combo := range combinations {
+			for _, val := range attr.Values {
+				// Create a new combination by appending the current value
+				newCombo := make([]domain.ProductAttributeValue, len(combo), len(combo)+1)
+				copy(newCombo, combo)
+				newCombo = append(newCombo, val)
+				nextCombinations = append(nextCombinations, newCombo)
+			}
+		}
+		combinations = nextCombinations
+	}
+
+	for _, combo := range combinations {
+		var parts []string
+		
+		// Prepend slug to ensure global uniqueness
+		parts = append(parts, strings.ToUpper(slug))
+		
+		attrMap := make(map[string]string)
+		for i, val := range combo {
+			attrName := attributes[i].Name
+			attrMap[attrName] = val.Value
+			
+			// URL-safe part
+			part := strings.ToUpper(val.Value)
+			part = strings.ReplaceAll(part, " ", "-")
+			parts = append(parts, part)
+		}
+		
+		code := strings.Join(parts, "-")
+		
+		skus = append(skus, domain.Sku{
+			ID:         uuid.New(),
+			ProductID:  productID,
+			Code:       code,
+			Attributes: attrMap,
+			CreatedAt:  time.Now().UTC(),
+		})
+	}
+
+	return attributes, skus, nil
 }

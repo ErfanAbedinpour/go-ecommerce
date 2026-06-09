@@ -33,7 +33,7 @@ func NewProductRepository(db *gorm.DB) *ProductRepository {
 func (r *ProductRepository) Create(ctx context.Context, p *product.Product) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		m := toProductModel(p)
-		if err := tx.Omit("Images", "Attributes", "Inventory").Create(m).Error; err != nil {
+		if err := tx.Omit("Images", "Attributes", "SKUs", "Inventory").Create(m).Error; err != nil {
 			return mapProductDBError(err)
 		}
 		if err := r.saveChildren(tx, p); err != nil {
@@ -52,7 +52,6 @@ func (r *ProductRepository) Update(ctx context.Context, p *product.Product) erro
 				"category_id":       m.CategoryID,
 				"name":              m.Name,
 				"slug":              m.Slug,
-				"sku":               m.SKU,
 				"description":       m.Description,
 				"short_description": m.ShortDescription,
 				"price":             m.Price,
@@ -69,6 +68,9 @@ func (r *ProductRepository) Update(ctx context.Context, p *product.Product) erro
 			return err
 		}
 		if err := tx.Where("product_id = ?", p.ID).Delete(&models.ProductAttributeModel{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("product_id = ?", p.ID).Delete(&models.SkuModel{}).Error; err != nil {
 			return err
 		}
 		return r.saveChildren(tx, p)
@@ -89,9 +91,39 @@ func (r *ProductRepository) saveChildren(tx *gorm.DB, p *product.Product) error 
 	if len(p.Attributes) > 0 {
 		attrs := make([]models.ProductAttributeModel, len(p.Attributes))
 		for i, attr := range p.Attributes {
-			attrs[i] = toAttributeModel(attr)
+			attrs[i] = models.ProductAttributeModel{
+				ID:        attr.ID,
+				ProductID: attr.ProductID,
+				Name:      attr.Name,
+			}
 		}
-		if err := tx.Create(&attrs).Error; err != nil {
+		if err := tx.Select("ID", "ProductID", "Name").Create(&attrs).Error; err != nil {
+			return err
+		}
+
+		var values []models.ProductAttributeValueModel
+		for _, attr := range p.Attributes {
+			for _, v := range attr.Values {
+				values = append(values, models.ProductAttributeValueModel{
+					ID:          v.ID,
+					AttributeID: attr.ID,
+					Value:       v.Value,
+				})
+			}
+		}
+		if len(values) > 0 {
+			if err := tx.Select("ID", "AttributeID", "Value").Create(&values).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(p.SKUs) > 0 {
+		skus := make([]models.SkuModel, len(p.SKUs))
+		for i, sku := range p.SKUs {
+			skus[i] = toSkuModel(sku)
+		}
+		if err := tx.Create(&skus).Error; err != nil {
 			return err
 		}
 	}
@@ -123,7 +155,8 @@ func (r *ProductRepository) FindByID(ctx context.Context, id uuid.UUID) (*produc
 		Preload("Images", func(db *gorm.DB) *gorm.DB {
 			return db.Order("sort_order ASC")
 		}).
-		Preload("Attributes").
+		Preload("Attributes.Values").
+		Preload("SKUs").
 		Preload("Inventory").
 		Where("id = ?", id).
 		First(&m).Error
@@ -148,16 +181,16 @@ func (r *ProductRepository) FindBySlug(ctx context.Context, slug string) (*produ
 	return toProductDomain(&m), nil
 }
 
-func (r *ProductRepository) FindBySKU(ctx context.Context, sku string) (*product.Product, error) {
-	var m models.ProductModel
-	err := r.db.WithContext(ctx).Where("sku = ?", sku).First(&m).Error
+func (r *ProductRepository) FindBySKU(ctx context.Context, skuCode string) (*product.Product, error) {
+	var sku models.SkuModel
+	err := r.db.WithContext(ctx).Where("code = ?", skuCode).First(&sku).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, product.ErrNotFound
 		}
 		return nil, err
 	}
-	return toProductDomain(&m), nil
+	return r.FindByID(ctx, sku.ProductID)
 }
 
 func (r *ProductRepository) List(ctx context.Context, filter product.ListFilter, page pagination.Params) ([]product.Product, int64, error) {
@@ -187,7 +220,8 @@ func (r *ProductRepository) List(ctx context.Context, filter product.ListFilter,
 		Preload("Images", func(db *gorm.DB) *gorm.DB {
 			return db.Order("sort_order ASC")
 		}).
-		Preload("Attributes").
+		Preload("Attributes.Values").
+		Preload("SKUs").
 		Preload("Inventory").
 		Order(r.orderClause(page)).
 		Offset(page.Offset()).
@@ -204,7 +238,7 @@ func (r *ProductRepository) Search(ctx context.Context, query string, page pagin
 	pattern := "%" + strings.ToLower(query) + "%"
 	db := r.db.WithContext(ctx).Model(&models.ProductModel{}).
 		Where(
-			"LOWER(name) LIKE ? OR LOWER(sku) LIKE ? OR LOWER(COALESCE(description, '')) LIKE ?",
+			"LOWER(products.name) LIKE ? OR LOWER(COALESCE(products.description, '')) LIKE ? OR EXISTS (SELECT 1 FROM skus WHERE skus.product_id = products.id AND LOWER(skus.code) LIKE ?)",
 			pattern, pattern, pattern,
 		)
 
@@ -218,7 +252,8 @@ func (r *ProductRepository) Search(ctx context.Context, query string, page pagin
 		Preload("Images", func(db *gorm.DB) *gorm.DB {
 			return db.Order("sort_order ASC")
 		}).
-		Preload("Attributes").
+		Preload("Attributes.Values").
+		Preload("SKUs").
 		Preload("Inventory").
 		Order("products.created_at DESC").
 		Offset(page.Offset()).
@@ -325,7 +360,7 @@ func mapProductDBError(err error) error {
 	if strings.Contains(msg, "products_slug") || strings.Contains(msg, "slug") {
 		return product.ErrSlugConflict
 	}
-	if strings.Contains(msg, "products_sku") || strings.Contains(msg, "sku") {
+	if strings.Contains(msg, "skus_code") || strings.Contains(msg, "code") {
 		return product.ErrSKUConflict
 	}
 	return err

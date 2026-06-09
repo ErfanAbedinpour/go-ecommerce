@@ -1,5 +1,36 @@
 basePath: /
 definitions:
+  app_internal_interfaces_http_dto_request.CreateAdminUserRequest:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      first_name:
+        maxLength: 100
+        type: string
+      is_active:
+        type: boolean
+      last_name:
+        maxLength: 100
+        type: string
+      password:
+        maxLength: 128
+        minLength: 8
+        type: string
+      phone:
+        maxLength: 20
+        type: string
+      role:
+        enum:
+        - admin
+        - customer
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    type: object
   app_internal_interfaces_http_dto_request.CreateBrandRequest:
     properties:
       description:
@@ -71,6 +102,58 @@ definitions:
     - discount_type
     - discount_value
     type: object
+  app_internal_interfaces_http_dto_request.CreateOrderItemRequest:
+    properties:
+      product_id:
+        type: string
+      quantity:
+        type: integer
+    required:
+    - product_id
+    - quantity
+    type: object
+  app_internal_interfaces_http_dto_request.CreateOrderRequest:
+    properties:
+      billing_address:
+        $ref: '#/definitions/app_internal_interfaces_http_dto_request.OrderAddressRequest'
+      coupon_code:
+        maxLength: 50
+        type: string
+      customer_id:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.CreateOrderItemRequest'
+        minItems: 1
+        type: array
+      notes:
+        maxLength: 2000
+        type: string
+      payment_method:
+        maxLength: 50
+        type: string
+      payment_status:
+        enum:
+        - unpaid
+        - paid
+        type: string
+      shipping_address:
+        $ref: '#/definitions/app_internal_interfaces_http_dto_request.OrderAddressRequest'
+      shipping_amount:
+        minimum: 0
+        type: number
+      tax_amount:
+        minimum: 0
+        type: number
+      transaction_id:
+        maxLength: 100
+        type: string
+    required:
+    - billing_address
+    - customer_id
+    - items
+    - shipping_address
+    type: object
   app_internal_interfaces_http_dto_request.CreateProductAttributeRequest:
     properties:
       is_active:
@@ -140,10 +223,6 @@ definitions:
       short_description:
         maxLength: 500
         type: string
-      sku:
-        maxLength: 100
-        minLength: 1
-        type: string
       slug:
         maxLength: 300
         type: string
@@ -156,7 +235,6 @@ definitions:
     required:
     - name
     - price
-    - sku
     type: object
   app_internal_interfaces_http_dto_request.ForgotPasswordRequest:
     properties:
@@ -205,17 +283,41 @@ definitions:
     - label
     - url
     type: object
+  app_internal_interfaces_http_dto_request.OrderAddressRequest:
+    properties:
+      city:
+        maxLength: 100
+        type: string
+      country:
+        type: string
+      postal_code:
+        maxLength: 20
+        type: string
+      state:
+        maxLength: 100
+        type: string
+      street:
+        maxLength: 300
+        type: string
+    required:
+    - city
+    - country
+    - postal_code
+    - street
+    type: object
   app_internal_interfaces_http_dto_request.ProductAttributeRequest:
     properties:
       name:
         maxLength: 100
         type: string
-      value:
-        maxLength: 200
-        type: string
+      values:
+        items:
+          type: string
+        minItems: 1
+        type: array
     required:
     - name
-    - value
+    - values
     type: object
   app_internal_interfaces_http_dto_request.ProductImageRequest:
     properties:
@@ -293,6 +395,32 @@ definitions:
     - first_name
     - last_name
     - password
+    type: object
+  app_internal_interfaces_http_dto_request.UpdateAdminUserRequest:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      first_name:
+        maxLength: 100
+        type: string
+      is_active:
+        type: boolean
+      last_name:
+        maxLength: 100
+        type: string
+      password:
+        maxLength: 128
+        minLength: 8
+        type: string
+      phone:
+        maxLength: 20
+        type: string
+      role:
+        enum:
+        - admin
+        - customer
+        type: string
     type: object
   app_internal_interfaces_http_dto_request.UpdateBrandRequest:
     properties:
@@ -375,6 +503,26 @@ definitions:
         maxLength: 500
         type: string
     type: object
+  app_internal_interfaces_http_dto_request.UpdateCustomerRequest:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      first_name:
+        maxLength: 100
+        type: string
+      last_name:
+        maxLength: 100
+        type: string
+      phone:
+        maxLength: 20
+        type: string
+      type:
+        enum:
+        - registered
+        - guest
+        type: string
+    type: object
   app_internal_interfaces_http_dto_request.UpdateInventoryRequest:
     properties:
       adjustment_reason:
@@ -395,6 +543,14 @@ definitions:
         items:
           $ref: '#/definitions/app_internal_interfaces_http_dto_request.NavItemRequest'
         type: array
+    type: object
+  app_internal_interfaces_http_dto_request.UpdateOrderNotesRequest:
+    properties:
+      notes:
+        maxLength: 2000
+        type: string
+    required:
+    - notes
     type: object
   app_internal_interfaces_http_dto_request.UpdateOrderStatusRequest:
     properties:
@@ -473,10 +629,6 @@ definitions:
       short_description:
         maxLength: 500
         type: string
-      sku:
-        maxLength: 100
-        minLength: 1
-        type: string
       slug:
         maxLength: 300
         type: string
@@ -547,6 +699,40 @@ definitions:
         type: string
       youtube:
         maxLength: 500
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.AdminUserListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.AdminUserResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.AdminUserResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      last_login_at:
+        type: string
+      last_name:
+        type: string
+      phone:
+        type: string
+      role:
+        type: string
+      updated_at:
         type: string
     type: object
   app_internal_interfaces_http_dto_response.BrandListResponse:
@@ -842,6 +1028,8 @@ definitions:
     type: object
   app_internal_interfaces_http_dto_response.CustomerStatsResponse:
     properties:
+      last_order_at:
+        type: string
       total_orders:
         type: integer
       total_spent:
@@ -1001,6 +1189,8 @@ definitions:
         type: string
       order_number:
         type: string
+      payment_method:
+        type: string
       payment_status:
         type: string
       shipping_address:
@@ -1019,7 +1209,39 @@ definitions:
         type: array
       total:
         type: number
+      transaction_id:
+        type: string
       updated_at:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.OrderInvoiceResponse:
+    properties:
+      invoice_number:
+        type: string
+      issued_at:
+        type: string
+      order:
+        $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderDetailResponse'
+      store:
+        $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderInvoiceStoreResponse'
+    type: object
+  app_internal_interfaces_http_dto_response.OrderInvoiceStoreResponse:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      email:
+        type: string
+      logo_url:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      url:
         type: string
     type: object
   app_internal_interfaces_http_dto_response.OrderItemResponse:
@@ -1109,8 +1331,10 @@ definitions:
         type: string
       name:
         type: string
-      value:
-        type: string
+      values:
+        items:
+          type: string
+        type: array
     type: object
   app_internal_interfaces_http_dto_response.ProductImageResponse:
     properties:
@@ -1175,8 +1399,10 @@ definitions:
         type: number
       short_description:
         type: string
-      sku:
-        type: string
+      skus:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.SkuResponse'
+        type: array
       slug:
         type: string
       status:
@@ -1278,6 +1504,17 @@ definitions:
       name:
         type: string
       url:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.SkuResponse:
+    properties:
+      attributes:
+        additionalProperties:
+          type: string
+        type: object
+      code:
+        type: string
+      id:
         type: string
     type: object
   app_internal_interfaces_http_dto_response.SocialSettingsResponse:
@@ -2109,6 +2346,40 @@ paths:
       tags:
       - customers
   /api/v1/admin/customers/{id}:
+    delete:
+      description: Delete a customer without existing orders.
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete customer
+      tags:
+      - customers
     get:
       description: Get a customer by ID with addresses and purchase statistics.
       parameters:
@@ -2139,6 +2410,54 @@ paths:
       security:
       - BearerAuth: []
       summary: Get customer
+      tags:
+      - customers
+    put:
+      consumes:
+      - application/json
+      description: Update a storefront customer profile.
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Customer data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateCustomerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.CustomerDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update customer
       tags:
       - customers
   /api/v1/admin/customers/{id}/orders:
@@ -2488,6 +2807,14 @@ paths:
         in: query
         name: q
         type: string
+      - description: Filter orders created on or after date (YYYY-MM-DD)
+        in: query
+        name: from
+        type: string
+      - description: Filter orders created on or before date (YYYY-MM-DD)
+        in: query
+        name: to
+        type: string
       produces:
       - application/json
       responses:
@@ -2506,6 +2833,50 @@ paths:
       security:
       - BearerAuth: []
       summary: List orders
+      tags:
+      - orders
+    post:
+      consumes:
+      - application/json
+      description: Create a manual order with line items, addresses, and optional
+        coupon.
+      parameters:
+      - description: Order data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create order
       tags:
       - orders
   /api/v1/admin/orders/{id}:
@@ -2577,6 +2948,84 @@ paths:
       security:
       - BearerAuth: []
       summary: Cancel order
+      tags:
+      - orders
+  /api/v1/admin/orders/{id}/invoice:
+    get:
+      description: Get printable invoice payload with store and order details.
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderInvoiceResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get order invoice
+      tags:
+      - orders
+  /api/v1/admin/orders/{id}/notes:
+    patch:
+      consumes:
+      - application/json
+      description: Save internal order notes without changing status.
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Notes
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateOrderNotesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update order notes
       tags:
       - orders
   /api/v1/admin/orders/{id}/refund:
@@ -3498,6 +3947,223 @@ paths:
       summary: Upload file
       tags:
       - uploads
+  /api/v1/admin/users:
+    get:
+      description: Get a paginated list of admin panel user accounts.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Sort field
+        enum:
+        - created_at
+        - email
+        - first_name
+        - last_name
+        - updated_at
+        in: query
+        name: sort
+        type: string
+      - description: Sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        type: string
+      - description: Search by name or email
+        in: query
+        name: q
+        type: string
+      - description: Filter by role
+        enum:
+        - admin
+        - customer
+        in: query
+        name: role
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.AdminUserListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List admin users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Create a new admin panel user account.
+      parameters:
+      - description: User data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.CreateAdminUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.AdminUserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create admin user
+      tags:
+      - users
+  /api/v1/admin/users/{id}:
+    delete:
+      description: Soft-delete an admin user. Cannot delete yourself or the last active
+        admin.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete admin user
+      tags:
+      - users
+    get:
+      description: Get an admin panel user by ID.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.AdminUserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get admin user
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update an admin panel user account.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateAdminUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.AdminUserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update admin user
+      tags:
+      - users
   /api/v1/auth/forgot-password:
     post:
       consumes:

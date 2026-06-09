@@ -332,7 +332,7 @@ func TestService_Create(t *testing.T) {
 	svc := NewService(repo,
 		&mockProductRepo{products: map[uuid.UUID]*domainproduct.Product{
 			productID: {
-				ID: productID, Name: "Shirt", SKU: "SHIRT-1", Price: 25,
+				ID: productID, Name: "Shirt", SKUs: []domainproduct.Sku{{Code: "SHIRT-1"}}, Price: 25,
 				Inventory: domainproduct.Inventory{Quantity: 10},
 			},
 		}},

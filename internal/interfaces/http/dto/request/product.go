@@ -4,7 +4,6 @@ package request
 type CreateProductRequest struct {
 	Name             string                    `json:"name" validate:"required,min=1,max=300"`
 	Slug             string                    `json:"slug" validate:"omitempty,max=300"`
-	SKU              string                    `json:"sku" validate:"required,min=1,max=100"`
 	Description      string                    `json:"description" validate:"omitempty"`
 	ShortDescription string                    `json:"short_description" validate:"omitempty,max=500"`
 	Price            float64                   `json:"price" validate:"required,gte=0"`
@@ -22,7 +21,6 @@ type CreateProductRequest struct {
 type UpdateProductRequest struct {
 	Name             *string                    `json:"name" validate:"omitempty,min=1,max=300"`
 	Slug             *string                    `json:"slug" validate:"omitempty,max=300"`
-	SKU              *string                    `json:"sku" validate:"omitempty,min=1,max=100"`
 	Description      *string                    `json:"description"`
 	ShortDescription *string                    `json:"short_description" validate:"omitempty,max=500"`
 	Price            *float64                   `json:"price" validate:"omitempty,gte=0"`
@@ -44,8 +42,8 @@ type ProductImageRequest struct {
 
 // ProductAttributeRequest holds attribute data in a product request.
 type ProductAttributeRequest struct {
-	Name  string `json:"name" validate:"required,max=100"`
-	Value string `json:"value" validate:"required,max=200"`
+	Name   string   `json:"name" validate:"required,max=100"`
+	Values []string `json:"values" validate:"required,min=1,dive,required,max=200"`
 }
 
 // ProductInventoryRequest holds inventory data in a product request.

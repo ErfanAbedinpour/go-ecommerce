@@ -14,4 +14,10 @@ var (
 	ErrInvalidStockLevel = apperror.Validation("invalid stock_level filter", map[string]string{
 		"stock_level": "must be one of: low, out",
 	})
+	ErrEmptyAttributeName      = apperror.Validation("attribute name cannot be empty", nil)
+	ErrDuplicateAttributeName  = apperror.Validation("duplicate attribute name", nil)
+	ErrEmptyAttributeValues    = apperror.Validation("attribute values cannot be empty", nil)
+	ErrEmptyAttributeValue     = apperror.Validation("attribute value cannot be empty", nil)
+	ErrDuplicateAttributeValue = apperror.Validation("duplicate attribute value", nil)
+	ErrMaxVariantsExceeded     = apperror.Validation("maximum variant limit exceeded", nil)
 )

@@ -1,6 +1,8 @@
 package postgres
 
-import (
+	import (
+	"encoding/json"
+
 	"app/internal/domain/product"
 	"app/internal/infrastructure/persistence/models"
 )
@@ -11,7 +13,6 @@ func toProductDomain(m *models.ProductModel) *product.Product {
 		CategoryID: m.CategoryID,
 		Name:       m.Name,
 		Slug:       m.Slug,
-		SKU:        m.SKU,
 		Price:      m.Price,
 		SalePrice:  m.SalePrice,
 		IsFeatured: m.IsFeatured,
@@ -34,6 +35,9 @@ func toProductDomain(m *models.ProductModel) *product.Product {
 	}
 	for _, attr := range m.Attributes {
 		p.Attributes = append(p.Attributes, toAttributeDomain(attr))
+	}
+	for _, sku := range m.SKUs {
+		p.SKUs = append(p.SKUs, toSkuDomain(sku))
 	}
 	if m.Inventory != nil {
 		p.Inventory = toInventoryDomain(*m.Inventory)
@@ -64,13 +68,40 @@ func toImageDomain(m models.ProductImageModel) product.Image {
 	return img
 }
 
-func toAttributeDomain(m models.ProductAttributeModel) product.Attribute {
-	return product.Attribute{
+func toAttributeDomain(m models.ProductAttributeModel) product.ProductAttribute {
+	attr := product.ProductAttribute{
 		ID:        m.ID,
 		ProductID: m.ProductID,
 		Name:      m.Name,
-		Value:     m.Value,
 	}
+	for _, v := range m.Values {
+		attr.Values = append(attr.Values, product.ProductAttributeValue{
+			ID:          v.ID,
+			AttributeID: v.AttributeID,
+			Value:       v.Value,
+		})
+	}
+	return attr
+}
+
+func toSkuDomain(m models.SkuModel) product.Sku {
+	sku := product.Sku{
+		ID:        m.ID,
+		ProductID: m.ProductID,
+		Code:      m.Code,
+		CreatedAt: m.CreatedAt,
+	}
+	
+	var attrs map[string]string
+	if m.Attributes != "" {
+		_ = json.Unmarshal([]byte(m.Attributes), &attrs)
+	}
+	if attrs == nil {
+		attrs = make(map[string]string)
+	}
+	sku.Attributes = attrs
+	
+	return sku
 }
 
 func toInventoryDomain(m models.InventoryModel) product.Inventory {
@@ -89,7 +120,6 @@ func toProductModel(p *product.Product) *models.ProductModel {
 		CategoryID: p.CategoryID,
 		Name:       p.Name,
 		Slug:       p.Slug,
-		SKU:        p.SKU,
 		Price:      p.Price,
 		SalePrice:  p.SalePrice,
 		IsFeatured: p.IsFeatured,
@@ -112,6 +142,9 @@ func toProductModel(p *product.Product) *models.ProductModel {
 	}
 	for _, attr := range p.Attributes {
 		m.Attributes = append(m.Attributes, toAttributeModel(attr))
+	}
+	for _, sku := range p.SKUs {
+		m.SKUs = append(m.SKUs, toSkuModel(sku))
 	}
 	m.Inventory = &models.InventoryModel{
 		ID:                p.Inventory.ID,
@@ -138,11 +171,29 @@ func toImageModel(img product.Image) models.ProductImageModel {
 	return m
 }
 
-func toAttributeModel(attr product.Attribute) models.ProductAttributeModel {
-	return models.ProductAttributeModel{
+func toAttributeModel(attr product.ProductAttribute) models.ProductAttributeModel {
+	m := models.ProductAttributeModel{
 		ID:        attr.ID,
 		ProductID: attr.ProductID,
 		Name:      attr.Name,
-		Value:     attr.Value,
+	}
+	for _, v := range attr.Values {
+		m.Values = append(m.Values, models.ProductAttributeValueModel{
+			ID:          v.ID,
+			AttributeID: v.AttributeID,
+			Value:       v.Value,
+		})
+	}
+	return m
+}
+
+func toSkuModel(sku product.Sku) models.SkuModel {
+	attrsJSON, _ := json.Marshal(sku.Attributes)
+	return models.SkuModel{
+		ID:         sku.ID,
+		ProductID:  sku.ProductID,
+		Code:       sku.Code,
+		Attributes: string(attrsJSON),
+		CreatedAt:  sku.CreatedAt,
 	}
 }

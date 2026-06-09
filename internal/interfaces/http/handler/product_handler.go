@@ -317,7 +317,6 @@ func toCreateInput(req request.CreateProductRequest) (appsvc.CreateInput, error)
 	input := appsvc.CreateInput{
 		Name:             req.Name,
 		Slug:             req.Slug,
-		SKU:              req.SKU,
 		Description:      req.Description,
 		ShortDescription: req.ShortDescription,
 		Price:            req.Price,
@@ -344,7 +343,7 @@ func toCreateInput(req request.CreateProductRequest) (appsvc.CreateInput, error)
 	}
 	for _, attr := range req.Attributes {
 		input.Attributes = append(input.Attributes, appsvc.AttributeInput{
-			Name: attr.Name, Value: attr.Value,
+			Name: attr.Name, Values: attr.Values,
 		})
 	}
 	return input, nil
@@ -352,7 +351,7 @@ func toCreateInput(req request.CreateProductRequest) (appsvc.CreateInput, error)
 
 func toUpdateInput(req request.UpdateProductRequest) (appsvc.UpdateInput, error) {
 	input := appsvc.UpdateInput{
-		Name: req.Name, Slug: req.Slug, SKU: req.SKU,
+		Name: req.Name, Slug: req.Slug,
 		Description: req.Description, ShortDescription: req.ShortDescription,
 		Price: req.Price, SalePrice: req.SalePrice, Brand: req.Brand,
 		IsFeatured: req.IsFeatured, Status: req.Status,
@@ -374,7 +373,7 @@ func toUpdateInput(req request.UpdateProductRequest) (appsvc.UpdateInput, error)
 	if req.Attributes != nil {
 		attrs := make([]appsvc.AttributeInput, len(*req.Attributes))
 		for i, attr := range *req.Attributes {
-			attrs[i] = appsvc.AttributeInput{Name: attr.Name, Value: attr.Value}
+			attrs[i] = appsvc.AttributeInput{Name: attr.Name, Values: attr.Values}
 		}
 		input.Attributes = &attrs
 	}

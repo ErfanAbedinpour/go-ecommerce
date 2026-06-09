@@ -12,7 +12,6 @@ type Product struct {
 	CategoryID       *uuid.UUID
 	Name             string
 	Slug             string
-	SKU              string
 	Description      string
 	ShortDescription string
 	Price            float64
@@ -21,7 +20,8 @@ type Product struct {
 	IsFeatured       bool
 	Status           Status
 	Images           []Image
-	Attributes       []Attribute
+	Attributes       []ProductAttribute
+	SKUs             []Sku
 	Inventory        Inventory
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
@@ -37,12 +37,28 @@ type Image struct {
 	CreatedAt time.Time
 }
 
-// Attribute represents a product attribute key-value pair.
-type Attribute struct {
+// ProductAttribute represents a product attribute (e.g. Color).
+type ProductAttribute struct {
 	ID        uuid.UUID
 	ProductID uuid.UUID
 	Name      string
-	Value     string
+	Values    []ProductAttributeValue
+}
+
+// ProductAttributeValue represents a specific value for a product attribute (e.g. Red).
+type ProductAttributeValue struct {
+	ID          uuid.UUID
+	AttributeID uuid.UUID
+	Value       string
+}
+
+// Sku represents a specific variant of a product.
+type Sku struct {
+	ID         uuid.UUID
+	ProductID  uuid.UUID
+	Code       string
+	Attributes map[string]string
+	CreatedAt  time.Time
 }
 
 // Inventory tracks stock levels for a product.
