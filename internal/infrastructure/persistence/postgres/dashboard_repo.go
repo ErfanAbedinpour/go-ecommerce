@@ -25,7 +25,12 @@ func NewDashboardRepository(db *gorm.DB) *DashboardRepository {
 }
 
 type statsRow struct {
-	dashboard.Stats
+	TotalRevenue         float64 `gorm:"column:total_revenue"`
+	TotalOrders          int64   `gorm:"column:total_orders"`
+	TotalCustomers       int64   `gorm:"column:total_customers"`
+	TotalProducts        int64   `gorm:"column:total_products"`
+	PendingOrders        int64   `gorm:"column:pending_orders"`
+	LowStockCount        int64   `gorm:"column:low_stock_count"`
 	RevenueCurrent30d    float64 `gorm:"column:revenue_current_30d"`
 	RevenuePrevious30d   float64 `gorm:"column:revenue_previous_30d"`
 	OrdersCurrent30d     int64   `gorm:"column:orders_current_30d"`
@@ -120,16 +125,22 @@ func (r *DashboardRepository) GetStats(ctx context.Context) (*dashboard.Stats, e
 		return nil, err
 	}
 
-	stats := row.Stats
-	stats.Growth = dashboard.StatsGrowth{
-		TotalRevenue:   dashboard.CalcGrowthPercent(row.RevenueCurrent30d, row.RevenuePrevious30d),
-		TotalOrders:    dashboard.CalcGrowthPercent(float64(row.OrdersCurrent30d), float64(row.OrdersPrevious30d)),
-		TotalCustomers: dashboard.CalcGrowthPercent(float64(row.CustomersCurrent30d), float64(row.CustomersPrevious30d)),
-		TotalProducts:  dashboard.CalcGrowthPercent(float64(row.ProductsCurrent30d), float64(row.ProductsPrevious30d)),
-		PendingOrders:  dashboard.CalcGrowthPercent(float64(row.PendingCurrent30d), float64(row.PendingPrevious30d)),
-		LowStockCount:  dashboard.CalcGrowthPercent(float64(row.LowStockCurrent30d), float64(row.LowStockPrevious30d)),
-	}
-	return &stats, nil
+	return &dashboard.Stats{
+		TotalRevenue:   row.TotalRevenue,
+		TotalOrders:    row.TotalOrders,
+		TotalCustomers: row.TotalCustomers,
+		TotalProducts:  row.TotalProducts,
+		PendingOrders:  row.PendingOrders,
+		LowStockCount:  row.LowStockCount,
+		Growth: dashboard.StatsGrowth{
+			TotalRevenue:   dashboard.CalcGrowthPercent(row.RevenueCurrent30d, row.RevenuePrevious30d),
+			TotalOrders:    dashboard.CalcGrowthPercent(float64(row.OrdersCurrent30d), float64(row.OrdersPrevious30d)),
+			TotalCustomers: dashboard.CalcGrowthPercent(float64(row.CustomersCurrent30d), float64(row.CustomersPrevious30d)),
+			TotalProducts:  dashboard.CalcGrowthPercent(float64(row.ProductsCurrent30d), float64(row.ProductsPrevious30d)),
+			PendingOrders:  dashboard.CalcGrowthPercent(float64(row.PendingCurrent30d), float64(row.PendingPrevious30d)),
+			LowStockCount:  dashboard.CalcGrowthPercent(float64(row.LowStockCurrent30d), float64(row.LowStockPrevious30d)),
+		},
+	}, nil
 }
 
 func (r *DashboardRepository) GetRevenueAnalytics(ctx context.Context, range_ dashboard.DateRange) ([]dashboard.RevenueDataPoint, error) {
@@ -184,7 +195,8 @@ func (r *DashboardRepository) ListLowStockProducts(ctx context.Context, page pag
 		Preload("Images", func(db *gorm.DB) *gorm.DB {
 			return db.Order("sort_order ASC")
 		}).
-		Preload("Attributes").
+		Preload("Attributes.Values").
+		Preload("SKUs").
 		Preload("Inventory").
 		Order(r.lowStockOrderClause(page)).
 		Offset(page.Offset()).
@@ -255,7 +267,8 @@ func (r *DashboardRepository) ListFeaturedProducts(ctx context.Context, limit in
 		Preload("Images", func(db *gorm.DB) *gorm.DB {
 			return db.Order("sort_order ASC")
 		}).
-		Preload("Attributes").
+		Preload("Attributes.Values").
+		Preload("SKUs").
 		Preload("Inventory").
 		Order("updated_at DESC").
 		Limit(limit).
