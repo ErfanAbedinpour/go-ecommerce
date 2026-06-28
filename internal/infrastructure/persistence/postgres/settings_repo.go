@@ -116,6 +116,40 @@ func (r *SettingsRepository) UpdateNavigation(ctx context.Context, items []setti
 	return items, nil
 }
 
+func (r *SettingsRepository) UpdateStorefrontNavigation(ctx context.Context, items []settings.NavItem) ([]settings.NavItem, error) {
+	m, err := r.loadOrCreate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if items == nil {
+		items = []settings.NavItem{}
+	}
+	data, err := json.Marshal(items)
+	if err != nil {
+		return nil, err
+	}
+	m.StorefrontNavigation = data
+	if err := r.save(ctx, m); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (r *SettingsRepository) UpdateContactSectionImage(ctx context.Context, imageURL string) (string, error) {
+	m, err := r.loadOrCreate(ctx)
+	if err != nil {
+		return "", err
+	}
+	m.ContactSectionImageURL = &imageURL
+	if imageURL == "" {
+		m.ContactSectionImageURL = nil
+	}
+	if err := r.save(ctx, m); err != nil {
+		return "", err
+	}
+	return imageURL, nil
+}
+
 func (r *SettingsRepository) loadOrCreate(ctx context.Context) (*models.StoreSettingsModel, error) {
 	id, err := uuid.Parse(storeSettingsID)
 	if err != nil {
@@ -132,12 +166,13 @@ func (r *SettingsRepository) loadOrCreate(ctx context.Context) (*models.StoreSet
 	}
 
 	m = models.StoreSettingsModel{
-		ID:         id,
-		Site:       []byte("{}"),
-		Contact:    []byte("{}"),
-		Social:     []byte("{}"),
-		SEO:        []byte("{}"),
-		Navigation: []byte("[]"),
+		ID:                   id,
+		Site:                 []byte("{}"),
+		Contact:              []byte("{}"),
+		Social:               []byte("{}"),
+		SEO:                  []byte("{}"),
+		Navigation:           []byte("[]"),
+		StorefrontNavigation: []byte("[]"),
 	}
 	if err := r.db.WithContext(ctx).Create(&m).Error; err != nil {
 		return nil, err
@@ -156,6 +191,7 @@ func toStoreSettingsDomain(m *models.StoreSettingsModel) (*settings.StoreSetting
 	var social settings.Social
 	var seo settings.SEO
 	var navigation []settings.NavItem
+	var storefrontNavigation []settings.NavItem
 
 	if len(m.Site) > 0 {
 		if err := json.Unmarshal(m.Site, &site); err != nil {
@@ -182,17 +218,32 @@ func toStoreSettingsDomain(m *models.StoreSettingsModel) (*settings.StoreSetting
 			return nil, err
 		}
 	}
+	if len(m.StorefrontNavigation) > 0 {
+		if err := json.Unmarshal(m.StorefrontNavigation, &storefrontNavigation); err != nil {
+			return nil, err
+		}
+	}
 	if navigation == nil {
 		navigation = []settings.NavItem{}
 	}
+	if storefrontNavigation == nil {
+		storefrontNavigation = []settings.NavItem{}
+	}
+
+	contactSectionImageURL := ""
+	if m.ContactSectionImageURL != nil {
+		contactSectionImageURL = *m.ContactSectionImageURL
+	}
 
 	return &settings.StoreSettings{
-		Site:       site,
-		Contact:    contact,
-		Social:     social,
-		SEO:        seo,
-		Navigation: navigation,
-		UpdatedAt:  m.UpdatedAt,
+		Site:                   site,
+		Contact:                contact,
+		Social:                 social,
+		SEO:                    seo,
+		Navigation:             navigation,
+		StorefrontNavigation:   storefrontNavigation,
+		ContactSectionImageURL: contactSectionImageURL,
+		UpdatedAt:              m.UpdatedAt,
 	}, nil
 }
 

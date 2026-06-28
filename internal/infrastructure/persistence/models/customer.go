@@ -8,8 +8,9 @@ import (
 
 // CustomerModel is the GORM model for customers table.
 type CustomerModel struct {
-	ID          uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	Email       string    `gorm:"type:varchar(255);not null"`
+	ID          uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	UserID      *uuid.UUID `gorm:"type:uuid;index"`
+	Email       string     `gorm:"type:varchar(255);not null"`
 	FirstName   string    `gorm:"type:varchar(100);not null"`
 	LastName    string    `gorm:"type:varchar(100);not null"`
 	Phone       *string   `gorm:"type:varchar(20)"`

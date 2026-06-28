@@ -1,6 +1,6 @@
-// @title           eCommerce Admin API
+// @title           eCommerce API
 // @version         1.0
-// @description     REST API for the eCommerce admin panel. Supports JWT authentication with role-based access (admin, customer).
+// @description     REST API for the eCommerce admin panel and public storefront. Supports JWT authentication with role-based access (admin, customer). Store endpoints under /api/v1/store are public; account routes require a customer token.
 // @termsOfService  http://swagger.io/terms/
 
 // @contact.name   API Support

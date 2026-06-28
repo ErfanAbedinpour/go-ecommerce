@@ -16,6 +16,9 @@ import (
 	apporder "app/internal/application/order"
 	appproduct "app/internal/application/product"
 	appsettings "app/internal/application/settings"
+	appstorecontent "app/internal/application/storecontent"
+	appstorefront "app/internal/application/storefront"
+	apptheme "app/internal/application/theme"
 	"app/internal/config"
 	infraauth "app/internal/infrastructure/auth"
 	"app/internal/infrastructure/email"
@@ -48,6 +51,9 @@ type Container struct {
 	BrandService      *appbrand.Service
 	AttributeService  *appattr.Service
 	AttrValueService  *appattrval.Service
+	StorefrontService  *appstorefront.Service
+	StoreContentService *appstorecontent.Service
+	ThemeService       *apptheme.Service
 
 	// Handlers
 	Health   *handler.HealthHandler
@@ -63,6 +69,9 @@ type Container struct {
 	Brand     *handler.BrandHandler
 	Attribute *handler.AttributeHandler
 	Upload    *handler.UploadHandler
+	Store     *handler.StoreHandler
+	Storefront *handler.StorefrontHandler
+	Theme     *handler.ThemeHandler
 }
 
 // New creates and wires the dependency injection container.
@@ -82,9 +91,11 @@ func New(cfg *config.Config) (*Container, error) {
 	userRepo := postgres.NewUserRepository(db.DB)
 	refreshTokenRepo := postgres.NewRefreshTokenRepository(db.DB)
 	resetTokenRepo := postgres.NewPasswordResetRepository(db.DB)
+	customerRepo := postgres.NewCustomerRepository(db.DB)
 	mailer := email.NewSMTPMailer(cfg.SMTP, log)
 	authService := appauth.NewAuthService(
 		userRepo,
+		customerRepo,
 		refreshTokenRepo,
 		resetTokenRepo,
 		hasher,
@@ -102,7 +113,6 @@ func New(cfg *config.Config) (*Container, error) {
 	couponRepo := postgres.NewCouponRepository(db.DB)
 	couponService := appcoupon.NewService(couponRepo)
 
-	customerRepo := postgres.NewCustomerRepository(db.DB)
 	customerService := appcustomer.NewService(customerRepo)
 	adminUserService := appadminuser.NewService(userRepo, refreshTokenRepo, hasher)
 
@@ -124,6 +134,21 @@ func New(cfg *config.Config) (*Container, error) {
 	attrValRepo := postgres.NewAttributeValueRepository(db.DB)
 	attrValService := appattrval.NewService(attrValRepo)
 
+	storecontentRepo := postgres.NewStoreContentRepository(db.DB)
+	storecontentService := appstorecontent.NewService(storecontentRepo, productRepo, settingsRepo)
+
+	storefrontService := appstorefront.NewService(
+		productRepo,
+		categoryRepo,
+		orderService,
+		couponRepo,
+		customerRepo,
+		settingsRepo,
+	)
+
+	themeRepo := postgres.NewThemeRepository(db.DB)
+	themeService := apptheme.NewService(themeRepo)
+
 	uploader := storage.NewUploader(cfg.Upload)
 
 	c := &Container{
@@ -144,6 +169,9 @@ func New(cfg *config.Config) (*Container, error) {
 		BrandService:     brandService,
 		AttributeService: attrDefService,
 		AttrValueService: attrValService,
+		StorefrontService:  storefrontService,
+		StoreContentService: storecontentService,
+		ThemeService:       themeService,
 		Health:           handler.NewHealthHandler(db, cfg.App.Version),
 		Auth:            handler.NewAuthHandler(authService, v, log),
 		Product:         handler.NewProductHandler(productService, v, log),
@@ -157,6 +185,9 @@ func New(cfg *config.Config) (*Container, error) {
 		Brand:           handler.NewBrandHandler(brandService, v, log),
 		Attribute:       handler.NewAttributeHandler(attrDefService, attrValService, v, log),
 		Upload:          handler.NewUploadHandler(uploader, log),
+		Store:           handler.NewStoreHandler(storefrontService, storecontentService, settingsService, themeService, v, log),
+		Storefront:      handler.NewStorefrontHandler(storecontentService, settingsService, v, log),
+		Theme:           handler.NewThemeHandler(themeService, v, log),
 	}
 
 	return c, nil

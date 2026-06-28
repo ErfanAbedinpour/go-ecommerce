@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
+	domaincustomer "app/internal/domain/customer"
 	"app/internal/domain/user"
 	"app/internal/infrastructure/auth"
 )
@@ -69,6 +70,25 @@ func (s *AuthService) Signup(ctx context.Context, input SignupInput) (*TokenOutp
 
 	if err := s.users.Create(ctx, u); err != nil {
 		return nil, err
+	}
+
+	if role == user.RoleCustomer {
+		userID := u.ID
+		now := time.Now().UTC()
+		customer := &domaincustomer.Customer{
+			ID:        uuid.New(),
+			UserID:    &userID,
+			Email:     email,
+			FirstName: u.FirstName,
+			LastName:  u.LastName,
+			Phone:     u.Phone,
+			Type:      domaincustomer.TypeRegistered,
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+		if err := s.customers.Create(ctx, customer); err != nil {
+			return nil, err
+		}
 	}
 
 	tokens, _, _, err := s.generateAndStoreTokens(ctx, u)

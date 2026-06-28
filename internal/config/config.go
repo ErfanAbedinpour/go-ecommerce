@@ -83,7 +83,7 @@ type SMTPConfig struct {
 
 // CORSConfig holds CORS settings.
 type CORSConfig struct {
-	AllowedOrigins   []string `env:"CORS_ALLOWED_ORIGINS" envDefault:"http://localhost:3000,http://localhost:5173"`
+	AllowedOrigins   []string `env:"CORS_ALLOWED_ORIGINS" envDefault:"http://localhost:3000,http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,https://store-os-eta.vercel.app,https://shop-panel-react.vercel.app"`
 	AllowedMethods   []string `env:"CORS_ALLOWED_METHODS" envDefault:"GET,POST,PUT,PATCH,DELETE,OPTIONS"`
 	AllowedHeaders   []string `env:"CORS_ALLOWED_HEADERS" envDefault:"Accept,Authorization,Content-Type,X-Request-ID"`
 	AllowCredentials bool     `env:"CORS_ALLOW_CREDENTIALS" envDefault:"true"`
@@ -95,7 +95,7 @@ type UploadConfig struct {
 	Dir          string   `env:"UPLOAD_DIR" envDefault:"./uploads"`
 	MaxSizeMB    int      `env:"UPLOAD_MAX_SIZE_MB" envDefault:"5"`
 	BaseURL      string   `env:"UPLOAD_BASE_URL" envDefault:"http://localhost:8080/uploads"`
-	AllowedTypes []string `env:"UPLOAD_ALLOWED_TYPES" envDefault:"image/jpeg,image/png,image/webp,image/gif"`
+	AllowedTypes []string `env:"UPLOAD_ALLOWED_TYPES" envDefault:"image/jpeg,image/png,image/webp,image/gif,video/mp4"`
 }
 
 // LogConfig holds logging settings.

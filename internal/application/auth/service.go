@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"app/internal/config"
+	domaincustomer "app/internal/domain/customer"
 	"app/internal/domain/user"
 	"app/internal/infrastructure/auth"
 	"app/internal/infrastructure/email"
@@ -22,6 +23,7 @@ type TokenGenerator interface {
 // AuthService handles authentication use cases.
 type AuthService struct {
 	users         user.Repository
+	customers     domaincustomer.Repository
 	refreshTokens user.RefreshTokenRepository
 	resetTokens   user.PasswordResetRepository
 	hasher        PasswordHasher
@@ -33,6 +35,7 @@ type AuthService struct {
 // NewAuthService creates a new AuthService.
 func NewAuthService(
 	users user.Repository,
+	customers domaincustomer.Repository,
 	refreshTokens user.RefreshTokenRepository,
 	resetTokens user.PasswordResetRepository,
 	hasher PasswordHasher,
@@ -42,6 +45,7 @@ func NewAuthService(
 ) *AuthService {
 	return &AuthService{
 		users:         users,
+		customers:     customers,
 		refreshTokens: refreshTokens,
 		resetTokens:   resetTokens,
 		hasher:        hasher,

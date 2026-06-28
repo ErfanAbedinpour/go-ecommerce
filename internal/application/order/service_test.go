@@ -121,6 +121,12 @@ func (m *mockProductRepo) CategoryExists(context.Context, uuid.UUID) (bool, erro
 func (m *mockProductRepo) GetStats(context.Context) (*domainproduct.Stats, error) {
 	return nil, nil
 }
+func (m *mockProductRepo) ListStorefront(context.Context, domainproduct.StoreListFilter, pagination.Params) ([]domainproduct.Product, int64, error) {
+	return nil, 0, nil
+}
+func (m *mockProductRepo) CountActive(context.Context) (int64, error) {
+	return 0, nil
+}
 func (m *mockProductRepo) FindByID(_ context.Context, id uuid.UUID) (*domainproduct.Product, error) {
 	p, ok := m.products[id]
 	if !ok {
@@ -133,6 +139,16 @@ type mockCustomerRepo struct {
 	customers map[uuid.UUID]*domaincustomer.Customer
 }
 
+func (m *mockCustomerRepo) Create(_ context.Context, c *domaincustomer.Customer) error {
+	if m.customers == nil {
+		m.customers = make(map[uuid.UUID]*domaincustomer.Customer)
+	}
+	m.customers[c.ID] = c
+	return nil
+}
+func (m *mockCustomerRepo) FindByUserID(context.Context, uuid.UUID) (*domaincustomer.Customer, error) {
+	return nil, domaincustomer.ErrNotFound
+}
 func (m *mockCustomerRepo) FindByID(_ context.Context, id uuid.UUID) (*domaincustomer.Customer, error) {
 	c, ok := m.customers[id]
 	if !ok {
@@ -202,6 +218,12 @@ func (m *mockSettingsRepo) UpdateSEO(context.Context, domainsettings.SEO) (*doma
 }
 func (m *mockSettingsRepo) UpdateNavigation(context.Context, []domainsettings.NavItem) ([]domainsettings.NavItem, error) {
 	return nil, nil
+}
+func (m *mockSettingsRepo) UpdateStorefrontNavigation(context.Context, []domainsettings.NavItem) ([]domainsettings.NavItem, error) {
+	return nil, nil
+}
+func (m *mockSettingsRepo) UpdateContactSectionImage(context.Context, string) (string, error) {
+	return "", nil
 }
 
 func newTestService(repo *mockRepo) *Service {

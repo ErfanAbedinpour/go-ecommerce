@@ -171,7 +171,15 @@ func (r *ProductRepository) FindByID(ctx context.Context, id uuid.UUID) (*produc
 
 func (r *ProductRepository) FindBySlug(ctx context.Context, slug string) (*product.Product, error) {
 	var m models.ProductModel
-	err := r.db.WithContext(ctx).Where("slug = ?", slug).First(&m).Error
+	err := r.db.WithContext(ctx).
+		Preload("Images", func(db *gorm.DB) *gorm.DB {
+			return db.Order("sort_order ASC")
+		}).
+		Preload("Attributes.Values").
+		Preload("SKUs").
+		Preload("Inventory").
+		Where("slug = ?", slug).
+		First(&m).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, product.ErrNotFound
@@ -264,6 +272,65 @@ func (r *ProductRepository) Search(ctx context.Context, query string, page pagin
 	}
 
 	return toProductsDomain(items), total, nil
+}
+
+func (r *ProductRepository) ListStorefront(ctx context.Context, filter product.StoreListFilter, page pagination.Params) ([]product.Product, int64, error) {
+	query := r.db.WithContext(ctx).Model(&models.ProductModel{}).
+		Where("status = ?", product.StatusActive.String())
+
+	if filter.CategoryID != nil {
+		query = query.Where("category_id = ?", *filter.CategoryID)
+	}
+	if filter.Query != "" {
+		pattern := "%" + strings.ToLower(filter.Query) + "%"
+		query = query.Where(
+			"LOWER(products.name) LIKE ? OR LOWER(COALESCE(products.description, '')) LIKE ? OR LOWER(COALESCE(products.brand, '')) LIKE ? OR EXISTS (SELECT 1 FROM skus WHERE skus.product_id = products.id AND LOWER(skus.code) LIKE ?)",
+			pattern, pattern, pattern, pattern,
+		)
+	}
+
+	switch filter.Sort {
+	case "discount":
+		query = query.Where("sale_price IS NOT NULL AND sale_price < price").
+			Order("(1 - sale_price / NULLIF(price, 0)) DESC")
+	case "price":
+		query = query.Order("COALESCE(sale_price, price) ASC")
+	case "name":
+		query = query.Order("products.name ASC")
+	default:
+		query = query.Order("products.created_at DESC")
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var items []models.ProductModel
+	err := query.
+		Preload("Images", func(db *gorm.DB) *gorm.DB {
+			return db.Order("sort_order ASC")
+		}).
+		Preload("Attributes.Values").
+		Preload("SKUs").
+		Preload("Inventory").
+		Offset(page.Offset()).
+		Limit(page.Limit()).
+		Find(&items).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return toProductsDomain(items), total, nil
+}
+
+func (r *ProductRepository) CountActive(ctx context.Context) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&models.ProductModel{}).
+		Where("status = ?", product.StatusActive.String()).
+		Count(&count).Error
+	return count, err
 }
 
 func (r *ProductRepository) UpdateInventory(ctx context.Context, productID uuid.UUID, inventory product.Inventory) error {

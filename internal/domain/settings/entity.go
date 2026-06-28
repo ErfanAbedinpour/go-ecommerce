@@ -52,10 +52,12 @@ type NavItem struct {
 
 // StoreSettings is the aggregate of all store configuration sections.
 type StoreSettings struct {
-	Site       Site
-	Contact    Contact
-	Social     Social
-	SEO        SEO
-	Navigation []NavItem
-	UpdatedAt  time.Time
+	Site                    Site
+	Contact                 Contact
+	Social                  Social
+	SEO                     SEO
+	Navigation              []NavItem
+	StorefrontNavigation    []NavItem
+	ContactSectionImageURL  string
+	UpdatedAt               time.Time
 }

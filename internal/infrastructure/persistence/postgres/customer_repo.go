@@ -43,6 +43,26 @@ func NewCustomerRepository(db *gorm.DB) *CustomerRepository {
 	return &CustomerRepository{db: db}
 }
 
+func (r *CustomerRepository) Create(ctx context.Context, c *customer.Customer) error {
+	m := toCustomerModel(c)
+	if err := r.db.WithContext(ctx).Create(m).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *CustomerRepository) FindByUserID(ctx context.Context, userID uuid.UUID) (*customer.Customer, error) {
+	var m models.CustomerModel
+	err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&m).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, customer.ErrNotFound
+		}
+		return nil, err
+	}
+	return toCustomerDomain(&m), nil
+}
+
 func (r *CustomerRepository) FindByID(ctx context.Context, id uuid.UUID) (*customer.Customer, error) {
 	var m models.CustomerModel
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&m).Error
@@ -93,6 +113,7 @@ func (r *CustomerRepository) Update(ctx context.Context, c *customer.Customer) e
 		Model(&models.CustomerModel{}).
 		Where("id = ?", c.ID).
 		Updates(map[string]any{
+			"user_id":    m.UserID,
 			"email":      m.Email,
 			"first_name": m.FirstName,
 			"last_name":  m.LastName,

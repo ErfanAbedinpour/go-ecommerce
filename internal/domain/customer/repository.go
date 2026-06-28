@@ -18,8 +18,10 @@ type ListFilter struct {
 
 // Repository defines the port for customer persistence.
 type Repository interface {
+	Create(ctx context.Context, customer *Customer) error
 	FindByID(ctx context.Context, id uuid.UUID) (*Customer, error)
 	FindByEmail(ctx context.Context, email string) (*Customer, error)
+	FindByUserID(ctx context.Context, userID uuid.UUID) (*Customer, error)
 	List(ctx context.Context, filter ListFilter, page pagination.Params) ([]Customer, int64, error)
 	Update(ctx context.Context, customer *Customer) error
 	Delete(ctx context.Context, id uuid.UUID) error

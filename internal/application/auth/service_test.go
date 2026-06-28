@@ -8,6 +8,8 @@ import (
 	"github.com/google/uuid"
 
 	"app/internal/config"
+	"app/internal/domain/customer"
+	domainorder "app/internal/domain/order"
 	"app/internal/domain/user"
 	infraauth "app/internal/infrastructure/auth"
 	"app/pkg/pagination"
@@ -173,6 +175,41 @@ func (mockJWT) RefreshTokenTTL() time.Duration {
 	return time.Hour
 }
 
+type mockCustomerRepo struct {
+	created int
+}
+
+func (m *mockCustomerRepo) Create(_ context.Context, _ *customer.Customer) error {
+	m.created++
+	return nil
+}
+func (m *mockCustomerRepo) FindByID(context.Context, uuid.UUID) (*customer.Customer, error) {
+	return nil, customer.ErrNotFound
+}
+func (m *mockCustomerRepo) FindByEmail(context.Context, string) (*customer.Customer, error) {
+	return nil, customer.ErrNotFound
+}
+func (m *mockCustomerRepo) FindByUserID(context.Context, uuid.UUID) (*customer.Customer, error) {
+	return nil, customer.ErrNotFound
+}
+func (m *mockCustomerRepo) List(context.Context, customer.ListFilter, pagination.Params) ([]customer.Customer, int64, error) {
+	return nil, 0, nil
+}
+func (m *mockCustomerRepo) Update(context.Context, *customer.Customer) error { return nil }
+func (m *mockCustomerRepo) Delete(context.Context, uuid.UUID) error          { return nil }
+func (m *mockCustomerRepo) HasOrders(context.Context, uuid.UUID) (bool, error) {
+	return false, nil
+}
+func (m *mockCustomerRepo) GetLastOrderAt(context.Context, uuid.UUID) (*time.Time, error) {
+	return nil, nil
+}
+func (m *mockCustomerRepo) ListAddresses(context.Context, uuid.UUID) ([]customer.Address, error) {
+	return nil, nil
+}
+func (m *mockCustomerRepo) ListOrders(context.Context, uuid.UUID, pagination.Params) ([]domainorder.Summary, int64, error) {
+	return nil, 0, nil
+}
+
 func newTestService(signupEnabled bool, defaultRole string) (*AuthService, *mockUserRepo, *mockResetRepo, *mockMailer) {
 	hasher := infraauth.NewPasswordHasher()
 	users := newMockUserRepo()
@@ -181,6 +218,7 @@ func newTestService(signupEnabled bool, defaultRole string) (*AuthService, *mock
 
 	svc := NewAuthService(
 		users,
+		&mockCustomerRepo{},
 		&mockRefreshRepo{},
 		resetRepo,
 		hasher,
@@ -199,7 +237,8 @@ func newTestService(signupEnabled bool, defaultRole string) (*AuthService, *mock
 }
 
 func TestSignup_Success(t *testing.T) {
-	svc, _, _, _ := newTestService(true, "customer")
+	customers := &mockCustomerRepo{}
+	svc := newTestServiceWithCustomers(true, "customer", customers)
 
 	out, err := svc.Signup(context.Background(), SignupInput{
 		Email:     "new@shop.com",
@@ -213,6 +252,51 @@ func TestSignup_Success(t *testing.T) {
 	if out.AccessToken != "access" {
 		t.Fatalf("expected access token, got %q", out.AccessToken)
 	}
+	if customers.created != 1 {
+		t.Fatalf("expected customer record on signup, created = %d", customers.created)
+	}
+}
+
+func TestSignup_AdminRoleSkipsCustomerRecord(t *testing.T) {
+	customers := &mockCustomerRepo{}
+	svc := newTestServiceWithCustomers(true, "admin", customers)
+
+	_, err := svc.Signup(context.Background(), SignupInput{
+		Email:     "admin@shop.com",
+		Password:  "Secret123",
+		FirstName: "Admin",
+		LastName:  "User",
+	})
+	if err != nil {
+		t.Fatalf("Signup() error = %v", err)
+	}
+	if customers.created != 0 {
+		t.Fatalf("expected no customer record for admin signup, created = %d", customers.created)
+	}
+}
+
+func newTestServiceWithCustomers(signupEnabled bool, defaultRole string, customers *mockCustomerRepo) *AuthService {
+	hasher := infraauth.NewPasswordHasher()
+	users := newMockUserRepo()
+	resetRepo := newMockResetRepo()
+	mailer := &mockMailer{}
+
+	return NewAuthService(
+		users,
+		customers,
+		&mockRefreshRepo{},
+		resetRepo,
+		hasher,
+		mockJWT{},
+		mailer,
+		config.AuthConfig{
+			SignupEnabled:     signupEnabled,
+			SignupDefaultRole: defaultRole,
+			ResetTokenTTL:     time.Hour,
+			AppURL:            "http://localhost:5173",
+			ResetPath:         "/reset-password",
+		},
+	)
 }
 
 func TestSignup_EmailTaken(t *testing.T) {

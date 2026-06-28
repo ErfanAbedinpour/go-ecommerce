@@ -26,6 +26,22 @@ func newMockRepo() *mockRepo {
 	}
 }
 
+func (m *mockRepo) Create(_ context.Context, c *domain.Customer) error {
+	cp := *c
+	m.customers[c.ID] = &cp
+	return nil
+}
+
+func (m *mockRepo) FindByUserID(_ context.Context, userID uuid.UUID) (*domain.Customer, error) {
+	for _, c := range m.customers {
+		if c.UserID != nil && *c.UserID == userID {
+			cp := *c
+			return &cp, nil
+		}
+	}
+	return nil, domain.ErrNotFound
+}
+
 func (m *mockRepo) FindByID(_ context.Context, id uuid.UUID) (*domain.Customer, error) {
 	c, ok := m.customers[id]
 	if !ok {

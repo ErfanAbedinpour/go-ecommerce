@@ -8,6 +8,7 @@ import (
 func toCustomerDomain(m *models.CustomerModel) *customer.Customer {
 	c := &customer.Customer{
 		ID:          m.ID,
+		UserID:      m.UserID,
 		Email:       m.Email,
 		FirstName:   m.FirstName,
 		LastName:    m.LastName,
@@ -51,6 +52,7 @@ func toAddressDomain(m *models.CustomerAddressModel) customer.Address {
 func toCustomerModel(c *customer.Customer) *models.CustomerModel {
 	m := &models.CustomerModel{
 		ID:          c.ID,
+		UserID:      c.UserID,
 		Email:       c.Email,
 		FirstName:   c.FirstName,
 		LastName:    c.LastName,

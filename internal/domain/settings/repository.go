@@ -10,4 +10,6 @@ type Repository interface {
 	UpdateSocial(ctx context.Context, social Social) (*Social, error)
 	UpdateSEO(ctx context.Context, seo SEO) (*SEO, error)
 	UpdateNavigation(ctx context.Context, items []NavItem) ([]NavItem, error)
+	UpdateStorefrontNavigation(ctx context.Context, items []NavItem) ([]NavItem, error)
+	UpdateContactSectionImage(ctx context.Context, imageURL string) (string, error)
 }

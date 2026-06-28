@@ -58,6 +58,22 @@ func (m *mockRepo) UpdateNavigation(_ context.Context, items []domain.NavItem) (
 	return items, nil
 }
 
+func (m *mockRepo) UpdateStorefrontNavigation(_ context.Context, items []domain.NavItem) ([]domain.NavItem, error) {
+	if m.store == nil {
+		m.store = &domain.StoreSettings{}
+	}
+	m.store.StorefrontNavigation = items
+	return items, nil
+}
+
+func (m *mockRepo) UpdateContactSectionImage(_ context.Context, imageURL string) (string, error) {
+	if m.store == nil {
+		m.store = &domain.StoreSettings{}
+	}
+	m.store.ContactSectionImageURL = imageURL
+	return imageURL, nil
+}
+
 func TestService_UpdateSite(t *testing.T) {
 	repo := &mockRepo{}
 	svc := NewService(repo)

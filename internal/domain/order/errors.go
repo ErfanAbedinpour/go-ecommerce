@@ -25,6 +25,10 @@ var (
 		"items": "required",
 	})
 
+	ErrInvalidSKU = apperror.Validation("invalid product sku", map[string]string{
+		"sku_id": "sku does not belong to product",
+	})
+
 	ErrInvalidDateRange = apperror.Validation("invalid date range", map[string]string{
 		"from": "must be before or equal to to",
 	})

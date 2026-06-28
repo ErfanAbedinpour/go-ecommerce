@@ -108,6 +108,20 @@ func (m *mockRepo) GetStats(_ context.Context) (*domain.Stats, error) {
 	return &domain.Stats{Total: 10, Active: 7, Draft: 2, OutOfStock: 1}, nil
 }
 
+func (m *mockRepo) ListStorefront(_ context.Context, _ domain.StoreListFilter, page pagination.Params) ([]domain.Product, int64, error) {
+	return m.List(context.Background(), domain.ListFilter{Status: string(domain.StatusActive)}, page)
+}
+
+func (m *mockRepo) CountActive(_ context.Context) (int64, error) {
+	var count int64
+	for _, p := range m.products {
+		if p.Status == domain.StatusActive {
+			count++
+		}
+	}
+	return count, nil
+}
+
 func TestService_Create(t *testing.T) {
 	svc := NewService(newMockRepo())
 	p, err := svc.Create(context.Background(), CreateInput{

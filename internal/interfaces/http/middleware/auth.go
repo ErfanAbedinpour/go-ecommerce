@@ -77,6 +77,58 @@ func GetUserRole(ctx context.Context) (user.Role, error) {
 	return role, nil
 }
 
+// OptionalAuthenticate validates Bearer token when present and injects claims into context.
+// Requests without a token continue as anonymous.
+func OptionalAuthenticate(jwtService TokenValidator) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			header := r.Header.Get("Authorization")
+			if header == "" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			token, err := extractBearerToken(r)
+			if err != nil {
+				response.Error(w, r, nil, err)
+				return
+			}
+
+			claims, err := jwtService.ValidateAccessToken(token)
+			if err != nil {
+				response.Error(w, r, nil, apperror.Unauthorized("invalid or expired access token"))
+				return
+			}
+
+			role, err := user.ParseRole(claims.Role)
+			if err != nil {
+				response.Error(w, r, nil, apperror.Unauthorized("invalid role in token"))
+				return
+			}
+
+			ctx := r.Context()
+			ctx = context.WithValue(ctx, UserIDKey, claims.UserID)
+			ctx = context.WithValue(ctx, UserEmailKey, claims.Email)
+			ctx = context.WithValue(ctx, UserRoleKey, role)
+
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+// GetUserIDOptional extracts the authenticated user ID when present.
+func GetUserIDOptional(ctx context.Context) (uuid.UUID, bool) {
+	id, ok := ctx.Value(UserIDKey).(string)
+	if !ok || id == "" {
+		return uuid.Nil, false
+	}
+	parsed, err := uuid.Parse(id)
+	if err != nil {
+		return uuid.Nil, false
+	}
+	return parsed, true
+}
+
 func extractBearerToken(r *http.Request) (string, error) {
 	header := r.Header.Get("Authorization")
 	if header == "" {

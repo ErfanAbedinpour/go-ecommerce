@@ -9,6 +9,7 @@ import (
 // Customer is the aggregate root for storefront buyers.
 type Customer struct {
 	ID          uuid.UUID
+	UserID      *uuid.UUID
 	Email       string
 	FirstName   string
 	LastName    string

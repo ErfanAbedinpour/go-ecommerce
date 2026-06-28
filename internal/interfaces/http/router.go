@@ -46,6 +46,7 @@ func NewRouter(c *di.Container) http.Handler {
 	r.Route("/api/v1", func(r chi.Router) {
 		registerPublicRoutes(r, c)
 		registerAuthenticatedRoutes(r, c)
+		registerStoreRoutes(r, c)
 		registerAdminRoutes(r, c)
 	})
 
@@ -89,6 +90,8 @@ func registerAdminRoutes(r chi.Router, c *di.Container) {
 		registerUserRoutes(r, c)
 		registerOrderRoutes(r, c)
 		registerSettingsRoutes(r, c)
+		registerAdminStorefrontRoutes(r, c)
+		registerAdminThemeRoutes(r, c)
 	})
 }
 
@@ -213,6 +216,79 @@ func registerCouponRoutes(r chi.Router, c *di.Container) {
 		r.Patch("/{id}/activate", c.Coupon.Activate)
 		r.Patch("/{id}/deactivate", c.Coupon.Deactivate)
 	})
+}
+
+func registerStoreRoutes(r chi.Router, c *di.Container) {
+	r.Route("/store", func(r chi.Router) {
+		r.Get("/products", c.Store.ListProducts)
+		r.Get("/products/{slugOrId}", c.Store.GetProduct)
+		r.Get("/categories", c.Store.ListCategories)
+		r.Get("/homepage", c.Store.GetHomepage)
+		r.Get("/settings", c.Store.GetSettings)
+		r.Get("/theme", c.Store.GetTheme)
+		r.Post("/coupons/validate", c.Store.ValidateCoupon)
+
+		r.Group(func(r chi.Router) {
+			r.Use(appmiddleware.OptionalAuthenticate(c.JWT))
+			r.Post("/checkout/preview", c.Store.PreviewCheckout)
+			r.Post("/checkout", c.Store.Checkout)
+		})
+
+		r.Group(func(r chi.Router) {
+			r.Use(appmiddleware.Authenticate(c.JWT))
+			r.Use(appmiddleware.RequireCustomer())
+			r.Get("/account/orders", c.Store.ListAccountOrders)
+			r.Get("/account/orders/{id}", c.Store.GetAccountOrder)
+		})
+	})
+}
+
+func registerAdminStorefrontRoutes(r chi.Router, c *di.Container) {
+	r.Route("/storefront", func(r chi.Router) {
+		r.Get("/hero", c.Storefront.GetHero)
+		r.Put("/hero", c.Storefront.UpdateHero)
+
+		r.Get("/product-slides", c.Storefront.ListProductSlides)
+		r.Put("/product-slides/{slideType}", c.Storefront.UpdateProductSlide)
+		r.Post("/product-slides/{slideType}/items", c.Storefront.CreateSlideItem)
+		r.Put("/product-slide-items/{id}", c.Storefront.UpdateSlideItem)
+		r.Delete("/product-slide-items/{id}", c.Storefront.DeleteSlideItem)
+
+		r.Get("/pro-banners", c.Storefront.ListProBanners)
+		r.Post("/pro-banners", c.Storefront.CreateProBanner)
+		r.Put("/pro-banners/{id}", c.Storefront.UpdateProBanner)
+		r.Delete("/pro-banners/{id}", c.Storefront.DeleteProBanner)
+
+		r.Get("/partner-brands", c.Storefront.ListPartnerBrands)
+		r.Post("/partner-brands", c.Storefront.CreatePartnerBrand)
+		r.Put("/partner-brands/{id}", c.Storefront.UpdatePartnerBrand)
+		r.Delete("/partner-brands/{id}", c.Storefront.DeletePartnerBrand)
+
+		r.Get("/homepage-reviews", c.Storefront.ListHomepageReviews)
+		r.Post("/homepage-reviews", c.Storefront.CreateHomepageReview)
+		r.Put("/homepage-reviews/{id}", c.Storefront.UpdateHomepageReview)
+		r.Delete("/homepage-reviews/{id}", c.Storefront.DeleteHomepageReview)
+
+		r.Get("/faq", c.Storefront.GetFAQSection)
+		r.Put("/faq", c.Storefront.UpdateFAQSection)
+		r.Get("/faq/items", c.Storefront.ListFAQItems)
+		r.Post("/faq/items", c.Storefront.CreateFAQItem)
+		r.Put("/faq/items/{id}", c.Storefront.UpdateFAQItem)
+		r.Delete("/faq/items/{id}", c.Storefront.DeleteFAQItem)
+
+		r.Get("/contact-section", c.Storefront.GetContactSection)
+		r.Put("/contact-section", c.Storefront.UpdateContactSection)
+
+		r.Get("/navigation", c.Storefront.GetNavigation)
+		r.Put("/navigation", c.Storefront.UpdateNavigation)
+	})
+}
+
+func registerAdminThemeRoutes(r chi.Router, c *di.Container) {
+	r.Get("/themes", c.Theme.ListThemes)
+	r.Post("/themes/{id}/purchase", c.Theme.PurchaseTheme)
+	r.Get("/store-style", c.Theme.GetStoreStyle)
+	r.Put("/store-style", c.Theme.UpdateStoreStyle)
 }
 
 func corsMiddleware(cfg *config.Config) func(http.Handler) http.Handler {

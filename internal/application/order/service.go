@@ -88,6 +88,7 @@ func (s *Service) GetInvoice(ctx context.Context, id uuid.UUID) (*domain.Invoice
 // CreateItemInput holds a line item for manual order creation.
 type CreateItemInput struct {
 	ProductID uuid.UUID
+	SkuID     *uuid.UUID
 	Quantity  int
 }
 
@@ -222,9 +223,9 @@ func (s *Service) buildLineItems(ctx context.Context, inputs []CreateItemInput) 
 		lineTotal := roundMoney(unitPrice * float64(input.Quantity))
 		subtotal += lineTotal
 
-		var skuCode string
-		if len(product.SKUs) > 0 {
-			skuCode = product.SKUs[0].Code
+		skuCode, err := resolveProductSKU(product, input.SkuID)
+		if err != nil {
+			return nil, 0, err
 		}
 
 		items = append(items, domain.Item{
@@ -238,6 +239,21 @@ func (s *Service) buildLineItems(ctx context.Context, inputs []CreateItemInput) 
 	}
 
 	return items, roundMoney(subtotal), nil
+}
+
+func resolveProductSKU(product *domainproduct.Product, skuID *uuid.UUID) (string, error) {
+	if skuID != nil {
+		for _, sku := range product.SKUs {
+			if sku.ID == *skuID {
+				return sku.Code, nil
+			}
+		}
+		return "", domain.ErrInvalidSKU
+	}
+	if len(product.SKUs) > 0 {
+		return product.SKUs[0].Code, nil
+	}
+	return "", nil
 }
 
 // UpdateNotesInput holds data for updating internal order notes.

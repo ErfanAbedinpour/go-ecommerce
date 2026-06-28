@@ -1,5 +1,496 @@
 basePath: /
 definitions:
+  app_internal_application_settings.PublicSettings:
+    properties:
+      contact:
+        $ref: '#/definitions/app_internal_domain_settings.Contact'
+      seo:
+        $ref: '#/definitions/app_internal_domain_settings.SEO'
+      site:
+        $ref: '#/definitions/app_internal_domain_settings.Site'
+      social:
+        $ref: '#/definitions/app_internal_domain_settings.Social'
+    type: object
+  app_internal_application_storecontent.HomepageCTA:
+    properties:
+      text:
+        type: string
+      url:
+        type: string
+    type: object
+  app_internal_application_storecontent.HomepageContactSection:
+    properties:
+      image_url:
+        type: string
+    type: object
+  app_internal_application_storecontent.HomepageFAQ:
+    properties:
+      image_url:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/app_internal_domain_storecontent.FAQItem'
+        type: array
+    type: object
+  app_internal_application_storecontent.HomepageHero:
+    properties:
+      cta_primary:
+        $ref: '#/definitions/app_internal_application_storecontent.HomepageCTA'
+      cta_secondary:
+        $ref: '#/definitions/app_internal_application_storecontent.HomepageCTA'
+      subtitle:
+        type: string
+      title:
+        type: string
+      video_url:
+        type: string
+    type: object
+  app_internal_application_storecontent.HomepageProductCard:
+    properties:
+      brand:
+        type: string
+      discount_percent:
+        type: integer
+      id:
+        type: string
+      is_on_sale:
+        type: boolean
+      is_out_of_stock:
+        type: boolean
+      name:
+        type: string
+      price_toman:
+        type: integer
+      sale_price_toman:
+        type: integer
+      slug:
+        type: string
+      thumbnail_url:
+        type: string
+    type: object
+  app_internal_application_storecontent.HomepageProductSlide:
+    properties:
+      autoplay_interval_ms:
+        type: integer
+      products:
+        items:
+          $ref: '#/definitions/app_internal_application_storecontent.HomepageProductCard'
+        type: array
+      slide_type:
+        type: string
+      tab_label:
+        type: string
+      title:
+        type: string
+    type: object
+  app_internal_application_storecontent.HomepageProjection:
+    properties:
+      contact_section:
+        $ref: '#/definitions/app_internal_application_storecontent.HomepageContactSection'
+      faq:
+        $ref: '#/definitions/app_internal_application_storecontent.HomepageFAQ'
+      hero:
+        $ref: '#/definitions/app_internal_application_storecontent.HomepageHero'
+      partner_brands:
+        items:
+          $ref: '#/definitions/app_internal_domain_storecontent.PartnerBrand'
+        type: array
+      pro_banners:
+        items:
+          $ref: '#/definitions/app_internal_domain_storecontent.ProBanner'
+        type: array
+      product_slides:
+        items:
+          $ref: '#/definitions/app_internal_application_storecontent.HomepageProductSlide'
+        type: array
+      stats:
+        $ref: '#/definitions/app_internal_application_storecontent.HomepageStats'
+      testimonials:
+        items:
+          $ref: '#/definitions/app_internal_domain_storecontent.HomepageReview'
+        type: array
+    type: object
+  app_internal_application_storecontent.HomepageStats:
+    properties:
+      products_count:
+        type: integer
+    type: object
+  app_internal_application_storefront.AccountOrderSummary:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      item_count:
+        type: integer
+      order_number:
+        type: string
+      payment_status:
+        type: string
+      status:
+        type: string
+      total_toman:
+        type: integer
+    type: object
+  app_internal_application_storefront.CheckoutSummary:
+    properties:
+      currency:
+        type: string
+      currency_label:
+        type: string
+      discount_toman:
+        type: integer
+      shipping_toman:
+        type: integer
+      subtotal_toman:
+        type: integer
+      tax_toman:
+        type: integer
+      total_toman:
+        type: integer
+    type: object
+  app_internal_application_storefront.CouponResult:
+    properties:
+      code:
+        type: string
+      discount_toman:
+        type: integer
+      is_valid:
+        type: boolean
+      message:
+        type: string
+    type: object
+  app_internal_application_storefront.PlaceCheckoutOutput:
+    properties:
+      order_id:
+        type: string
+      order_number:
+        type: string
+      payment_status:
+        type: string
+      status:
+        type: string
+      total_toman:
+        type: integer
+    type: object
+  app_internal_application_storefront.PreviewCheckoutOutput:
+    properties:
+      coupon:
+        $ref: '#/definitions/app_internal_application_storefront.CouponResult'
+      items:
+        items:
+          $ref: '#/definitions/app_internal_application_storefront.PreviewLineItem'
+        type: array
+      summary:
+        $ref: '#/definitions/app_internal_application_storefront.CheckoutSummary'
+    type: object
+  app_internal_application_storefront.PreviewLineItem:
+    properties:
+      available_quantity:
+        type: integer
+      is_available:
+        type: boolean
+      line_total_toman:
+        type: integer
+      product_id:
+        type: string
+      product_name:
+        type: string
+      quantity:
+        type: integer
+      sku_code:
+        type: string
+      sku_id:
+        type: string
+      thumbnail_url:
+        type: string
+      unit_price_toman:
+        type: integer
+      variant_label:
+        type: string
+    type: object
+  app_internal_application_storefront.ProductCard:
+    properties:
+      brand:
+        type: string
+      discount_percent:
+        type: integer
+      id:
+        type: string
+      is_on_sale:
+        type: boolean
+      is_out_of_stock:
+        type: boolean
+      name:
+        type: string
+      price_toman:
+        type: integer
+      sale_price_toman:
+        type: integer
+      slug:
+        type: string
+      thumbnail_url:
+        type: string
+    type: object
+  app_internal_application_storefront.ProductDetail:
+    properties:
+      attributes:
+        items:
+          $ref: '#/definitions/app_internal_domain_product.ProductAttribute'
+        type: array
+      brand:
+        type: string
+      description:
+        type: string
+      discount_percent:
+        type: integer
+      id:
+        type: string
+      images:
+        items:
+          $ref: '#/definitions/app_internal_domain_product.Image'
+        type: array
+      is_on_sale:
+        type: boolean
+      is_out_of_stock:
+        type: boolean
+      name:
+        type: string
+      price_toman:
+        type: integer
+      sale_price_toman:
+        type: integer
+      short_description:
+        type: string
+      skus:
+        items:
+          $ref: '#/definitions/app_internal_domain_product.Sku'
+        type: array
+      slug:
+        type: string
+      thumbnail_url:
+        type: string
+    type: object
+  app_internal_application_theme.PublicThemeOutput:
+    properties:
+      colors:
+        $ref: '#/definitions/app_internal_domain_theme.ColorTokens'
+      font_family:
+        type: string
+    type: object
+  app_internal_domain_product.Image:
+    properties:
+      altText:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      productID:
+        type: string
+      sortOrder:
+        type: integer
+      url:
+        type: string
+    type: object
+  app_internal_domain_product.ProductAttribute:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      productID:
+        type: string
+      values:
+        items:
+          $ref: '#/definitions/app_internal_domain_product.ProductAttributeValue'
+        type: array
+    type: object
+  app_internal_domain_product.ProductAttributeValue:
+    properties:
+      attributeID:
+        type: string
+      id:
+        type: string
+      value:
+        type: string
+    type: object
+  app_internal_domain_product.Sku:
+    properties:
+      attributes:
+        additionalProperties:
+          type: string
+        type: object
+      code:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      productID:
+        type: string
+    type: object
+  app_internal_domain_settings.Contact:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      email:
+        type: string
+      phone:
+        type: string
+    type: object
+  app_internal_domain_settings.SEO:
+    properties:
+      google_analytics_id:
+        type: string
+      meta_description:
+        type: string
+      meta_keywords:
+        type: string
+      meta_title:
+        type: string
+      og_image_url:
+        type: string
+      robots_txt:
+        type: string
+      sitemap_enabled:
+        type: boolean
+    type: object
+  app_internal_domain_settings.Site:
+    properties:
+      favicon_url:
+        type: string
+      logo_url:
+        type: string
+      name:
+        type: string
+      url:
+        type: string
+    type: object
+  app_internal_domain_settings.Social:
+    properties:
+      facebook:
+        type: string
+      instagram:
+        type: string
+      linkedin:
+        type: string
+      tiktok:
+        type: string
+      twitter:
+        type: string
+      youtube:
+        type: string
+    type: object
+  app_internal_domain_storecontent.FAQItem:
+    properties:
+      answer:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      question:
+        type: string
+      sortOrder:
+        type: integer
+    type: object
+  app_internal_domain_storecontent.HomepageReview:
+    properties:
+      createdAt:
+        type: string
+      customerName:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      photoURL:
+        type: string
+      rating:
+        type: integer
+      reviewText:
+        type: string
+      sortOrder:
+        type: integer
+    type: object
+  app_internal_domain_storecontent.PartnerBrand:
+    properties:
+      createdAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      linkURL:
+        type: string
+      logoURL:
+        type: string
+      sortOrder:
+        type: integer
+      title:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  app_internal_domain_storecontent.ProBanner:
+    properties:
+      createdAt:
+        type: string
+      desktopImageURL:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      linkURL:
+        type: string
+      mobileImageURL:
+        type: string
+      sortOrder:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  app_internal_domain_theme.ColorTokens:
+    properties:
+      accent:
+        type: string
+      accent_foreground:
+        type: string
+      background:
+        type: string
+      border:
+        type: string
+      destructive:
+        type: string
+      foreground:
+        type: string
+      muted:
+        type: string
+      muted_foreground:
+        type: string
+      primary:
+        type: string
+      primary_foreground:
+        type: string
+      secondary:
+        type: string
+      secondary_foreground:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_request.ContactSectionRequest:
+    properties:
+      image_url:
+        maxLength: 500
+        type: string
+    type: object
   app_internal_interfaces_http_dto_request.CreateAdminUserRequest:
     properties:
       email:
@@ -236,12 +727,53 @@ definitions:
     - name
     - price
     type: object
+  app_internal_interfaces_http_dto_request.FAQItemRequest:
+    properties:
+      answer:
+        maxLength: 5000
+        type: string
+      is_active:
+        type: boolean
+      question:
+        maxLength: 2000
+        type: string
+      sort_order:
+        minimum: 0
+        type: integer
+    required:
+    - answer
+    - question
+    type: object
   app_internal_interfaces_http_dto_request.ForgotPasswordRequest:
     properties:
       email:
         type: string
     required:
     - email
+    type: object
+  app_internal_interfaces_http_dto_request.HomepageReviewRequest:
+    properties:
+      customer_name:
+        maxLength: 255
+        type: string
+      is_active:
+        type: boolean
+      photo_url:
+        maxLength: 500
+        type: string
+      rating:
+        maximum: 5
+        minimum: 1
+        type: integer
+      review_text:
+        maxLength: 5000
+        type: string
+      sort_order:
+        minimum: 0
+        type: integer
+    required:
+    - customer_name
+    - review_text
     type: object
   app_internal_interfaces_http_dto_request.LoginRequest:
     properties:
@@ -304,6 +836,48 @@ definitions:
     - country
     - postal_code
     - street
+    type: object
+  app_internal_interfaces_http_dto_request.PartnerBrandRequest:
+    properties:
+      description:
+        maxLength: 2000
+        type: string
+      is_active:
+        type: boolean
+      link_url:
+        maxLength: 500
+        type: string
+      logo_url:
+        maxLength: 500
+        type: string
+      sort_order:
+        minimum: 0
+        type: integer
+      title:
+        maxLength: 255
+        type: string
+    required:
+    - logo_url
+    - title
+    type: object
+  app_internal_interfaces_http_dto_request.ProBannerRequest:
+    properties:
+      desktop_image_url:
+        maxLength: 500
+        type: string
+      is_active:
+        type: boolean
+      link_url:
+        maxLength: 500
+        type: string
+      mobile_image_url:
+        maxLength: 500
+        type: string
+      sort_order:
+        minimum: 0
+        type: integer
+    required:
+    - desktop_image_url
     type: object
   app_internal_interfaces_http_dto_request.ProductAttributeRequest:
     properties:
@@ -395,6 +969,113 @@ definitions:
     - first_name
     - last_name
     - password
+    type: object
+  app_internal_interfaces_http_dto_request.SlideItemRequest:
+    properties:
+      product_id:
+        type: string
+      sort_order:
+        minimum: 0
+        type: integer
+      tab_label:
+        maxLength: 100
+        type: string
+    required:
+    - product_id
+    type: object
+  app_internal_interfaces_http_dto_request.StoreCheckoutCustomerRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        maxLength: 100
+        type: string
+      last_name:
+        maxLength: 100
+        type: string
+      phone:
+        maxLength: 20
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    type: object
+  app_internal_interfaces_http_dto_request.StoreCheckoutItemRequest:
+    properties:
+      product_id:
+        type: string
+      quantity:
+        type: integer
+      sku_id:
+        type: string
+    required:
+    - product_id
+    - quantity
+    type: object
+  app_internal_interfaces_http_dto_request.StoreCheckoutPreviewRequest:
+    properties:
+      coupon_code:
+        maxLength: 50
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.StoreCheckoutItemRequest'
+        minItems: 1
+        type: array
+      shipping_amount:
+        minimum: 0
+        type: number
+      tax_amount:
+        minimum: 0
+        type: number
+    required:
+    - items
+    type: object
+  app_internal_interfaces_http_dto_request.StoreCheckoutRequest:
+    properties:
+      billing_address:
+        $ref: '#/definitions/app_internal_interfaces_http_dto_request.OrderAddressRequest'
+      coupon_code:
+        maxLength: 50
+        type: string
+      customer:
+        $ref: '#/definitions/app_internal_interfaces_http_dto_request.StoreCheckoutCustomerRequest'
+      items:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.StoreCheckoutItemRequest'
+        minItems: 1
+        type: array
+      notes:
+        maxLength: 2000
+        type: string
+      payment_method:
+        maxLength: 50
+        type: string
+      shipping_address:
+        $ref: '#/definitions/app_internal_interfaces_http_dto_request.OrderAddressRequest'
+      shipping_amount:
+        minimum: 0
+        type: number
+      tax_amount:
+        minimum: 0
+        type: number
+    required:
+    - customer
+    - items
+    - shipping_address
+    type: object
+  app_internal_interfaces_http_dto_request.StoreCouponValidateRequest:
+    properties:
+      code:
+        maxLength: 50
+        type: string
+      subtotal_toman:
+        minimum: 0
+        type: integer
+    required:
+    - code
+    - subtotal_toman
     type: object
   app_internal_interfaces_http_dto_request.UpdateAdminUserRequest:
     properties:
@@ -523,6 +1204,38 @@ definitions:
         - guest
         type: string
     type: object
+  app_internal_interfaces_http_dto_request.UpdateFAQSectionRequest:
+    properties:
+      image_url:
+        maxLength: 500
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_request.UpdateHeroRequest:
+    properties:
+      cta_primary_text:
+        maxLength: 100
+        type: string
+      cta_primary_url:
+        maxLength: 500
+        type: string
+      cta_secondary_text:
+        maxLength: 100
+        type: string
+      cta_secondary_url:
+        maxLength: 500
+        type: string
+      is_active:
+        type: boolean
+      subtitle:
+        maxLength: 2000
+        type: string
+      title:
+        maxLength: 255
+        type: string
+      video_url:
+        maxLength: 500
+        type: string
+    type: object
   app_internal_interfaces_http_dto_request.UpdateInventoryRequest:
     properties:
       adjustment_reason:
@@ -639,6 +1352,17 @@ definitions:
         - archived
         type: string
     type: object
+  app_internal_interfaces_http_dto_request.UpdateProductSlideRequest:
+    properties:
+      autoplay_interval_ms:
+        minimum: 1000
+        type: integer
+      is_active:
+        type: boolean
+      title:
+        maxLength: 255
+        type: string
+    type: object
   app_internal_interfaces_http_dto_request.UpdateSEOSettingsRequest:
     properties:
       google_analytics_id:
@@ -699,6 +1423,18 @@ definitions:
         type: string
       youtube:
         maxLength: 500
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_request.UpdateStoreStyleRequest:
+    properties:
+      active_theme_id:
+        type: string
+      colors:
+        additionalProperties:
+          type: string
+        type: object
+      font_family:
+        maxLength: 100
         type: string
     type: object
   app_internal_interfaces_http_dto_response.AdminUserListResponse:
@@ -849,6 +1585,11 @@ definitions:
       sort_order:
         type: integer
       updated_at:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.ContactSectionResponse:
+    properties:
+      image_url:
         type: string
     type: object
   app_internal_interfaces_http_dto_response.ContactSettingsResponse:
@@ -1091,6 +1832,35 @@ definitions:
         example: 400
         type: integer
     type: object
+  app_internal_interfaces_http_dto_response.FAQItemListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.FAQItemResponse'
+        type: array
+    type: object
+  app_internal_interfaces_http_dto_response.FAQItemResponse:
+    properties:
+      answer:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      question:
+        type: string
+      sort_order:
+        type: integer
+    type: object
+  app_internal_interfaces_http_dto_response.FAQSectionResponse:
+    properties:
+      id:
+        type: string
+      image_url:
+        type: string
+      updated_at:
+        type: string
+    type: object
   app_internal_interfaces_http_dto_response.FeaturedProductsResponse:
     properties:
       data:
@@ -1106,6 +1876,55 @@ definitions:
       version:
         example: 1.0.0
         type: string
+    type: object
+  app_internal_interfaces_http_dto_response.HeroResponse:
+    properties:
+      cta_primary_text:
+        type: string
+      cta_primary_url:
+        type: string
+      cta_secondary_text:
+        type: string
+      cta_secondary_url:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      subtitle:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+      video_url:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.HomepageReviewListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.HomepageReviewResponse'
+        type: array
+    type: object
+  app_internal_interfaces_http_dto_response.HomepageReviewResponse:
+    properties:
+      created_at:
+        type: string
+      customer_name:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      photo_url:
+        type: string
+      rating:
+        type: integer
+      review_text:
+        type: string
+      sort_order:
+        type: integer
     type: object
   app_internal_interfaces_http_dto_response.MessageResponse:
     properties:
@@ -1325,6 +2144,60 @@ definitions:
       to_status:
         type: string
     type: object
+  app_internal_interfaces_http_dto_response.PartnerBrandListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.PartnerBrandResponse'
+        type: array
+    type: object
+  app_internal_interfaces_http_dto_response.PartnerBrandResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      link_url:
+        type: string
+      logo_url:
+        type: string
+      sort_order:
+        type: integer
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.ProBannerListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProBannerResponse'
+        type: array
+    type: object
+  app_internal_interfaces_http_dto_response.ProBannerResponse:
+    properties:
+      created_at:
+        type: string
+      desktop_image_url:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      link_url:
+        type: string
+      mobile_image_url:
+        type: string
+      sort_order:
+        type: integer
+      updated_at:
+        type: string
+    type: object
   app_internal_interfaces_http_dto_response.ProductAttributeResponse:
     properties:
       id:
@@ -1406,6 +2279,36 @@ definitions:
       slug:
         type: string
       status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.ProductSlideListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductSlideResponse'
+        type: array
+    type: object
+  app_internal_interfaces_http_dto_response.ProductSlideResponse:
+    properties:
+      autoplay_interval_ms:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      items:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.SlideItemResponse'
+        type: array
+      slide_type:
+        type: string
+      sort_order:
+        type: integer
+      title:
         type: string
       updated_at:
         type: string
@@ -1517,6 +2420,17 @@ definitions:
       id:
         type: string
     type: object
+  app_internal_interfaces_http_dto_response.SlideItemResponse:
+    properties:
+      id:
+        type: string
+      product_id:
+        type: string
+      sort_order:
+        type: integer
+      tab_label:
+        type: string
+    type: object
   app_internal_interfaces_http_dto_response.SocialSettingsResponse:
     properties:
       facebook:
@@ -1530,6 +2444,91 @@ definitions:
       twitter:
         type: string
       youtube:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.StoreAccountOrderListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_application_storefront.AccountOrderSummary'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.StoreProductListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_application_storefront.ProductCard'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.StoreStyleResponse:
+    properties:
+      active_theme:
+        $ref: '#/definitions/app_internal_interfaces_http_dto_response.ThemeSummaryResponse'
+      active_theme_id:
+        type: string
+      colors:
+        $ref: '#/definitions/app_internal_domain_theme.ColorTokens'
+      font_family:
+        type: string
+      id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.ThemeListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.ThemeResponse'
+        type: array
+    type: object
+  app_internal_interfaces_http_dto_response.ThemePurchaseResponse:
+    properties:
+      purchased_at:
+        type: string
+      theme_id:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.ThemeResponse:
+    properties:
+      created_at:
+        type: string
+      default_colors:
+        $ref: '#/definitions/app_internal_domain_theme.ColorTokens'
+      default_font:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      is_active_theme:
+        type: boolean
+      is_purchased:
+        type: boolean
+      name:
+        type: string
+      preview_image_url:
+        type: string
+      price:
+        type: number
+      slug:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.ThemeSummaryResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      preview_image_url:
+        type: string
+      slug:
         type: string
     type: object
   app_internal_interfaces_http_dto_response.TokenResponse:
@@ -1574,13 +2573,14 @@ info:
   contact:
     email: support@shop.com
     name: API Support
-  description: REST API for the eCommerce admin panel. Supports JWT authentication
-    with role-based access (admin, customer).
+  description: REST API for the eCommerce admin panel and public storefront. Supports
+    JWT authentication with role-based access (admin, customer). Store endpoints under
+    /api/v1/store are public; account routes require a customer token.
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
   termsOfService: http://swagger.io/terms/
-  title: eCommerce Admin API
+  title: eCommerce API
   version: "1.0"
 paths:
   /api/v1/admin/:
@@ -3911,6 +4911,1093 @@ paths:
       summary: Update social settings
       tags:
       - settings
+  /api/v1/admin/store-style:
+    get:
+      description: Returns the current store style with resolved design tokens.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.StoreStyleResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get store style
+      tags:
+      - themes
+    put:
+      consumes:
+      - application/json
+      description: Updates active theme, color tokens, and font family.
+      parameters:
+      - description: Store style
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateStoreStyleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.StoreStyleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update store style
+      tags:
+      - themes
+  /api/v1/admin/storefront/contact-section:
+    get:
+      description: Returns the homepage contact section image URL.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ContactSectionResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get contact section
+      tags:
+      - storefront
+    put:
+      consumes:
+      - application/json
+      description: Updates the homepage contact section image URL.
+      parameters:
+      - description: Contact section
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.ContactSectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ContactSectionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update contact section
+      tags:
+      - storefront
+  /api/v1/admin/storefront/faq:
+    get:
+      description: Returns the FAQ section image configuration.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.FAQSectionResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get FAQ section
+      tags:
+      - storefront
+    put:
+      consumes:
+      - application/json
+      description: Updates the FAQ section image.
+      parameters:
+      - description: FAQ section
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateFAQSectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.FAQSectionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update FAQ section
+      tags:
+      - storefront
+  /api/v1/admin/storefront/faq/items:
+    get:
+      description: Returns all FAQ Q&A items.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.FAQItemListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List FAQ items
+      tags:
+      - storefront
+    post:
+      consumes:
+      - application/json
+      description: Creates an FAQ Q&A item.
+      parameters:
+      - description: FAQ item
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.FAQItemRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.FAQItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create FAQ item
+      tags:
+      - storefront
+  /api/v1/admin/storefront/faq/items/{id}:
+    delete:
+      description: Deletes an FAQ Q&A item.
+      parameters:
+      - description: FAQ item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete FAQ item
+      tags:
+      - storefront
+    put:
+      consumes:
+      - application/json
+      description: Updates an FAQ Q&A item.
+      parameters:
+      - description: FAQ item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: FAQ item
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.FAQItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.FAQItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update FAQ item
+      tags:
+      - storefront
+  /api/v1/admin/storefront/hero:
+    get:
+      description: Returns the singleton homepage hero configuration.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.HeroResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get storefront hero
+      tags:
+      - storefront
+    put:
+      consumes:
+      - application/json
+      description: Updates the singleton homepage hero configuration.
+      parameters:
+      - description: Hero settings
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateHeroRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.HeroResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update storefront hero
+      tags:
+      - storefront
+  /api/v1/admin/storefront/homepage-reviews:
+    get:
+      description: Returns all homepage customer testimonials.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.HomepageReviewListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List homepage reviews
+      tags:
+      - storefront
+    post:
+      consumes:
+      - application/json
+      description: Creates a homepage customer testimonial.
+      parameters:
+      - description: Review data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.HomepageReviewRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.HomepageReviewResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create homepage review
+      tags:
+      - storefront
+  /api/v1/admin/storefront/homepage-reviews/{id}:
+    delete:
+      description: Deletes a homepage customer testimonial.
+      parameters:
+      - description: Review ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete homepage review
+      tags:
+      - storefront
+    put:
+      consumes:
+      - application/json
+      description: Updates a homepage customer testimonial.
+      parameters:
+      - description: Review ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Review data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.HomepageReviewRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.HomepageReviewResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update homepage review
+      tags:
+      - storefront
+  /api/v1/admin/storefront/navigation:
+    get:
+      description: Returns the storefront header navigation menu tree.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.NavigationResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get storefront navigation
+      tags:
+      - storefront
+    put:
+      consumes:
+      - application/json
+      description: Replaces the storefront header navigation menu tree.
+      parameters:
+      - description: Navigation tree
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateNavigationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.NavigationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update storefront navigation
+      tags:
+      - storefront
+  /api/v1/admin/storefront/partner-brands:
+    get:
+      description: Returns all homepage partner brand blocks.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.PartnerBrandListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List partner brands
+      tags:
+      - storefront
+    post:
+      consumes:
+      - application/json
+      description: Creates a homepage partner brand block.
+      parameters:
+      - description: Partner brand data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.PartnerBrandRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.PartnerBrandResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create partner brand
+      tags:
+      - storefront
+  /api/v1/admin/storefront/partner-brands/{id}:
+    delete:
+      description: Deletes a homepage partner brand block.
+      parameters:
+      - description: Partner brand ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete partner brand
+      tags:
+      - storefront
+    put:
+      consumes:
+      - application/json
+      description: Updates a homepage partner brand block.
+      parameters:
+      - description: Partner brand ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Partner brand data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.PartnerBrandRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.PartnerBrandResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update partner brand
+      tags:
+      - storefront
+  /api/v1/admin/storefront/pro-banners:
+    get:
+      description: Returns all promotional homepage banners.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProBannerListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List pro banners
+      tags:
+      - storefront
+    post:
+      consumes:
+      - application/json
+      description: Creates a promotional homepage banner.
+      parameters:
+      - description: Banner data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.ProBannerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProBannerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create pro banner
+      tags:
+      - storefront
+  /api/v1/admin/storefront/pro-banners/{id}:
+    delete:
+      description: Deletes a promotional homepage banner.
+      parameters:
+      - description: Banner ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete pro banner
+      tags:
+      - storefront
+    put:
+      consumes:
+      - application/json
+      description: Updates a promotional homepage banner.
+      parameters:
+      - description: Banner ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Banner data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.ProBannerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProBannerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update pro banner
+      tags:
+      - storefront
+  /api/v1/admin/storefront/product-slide-items/{id}:
+    delete:
+      description: Removes a product from a carousel slide.
+      parameters:
+      - description: Slide item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete slide item
+      tags:
+      - storefront
+    put:
+      consumes:
+      - application/json
+      description: Updates a product slide item sort order or tab label.
+      parameters:
+      - description: Slide item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Slide item
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.SlideItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.SlideItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update slide item
+      tags:
+      - storefront
+  /api/v1/admin/storefront/product-slides:
+    get:
+      description: Returns all homepage product carousel configurations.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductSlideListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List product slides
+      tags:
+      - storefront
+  /api/v1/admin/storefront/product-slides/{slideType}:
+    put:
+      consumes:
+      - application/json
+      description: Updates a product carousel configuration by slide type.
+      parameters:
+      - description: Slide type
+        enum:
+        - featured
+        - bestseller
+        - discounted
+        in: path
+        name: slideType
+        required: true
+        type: string
+      - description: Slide settings
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.UpdateProductSlideRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductSlideResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update product slide
+      tags:
+      - storefront
+  /api/v1/admin/storefront/product-slides/{slideType}/items:
+    post:
+      consumes:
+      - application/json
+      description: Adds a product to a product carousel slide.
+      parameters:
+      - description: Slide type
+        enum:
+        - featured
+        - bestseller
+        - discounted
+        in: path
+        name: slideType
+        required: true
+        type: string
+      - description: Slide item
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.SlideItemRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.SlideItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add product to slide
+      tags:
+      - storefront
+  /api/v1/admin/themes:
+    get:
+      description: Returns available themes with purchase status for the current admin
+        user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ThemeListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List themes
+      tags:
+      - themes
+  /api/v1/admin/themes/{id}/purchase:
+    post:
+      description: Records a theme purchase for the current admin user.
+      parameters:
+      - description: Theme ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ThemePurchaseResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Purchase theme
+      tags:
+      - themes
   /api/v1/admin/uploads:
     post:
       consumes:
@@ -4365,6 +6452,252 @@ paths:
       summary: Sign up
       tags:
       - auth
+  /api/v1/store/account/orders:
+    get:
+      description: Returns order history for the authenticated customer.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.StoreAccountOrderListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List customer orders
+      tags:
+      - store
+  /api/v1/store/account/orders/{id}:
+    get:
+      description: Returns order detail for the authenticated customer.
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.OrderDetailResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get customer order
+      tags:
+      - store
+  /api/v1/store/categories:
+    get:
+      description: Returns the active category tree for the storefront.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/app_internal_interfaces_http_dto_response.CategoryResponse'
+            type: array
+      summary: List storefront categories
+      tags:
+      - store
+  /api/v1/store/checkout:
+    post:
+      consumes:
+      - application/json
+      description: Creates an unpaid storefront order for guest or authenticated customers.
+      parameters:
+      - description: Checkout
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.StoreCheckoutRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_application_storefront.PlaceCheckoutOutput'
+      summary: Place order
+      tags:
+      - store
+  /api/v1/store/checkout/preview:
+    post:
+      consumes:
+      - application/json
+      description: Validates cart items and computes checkout totals without placing
+        an order.
+      parameters:
+      - description: Checkout preview
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.StoreCheckoutPreviewRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_application_storefront.PreviewCheckoutOutput'
+      summary: Preview checkout
+      tags:
+      - store
+  /api/v1/store/coupons/validate:
+    post:
+      consumes:
+      - application/json
+      description: Validates a coupon code against a subtotal in Toman.
+      parameters:
+      - description: Coupon validation
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.StoreCouponValidateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_application_storefront.CouponResult'
+      summary: Validate coupon
+      tags:
+      - store
+  /api/v1/store/homepage:
+    get:
+      description: Returns aggregated homepage sections for the storefront.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_application_storecontent.HomepageProjection'
+      summary: Get homepage content
+      tags:
+      - store
+  /api/v1/store/products:
+    get:
+      description: Returns active products for the public storefront with search,
+        filters, and sort.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Search query
+        in: query
+        name: q
+        type: string
+      - description: Category ID
+        in: query
+        name: category_id
+        type: string
+      - description: Sort mode
+        enum:
+        - bestseller
+        - newest
+        - discounted
+        - price_asc
+        - price_desc
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.StoreProductListResponse'
+      summary: List storefront products
+      tags:
+      - store
+  /api/v1/store/products/{slugOrId}:
+    get:
+      description: Returns product detail by slug or UUID including variants and SKUs.
+      parameters:
+      - description: Product slug or UUID
+        in: path
+        name: slugOrId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_application_storefront.ProductDetail'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      summary: Get storefront product
+      tags:
+      - store
+  /api/v1/store/settings:
+    get:
+      description: Returns public site, contact, social, and SEO settings.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_application_settings.PublicSettings'
+      summary: Get public store settings
+      tags:
+      - store
+  /api/v1/store/theme:
+    get:
+      description: Returns active theme slug, color tokens, and font for CSS variables.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_application_theme.PublicThemeOutput'
+      summary: Get active storefront theme
+      tags:
+      - store
   /healthz:
     get:
       description: Returns 200 if the process is alive. Used by orchestrators for
