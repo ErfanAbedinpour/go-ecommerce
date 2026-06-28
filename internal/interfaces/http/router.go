@@ -92,6 +92,8 @@ func registerAdminRoutes(r chi.Router, c *di.Container) {
 		registerSettingsRoutes(r, c)
 		registerAdminStorefrontRoutes(r, c)
 		registerAdminThemeRoutes(r, c)
+		registerAdminEngagementRoutes(r, c)
+		registerAdminBlogRoutes(r, c)
 	})
 }
 
@@ -228,10 +230,24 @@ func registerStoreRoutes(r chi.Router, c *di.Container) {
 		r.Get("/theme", c.Store.GetTheme)
 		r.Post("/coupons/validate", c.Store.ValidateCoupon)
 
+		// Public engagement & blog storefront routes
+		r.Get("/products/{productId}/reviews", c.ProductReview.ListByProduct)
+		r.Get("/products/{productId}/reviews/summary", c.ProductReview.GetSummary)
+		r.Get("/products/{productId}/questions", c.ProductQuestion.ListByProduct)
+		r.Post("/products/{productId}/questions", c.ProductQuestion.Ask)
+		r.Post("/contact", c.Contact.Submit)
+
+		r.Get("/blog/posts", c.Blog.StoreListPosts)
+		r.Get("/blog/posts/{slug}", c.Blog.StoreGetPost)
+		r.Get("/blog/categories", c.Blog.StoreListCategories)
+		r.Get("/blog/posts/{postId}/comments", c.Blog.StoreListComments)
+		r.Post("/blog/posts/{postId}/comments", c.Blog.StoreSubmitComment)
+
 		r.Group(func(r chi.Router) {
 			r.Use(appmiddleware.OptionalAuthenticate(c.JWT))
 			r.Post("/checkout/preview", c.Store.PreviewCheckout)
 			r.Post("/checkout", c.Store.Checkout)
+			r.Post("/products/{productId}/reviews", c.ProductReview.Submit)
 		})
 
 		r.Group(func(r chi.Router) {
@@ -239,6 +255,9 @@ func registerStoreRoutes(r chi.Router, c *di.Container) {
 			r.Use(appmiddleware.RequireCustomer())
 			r.Get("/account/orders", c.Store.ListAccountOrders)
 			r.Get("/account/orders/{id}", c.Store.GetAccountOrder)
+			r.Post("/account/wishlist", c.Wishlist.Add)
+			r.Delete("/account/wishlist/{productId}", c.Wishlist.Remove)
+			r.Get("/account/wishlist", c.Wishlist.List)
 		})
 	})
 }
@@ -289,6 +308,53 @@ func registerAdminThemeRoutes(r chi.Router, c *di.Container) {
 	r.Post("/themes/{id}/purchase", c.Theme.PurchaseTheme)
 	r.Get("/store-style", c.Theme.GetStoreStyle)
 	r.Put("/store-style", c.Theme.UpdateStoreStyle)
+}
+
+func registerAdminEngagementRoutes(r chi.Router, c *di.Container) {
+	r.Route("/reviews", func(r chi.Router) {
+		r.Get("/", c.ProductReview.ListAdmin)
+		r.Patch("/{id}/status", c.ProductReview.UpdateStatus)
+		r.Delete("/{id}", c.ProductReview.Delete)
+	})
+
+	r.Route("/questions", func(r chi.Router) {
+		r.Get("/", c.ProductQuestion.ListAdmin)
+		r.Post("/{id}/answer", c.ProductQuestion.Answer)
+		r.Delete("/{id}", c.ProductQuestion.Delete)
+	})
+
+	r.Route("/contact-messages", func(r chi.Router) {
+		r.Get("/", c.Contact.List)
+		r.Get("/{id}", c.Contact.Get)
+		r.Patch("/{id}/status", c.Contact.UpdateStatus)
+		r.Delete("/{id}", c.Contact.Delete)
+	})
+}
+
+func registerAdminBlogRoutes(r chi.Router, c *di.Container) {
+	r.Route("/blog", func(r chi.Router) {
+		r.Route("/categories", func(r chi.Router) {
+			r.Get("/", c.Blog.AdminListCategories)
+			r.Post("/", c.Blog.AdminCreateCategory)
+			r.Get("/{id}", c.Blog.AdminGetCategory)
+			r.Put("/{id}", c.Blog.AdminUpdateCategory)
+			r.Delete("/{id}", c.Blog.AdminDeleteCategory)
+		})
+
+		r.Route("/posts", func(r chi.Router) {
+			r.Get("/", c.Blog.AdminListPosts)
+			r.Post("/", c.Blog.AdminCreatePost)
+			r.Get("/{id}", c.Blog.AdminGetPost)
+			r.Put("/{id}", c.Blog.AdminUpdatePost)
+			r.Delete("/{id}", c.Blog.AdminDeletePost)
+		})
+
+		r.Route("/comments", func(r chi.Router) {
+			r.Get("/", c.Blog.AdminListComments)
+			r.Patch("/{id}/status", c.Blog.AdminModerateComment)
+			r.Delete("/{id}", c.Blog.AdminDeleteComment)
+		})
+	})
 }
 
 func corsMiddleware(cfg *config.Config) func(http.Handler) http.Handler {

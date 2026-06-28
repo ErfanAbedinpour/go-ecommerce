@@ -485,6 +485,152 @@ definitions:
       secondary_foreground:
         type: string
     type: object
+  app_internal_interfaces_http_dto_request.BlogCategoryCreateRequest:
+    properties:
+      description:
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      slug:
+        maxLength: 255
+        type: string
+    required:
+    - name
+    - slug
+    type: object
+  app_internal_interfaces_http_dto_request.BlogCategoryUpdateRequest:
+    properties:
+      description:
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      slug:
+        maxLength: 255
+        type: string
+    required:
+    - name
+    - slug
+    type: object
+  app_internal_interfaces_http_dto_request.BlogCommentModerateRequest:
+    properties:
+      status:
+        enum:
+        - pending
+        - approved
+        - rejected
+        type: string
+    required:
+    - status
+    type: object
+  app_internal_interfaces_http_dto_request.BlogCommentSubmitRequest:
+    properties:
+      author_email:
+        maxLength: 255
+        type: string
+      author_name:
+        maxLength: 255
+        type: string
+      content:
+        type: string
+    required:
+    - author_email
+    - author_name
+    - content
+    type: object
+  app_internal_interfaces_http_dto_request.BlogPostCreateRequest:
+    properties:
+      category_id:
+        type: string
+      content:
+        type: string
+      featured_image:
+        maxLength: 500
+        type: string
+      slug:
+        maxLength: 255
+        type: string
+      status:
+        enum:
+        - draft
+        - published
+        type: string
+      summary:
+        type: string
+      title:
+        maxLength: 255
+        type: string
+    required:
+    - content
+    - slug
+    - title
+    type: object
+  app_internal_interfaces_http_dto_request.BlogPostUpdateRequest:
+    properties:
+      category_id:
+        type: string
+      content:
+        type: string
+      featured_image:
+        maxLength: 500
+        type: string
+      slug:
+        maxLength: 255
+        type: string
+      status:
+        enum:
+        - draft
+        - published
+        type: string
+      summary:
+        type: string
+      title:
+        maxLength: 255
+        type: string
+    required:
+    - content
+    - slug
+    - title
+    type: object
+  app_internal_interfaces_http_dto_request.ContactMessageStatusUpdateRequest:
+    properties:
+      status:
+        enum:
+        - unread
+        - read
+        - archived
+        type: string
+    required:
+    - status
+    type: object
+  app_internal_interfaces_http_dto_request.ContactMessageSubmitRequest:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      message:
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      phone:
+        maxLength: 50
+        type: string
+      source:
+        enum:
+        - homepage
+        - about
+        - contact_page
+        type: string
+      subject:
+        maxLength: 500
+        type: string
+    required:
+    - email
+    - message
+    - name
+    type: object
   app_internal_interfaces_http_dto_request.ContactSectionRequest:
     properties:
       image_url:
@@ -915,6 +1061,57 @@ definitions:
       quantity:
         minimum: 0
         type: integer
+    type: object
+  app_internal_interfaces_http_dto_request.ProductQuestionAnswerRequest:
+    properties:
+      answer:
+        type: string
+    required:
+    - answer
+    type: object
+  app_internal_interfaces_http_dto_request.ProductQuestionAskRequest:
+    properties:
+      asker_email:
+        maxLength: 255
+        type: string
+      asker_name:
+        maxLength: 255
+        type: string
+      question:
+        type: string
+    required:
+    - asker_name
+    - question
+    type: object
+  app_internal_interfaces_http_dto_request.ProductReviewStatusUpdateRequest:
+    properties:
+      status:
+        enum:
+        - pending
+        - approved
+        - rejected
+        type: string
+    required:
+    - status
+    type: object
+  app_internal_interfaces_http_dto_request.ProductReviewSubmitRequest:
+    properties:
+      author_name:
+        maxLength: 255
+        type: string
+      content:
+        type: string
+      rating:
+        maximum: 5
+        minimum: 1
+        type: integer
+      title:
+        maxLength: 255
+        type: string
+    required:
+    - author_name
+    - content
+    - rating
     type: object
   app_internal_interfaces_http_dto_request.RefreshRequest:
     properties:
@@ -1437,6 +1634,88 @@ definitions:
         maxLength: 100
         type: string
     type: object
+  app_internal_interfaces_http_dto_request.WishlistAddRequest:
+    properties:
+      product_id:
+        type: string
+    required:
+    - product_id
+    type: object
+  app_internal_interfaces_http_dto_response.AdminBlogCommentListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.BlogCommentListItemResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.AdminProductQuestionListItemResponse:
+    properties:
+      answer:
+        type: string
+      answered_at:
+        type: string
+      answered_by:
+        type: string
+      asker_email:
+        type: string
+      asker_name:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      product_id:
+        type: string
+      product_name:
+        type: string
+      question:
+        type: string
+      status:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.AdminProductQuestionListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.AdminProductQuestionListItemResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.AdminProductReviewListItemResponse:
+    properties:
+      author_name:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      customer_id:
+        type: string
+      id:
+        type: string
+      product_id:
+        type: string
+      product_name:
+        type: string
+      rating:
+        type: integer
+      status:
+        type: string
+      title:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.AdminProductReviewListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.AdminProductReviewListItemResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
   app_internal_interfaces_http_dto_response.AdminUserListResponse:
     properties:
       data:
@@ -1467,6 +1746,131 @@ definitions:
       phone:
         type: string
       role:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.BlogCategoryResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.BlogCommentListItemResponse:
+    properties:
+      author_email:
+        type: string
+      author_name:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      post_id:
+        type: string
+      post_title:
+        type: string
+      status:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.BlogCommentListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.BlogCommentResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.BlogCommentResponse:
+    properties:
+      author_email:
+        type: string
+      author_name:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      post_id:
+        type: string
+      status:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.BlogPostListItemResponse:
+    properties:
+      author_id:
+        type: string
+      author_name:
+        type: string
+      category_id:
+        type: string
+      category_name:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      featured_image:
+        type: string
+      id:
+        type: string
+      published_at:
+        type: string
+      slug:
+        type: string
+      status:
+        type: string
+      summary:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.BlogPostListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.BlogPostListItemResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.BlogPostResponse:
+    properties:
+      author_id:
+        type: string
+      category_id:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      featured_image:
+        type: string
+      id:
+        type: string
+      published_at:
+        type: string
+      slug:
+        type: string
+      status:
+        type: string
+      summary:
+        type: string
+      title:
         type: string
       updated_at:
         type: string
@@ -1585,6 +1989,36 @@ definitions:
       sort_order:
         type: integer
       updated_at:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.ContactMessageListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.ContactMessageResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.ContactMessageResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      message:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      source:
+        type: string
+      status:
+        type: string
+      subject:
         type: string
     type: object
   app_internal_interfaces_http_dto_response.ContactSectionResponse:
@@ -2240,6 +2674,36 @@ definitions:
       meta:
         $ref: '#/definitions/app_pkg_pagination.Meta'
     type: object
+  app_internal_interfaces_http_dto_response.ProductQuestionListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductQuestionResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.ProductQuestionResponse:
+    properties:
+      answer:
+        type: string
+      answered_at:
+        type: string
+      answered_by:
+        type: string
+      asker_name:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      product_id:
+        type: string
+      question:
+        type: string
+      status:
+        type: string
+    type: object
   app_internal_interfaces_http_dto_response.ProductResponse:
     properties:
       attributes:
@@ -2282,6 +2746,48 @@ definitions:
         type: string
       updated_at:
         type: string
+    type: object
+  app_internal_interfaces_http_dto_response.ProductReviewListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductReviewResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.ProductReviewResponse:
+    properties:
+      author_name:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      customer_id:
+        type: string
+      id:
+        type: string
+      product_id:
+        type: string
+      rating:
+        type: integer
+      status:
+        type: string
+      title:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.ProductReviewSummaryResponse:
+    properties:
+      average_rating:
+        type: number
+      distribution:
+        additionalProperties:
+          format: int64
+          type: integer
+        type: object
+      total_count:
+        type: integer
     type: object
   app_internal_interfaces_http_dto_response.ProductSlideListResponse:
     properties:
@@ -2557,6 +3063,41 @@ definitions:
       url:
         type: string
     type: object
+  app_internal_interfaces_http_dto_response.WishlistItemResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      product:
+        $ref: '#/definitions/app_internal_interfaces_http_dto_response.WishlistProductSummaryResponse'
+      product_id:
+        type: string
+    type: object
+  app_internal_interfaces_http_dto_response.WishlistListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_response.WishlistItemResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/app_pkg_pagination.Meta'
+    type: object
+  app_internal_interfaces_http_dto_response.WishlistProductSummaryResponse:
+    properties:
+      image_url:
+        type: string
+      is_in_stock:
+        type: boolean
+      name:
+        type: string
+      price:
+        type: number
+      sale_price:
+        type: number
+      slug:
+        type: string
+    type: object
   app_pkg_pagination.Meta:
     properties:
       page:
@@ -2606,6 +3147,487 @@ paths:
       summary: Admin API root
       tags:
       - admin
+  /api/v1/admin/blog/categories:
+    get:
+      description: Get list of all blog categories for admin panel.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/app_internal_interfaces_http_dto_response.BlogCategoryResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List categories (Admin)
+      tags:
+      - admin-blog
+    post:
+      consumes:
+      - application/json
+      description: Create a new blog category.
+      parameters:
+      - description: Category data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.BlogCategoryCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.BlogCategoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create category (Admin)
+      tags:
+      - admin-blog
+  /api/v1/admin/blog/categories/{id}:
+    delete:
+      description: Delete a blog category by ID.
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete category (Admin)
+      tags:
+      - admin-blog
+    get:
+      description: Get details of a single blog category by ID.
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.BlogCategoryResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get category (Admin)
+      tags:
+      - admin-blog
+    put:
+      consumes:
+      - application/json
+      description: Update details of an existing blog category.
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Category data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.BlogCategoryUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.BlogCategoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update category (Admin)
+      tags:
+      - admin-blog
+  /api/v1/admin/blog/comments:
+    get:
+      description: Get a paginated list of all blog comments.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Post ID filter
+        in: query
+        name: post_id
+        type: string
+      - description: Status filter (pending/approved/rejected)
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.AdminBlogCommentListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List comments (Admin)
+      tags:
+      - admin-blog
+  /api/v1/admin/blog/comments/{id}:
+    delete:
+      description: Delete a blog comment by ID.
+      parameters:
+      - description: Comment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete comment (Admin)
+      tags:
+      - admin-blog
+  /api/v1/admin/blog/comments/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Approve or reject a blog comment by ID.
+      parameters:
+      - description: Comment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Moderation data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.BlogCommentModerateRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Moderate comment (Admin)
+      tags:
+      - admin-blog
+  /api/v1/admin/blog/posts:
+    get:
+      description: Get a paginated list of all posts (drafts and published).
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Search query
+        in: query
+        name: q
+        type: string
+      - description: Category ID filter
+        in: query
+        name: category_id
+        type: string
+      - description: Status filter (draft/published)
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.BlogPostListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List posts (Admin)
+      tags:
+      - admin-blog
+    post:
+      consumes:
+      - application/json
+      description: Create a new blog post.
+      parameters:
+      - description: Post data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.BlogPostCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.BlogPostResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create post (Admin)
+      tags:
+      - admin-blog
+  /api/v1/admin/blog/posts/{id}:
+    delete:
+      description: Delete a blog post by ID.
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete post (Admin)
+      tags:
+      - admin-blog
+    get:
+      description: Get details of a single post by ID.
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.BlogPostResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get post (Admin)
+      tags:
+      - admin-blog
+    put:
+      consumes:
+      - application/json
+      description: Update details of an existing blog post.
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Post data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.BlogPostUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.BlogPostResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update post (Admin)
+      tags:
+      - admin-blog
   /api/v1/admin/brands:
     get:
       description: Get a paginated list of product brands.
@@ -3022,6 +4044,164 @@ paths:
       summary: Update category
       tags:
       - categories
+  /api/v1/admin/contact-messages:
+    get:
+      description: Get a paginated list of contact messages.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Status filter (unread/read/archived)
+        in: query
+        name: status
+        type: string
+      - description: Source filter (homepage/about/contact_page)
+        in: query
+        name: source
+        type: string
+      - description: Search query by name, email, or subject
+        in: query
+        name: q
+        type: string
+      - description: Filter messages created on or after date (YYYY-MM-DD)
+        in: query
+        name: from
+        type: string
+      - description: Filter messages created on or before date (YYYY-MM-DD)
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ContactMessageListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List contact messages (Admin)
+      tags:
+      - admin-contact
+  /api/v1/admin/contact-messages/{id}:
+    delete:
+      description: Delete a contact message.
+      parameters:
+      - description: Message ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete contact message (Admin)
+      tags:
+      - admin-contact
+    get:
+      description: Get details of a single contact message.
+      parameters:
+      - description: Message ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ContactMessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get contact message (Admin)
+      tags:
+      - admin-contact
+  /api/v1/admin/contact-messages/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Update status of a contact message.
+      parameters:
+      - description: Message ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Status update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.ContactMessageStatusUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update contact status (Admin)
+      tags:
+      - admin-contact
   /api/v1/admin/coupons:
     get:
       description: Get a paginated list of coupons with optional search.
@@ -4679,6 +5859,246 @@ paths:
       summary: Product statistics
       tags:
       - products
+  /api/v1/admin/questions:
+    get:
+      description: Get a paginated list of product questions.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Product ID filter
+        in: query
+        name: product_id
+        type: string
+      - description: Status filter (open/answered)
+        in: query
+        name: status
+        type: string
+      - description: Search query by question content or asker name
+        in: query
+        name: q
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.AdminProductQuestionListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List questions (Admin)
+      tags:
+      - admin-questions
+  /api/v1/admin/questions/{id}:
+    delete:
+      description: Delete a product question.
+      parameters:
+      - description: Question ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete question (Admin)
+      tags:
+      - admin-questions
+  /api/v1/admin/questions/{id}/answer:
+    post:
+      consumes:
+      - application/json
+      description: Answer a product question.
+      parameters:
+      - description: Question ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Answer data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.ProductQuestionAnswerRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Answer question (Admin)
+      tags:
+      - admin-questions
+  /api/v1/admin/reviews:
+    get:
+      description: Get a paginated list of reviews for admin moderation.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Product ID filter
+        in: query
+        name: product_id
+        type: string
+      - description: Status filter (pending/approved/rejected)
+        in: query
+        name: status
+        type: string
+      - description: Rating filter
+        in: query
+        name: rating
+        type: integer
+      - description: Search by author or content
+        in: query
+        name: q
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.AdminProductReviewListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List reviews (Admin)
+      tags:
+      - admin-reviews
+  /api/v1/admin/reviews/{id}:
+    delete:
+      description: Delete a product review.
+      parameters:
+      - description: Review ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete review (Admin)
+      tags:
+      - admin-reviews
+  /api/v1/admin/reviews/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Approve or reject a product review.
+      parameters:
+      - description: Review ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Status update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.ProductReviewStatusUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Moderate review (Admin)
+      tags:
+      - admin-reviews
   /api/v1/admin/settings/contact:
     get:
       description: Returns public contact information.
@@ -6511,6 +7931,239 @@ paths:
       summary: Get customer order
       tags:
       - store
+  /api/v1/store/account/wishlist:
+    get:
+      description: Get a paginated list of items in the authenticated customer's wishlist.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.WishlistListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List wishlist
+      tags:
+      - store-wishlist
+    post:
+      consumes:
+      - application/json
+      description: Add a product to the authenticated customer's wishlist.
+      parameters:
+      - description: Product ID to add
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.WishlistAddRequest'
+      produces:
+      - application/json
+      responses:
+        "210":
+          description: ""
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add to wishlist
+      tags:
+      - store-wishlist
+  /api/v1/store/account/wishlist/{productId}:
+    delete:
+      description: Remove a product from the authenticated customer's wishlist.
+      parameters:
+      - description: Product ID to remove
+        in: path
+        name: productId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove from wishlist
+      tags:
+      - store-wishlist
+  /api/v1/store/blog/categories:
+    get:
+      description: Get all blog categories.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/app_internal_interfaces_http_dto_response.BlogCategoryResponse'
+            type: array
+      summary: List blog categories
+      tags:
+      - blog
+  /api/v1/store/blog/posts:
+    get:
+      description: Get a paginated list of published blog posts.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Search query
+        in: query
+        name: q
+        type: string
+      - description: Category ID filter
+        in: query
+        name: category_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.BlogPostListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      summary: List blog posts
+      tags:
+      - blog
+  /api/v1/store/blog/posts/{postId}/comments:
+    get:
+      description: Get a paginated list of approved comments for a blog post.
+      parameters:
+      - description: Post ID
+        in: path
+        name: postId
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.BlogCommentListResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      summary: List post comments
+      tags:
+      - blog
+    post:
+      consumes:
+      - application/json
+      description: Submit a comment on a blog post (needs moderation).
+      parameters:
+      - description: Post ID
+        in: path
+        name: postId
+        required: true
+        type: string
+      - description: Comment data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.BlogCommentSubmitRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.BlogCommentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      summary: Submit a comment
+      tags:
+      - blog
+  /api/v1/store/blog/posts/{slug}:
+    get:
+      description: Get details of a single published blog post by slug.
+      parameters:
+      - description: Post slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.BlogPostResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      summary: Get blog post
+      tags:
+      - blog
   /api/v1/store/categories:
     get:
       description: Returns the active category tree for the storefront.
@@ -6571,6 +8224,32 @@ paths:
       summary: Preview checkout
       tags:
       - store
+  /api/v1/store/contact:
+    post:
+      consumes:
+      - application/json
+      description: Submit a contact inquiry form.
+      parameters:
+      - description: Contact form data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.ContactMessageSubmitRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ContactMessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      summary: Submit contact message
+      tags:
+      - store-contact
   /api/v1/store/coupons/validate:
     post:
       consumes:
@@ -6649,6 +8328,167 @@ paths:
       summary: List storefront products
       tags:
       - store
+  /api/v1/store/products/{productId}/questions:
+    get:
+      description: Get a paginated list of answered questions for a product.
+      parameters:
+      - description: Product ID
+        in: path
+        name: productId
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductQuestionListResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      summary: List questions
+      tags:
+      - store-questions
+    post:
+      consumes:
+      - application/json
+      description: Submit a question about a product.
+      parameters:
+      - description: Product ID
+        in: path
+        name: productId
+        required: true
+        type: string
+      - description: Question data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.ProductQuestionAskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductQuestionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      summary: Ask a question
+      tags:
+      - store-questions
+  /api/v1/store/products/{productId}/reviews:
+    get:
+      description: Get a paginated list of approved reviews for a product.
+      parameters:
+      - description: Product ID
+        in: path
+        name: productId
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Sort order (highest/lowest/newest)
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductReviewListResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      summary: List reviews
+      tags:
+      - store-reviews
+    post:
+      consumes:
+      - application/json
+      description: Submit a review for a product. Customer ID is linked if authenticated.
+      parameters:
+      - description: Product ID
+        in: path
+        name: productId
+        required: true
+        type: string
+      - description: Review data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/app_internal_interfaces_http_dto_request.ProductReviewSubmitRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductReviewResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      summary: Submit a review
+      tags:
+      - store-reviews
+  /api/v1/store/products/{productId}/reviews/summary:
+    get:
+      description: Get aggregate rating stats for a product.
+      parameters:
+      - description: Product ID
+        in: path
+        name: productId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ProductReviewSummaryResponse'
+        "440":
+          description: ""
+          schema:
+            $ref: '#/definitions/app_internal_interfaces_http_dto_response.ErrorResponse'
+      summary: Get reviews summary
+      tags:
+      - store-reviews
   /api/v1/store/products/{slugOrId}:
     get:
       description: Returns product detail by slug or UUID including variants and SKUs.

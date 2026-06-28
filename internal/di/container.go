@@ -19,6 +19,11 @@ import (
 	appstorecontent "app/internal/application/storecontent"
 	appstorefront "app/internal/application/storefront"
 	apptheme "app/internal/application/theme"
+	appwishlist "app/internal/application/wishlist"
+	appreview "app/internal/application/productreview"
+	appquestion "app/internal/application/productquestion"
+	appcontact "app/internal/application/contact"
+	appblog "app/internal/application/blog"
 	"app/internal/config"
 	infraauth "app/internal/infrastructure/auth"
 	"app/internal/infrastructure/email"
@@ -54,6 +59,11 @@ type Container struct {
 	StorefrontService  *appstorefront.Service
 	StoreContentService *appstorecontent.Service
 	ThemeService       *apptheme.Service
+	WishlistService    *appwishlist.Service
+	ProductReviewService *appreview.Service
+	ProductQuestionService *appquestion.Service
+	ContactService     *appcontact.Service
+	BlogService        *appblog.Service
 
 	// Handlers
 	Health   *handler.HealthHandler
@@ -72,6 +82,11 @@ type Container struct {
 	Store     *handler.StoreHandler
 	Storefront *handler.StorefrontHandler
 	Theme     *handler.ThemeHandler
+	Wishlist  *handler.WishlistHandler
+	ProductReview *handler.ProductReviewHandler
+	ProductQuestion *handler.ProductQuestionHandler
+	Contact   *handler.ContactHandler
+	Blog      *handler.BlogHandler
 }
 
 // New creates and wires the dependency injection container.
@@ -149,6 +164,21 @@ func New(cfg *config.Config) (*Container, error) {
 	themeRepo := postgres.NewThemeRepository(db.DB)
 	themeService := apptheme.NewService(themeRepo)
 
+	wishlistRepo := postgres.NewWishlistRepository(db.DB)
+	wishlistService := appwishlist.NewService(wishlistRepo, productRepo, customerRepo)
+
+	productReviewRepo := postgres.NewProductReviewRepository(db.DB)
+	productReviewService := appreview.NewService(productReviewRepo, productRepo, customerRepo)
+
+	productQuestionRepo := postgres.NewProductQuestionRepository(db.DB)
+	productQuestionService := appquestion.NewService(productQuestionRepo, productRepo)
+
+	contactRepo := postgres.NewContactMessageRepository(db.DB)
+	contactService := appcontact.NewService(contactRepo)
+
+	blogRepo := postgres.NewBlogRepository(db.DB)
+	blogService := appblog.NewService(blogRepo)
+
 	uploader := storage.NewUploader(cfg.Upload)
 
 	c := &Container{
@@ -172,6 +202,11 @@ func New(cfg *config.Config) (*Container, error) {
 		StorefrontService:  storefrontService,
 		StoreContentService: storecontentService,
 		ThemeService:       themeService,
+		WishlistService:    wishlistService,
+		ProductReviewService: productReviewService,
+		ProductQuestionService: productQuestionService,
+		ContactService:     contactService,
+		BlogService:        blogService,
 		Health:           handler.NewHealthHandler(db, cfg.App.Version),
 		Auth:            handler.NewAuthHandler(authService, v, log),
 		Product:         handler.NewProductHandler(productService, v, log),
@@ -188,6 +223,11 @@ func New(cfg *config.Config) (*Container, error) {
 		Store:           handler.NewStoreHandler(storefrontService, storecontentService, settingsService, themeService, v, log),
 		Storefront:      handler.NewStorefrontHandler(storecontentService, settingsService, v, log),
 		Theme:           handler.NewThemeHandler(themeService, v, log),
+		Wishlist:        handler.NewWishlistHandler(wishlistService, v, log),
+		ProductReview:   handler.NewProductReviewHandler(productReviewService, v, log),
+		ProductQuestion: handler.NewProductQuestionHandler(productQuestionService, v, log),
+		Contact:         handler.NewContactHandler(contactService, v, log),
+		Blog:            handler.NewBlogHandler(blogService, v, log),
 	}
 
 	return c, nil
