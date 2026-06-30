@@ -653,6 +653,53 @@ func (h *BlogHandler) AdminModerateComment(w http.ResponseWriter, r *http.Reques
 	response.NoContent(w)
 }
 
+// AdminApproveComment godoc
+// @Summary      Approve blog comment (Admin)
+// @Description  Convenience alias for PATCH .../status with status approved.
+// @Tags         admin-blog
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  string  true  "Comment ID"
+// @Success      204
+// @Failure      401  {object}  dtoresponse.ErrorResponse
+// @Failure      403  {object}  dtoresponse.ErrorResponse
+// @Failure      404  {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/admin/blog/comments/{id}/approve [patch]
+func (h *BlogHandler) AdminApproveComment(w http.ResponseWriter, r *http.Request) {
+	h.moderateCommentStatus(w, r, string(domainblog.CommentStatusApproved))
+}
+
+// AdminRejectComment godoc
+// @Summary      Reject blog comment (Admin)
+// @Description  Convenience alias for PATCH .../status with status rejected.
+// @Tags         admin-blog
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  string  true  "Comment ID"
+// @Success      204
+// @Failure      401  {object}  dtoresponse.ErrorResponse
+// @Failure      403  {object}  dtoresponse.ErrorResponse
+// @Failure      404  {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/admin/blog/comments/{id}/reject [patch]
+func (h *BlogHandler) AdminRejectComment(w http.ResponseWriter, r *http.Request) {
+	h.moderateCommentStatus(w, r, string(domainblog.CommentStatusRejected))
+}
+
+func (h *BlogHandler) moderateCommentStatus(w http.ResponseWriter, r *http.Request, status string) {
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	if err := h.service.ModerateComment(r.Context(), id, status); err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	response.NoContent(w)
+}
+
 // AdminDeleteComment godoc
 // @Summary      Delete comment (Admin)
 // @Description  Delete a blog comment by ID.
