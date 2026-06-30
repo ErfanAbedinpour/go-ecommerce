@@ -138,7 +138,7 @@ func TestGetAccountProfile(t *testing.T) {
 		},
 	}
 
-	svc := NewService(nil, nil, nil, nil, nil, customers, &accountSettingsRepo{}, noopMailer{})
+	svc := NewService(nil, nil, nil, nil, nil, customers, &accountSettingsRepo{}, nil, noopMailer{})
 
 	profile, err := svc.GetAccountProfile(context.Background(), userID)
 	if err != nil {
@@ -165,7 +165,7 @@ func TestUpdateAccountProfile(t *testing.T) {
 	}
 
 	customers := newAccountCustomerRepo(customer)
-	svc := NewService(nil, nil, nil, nil, nil, customers, &accountSettingsRepo{}, noopMailer{})
+	svc := NewService(nil, nil, nil, nil, nil, customers, &accountSettingsRepo{}, nil, noopMailer{})
 
 	profile, err := svc.UpdateAccountProfile(context.Background(), userID, UpdateAccountProfileInput{
 		FirstName: "Hassan",
@@ -201,7 +201,7 @@ func TestGetStoreNavigation_FiltersInactive(t *testing.T) {
 				{ID: "2", Label: "Hidden", URL: "/hidden", SortOrder: 2, IsActive: false},
 			},
 		},
-	}, noopMailer{})
+	}, nil, noopMailer{})
 
 	navigation, err := svc.GetStoreNavigation(context.Background())
 	if err != nil {
