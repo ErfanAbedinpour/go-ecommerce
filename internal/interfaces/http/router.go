@@ -226,23 +226,30 @@ func registerCouponRoutes(r chi.Router, c *di.Container) {
 }
 
 func registerStoreRoutes(r chi.Router, c *di.Container) {
+	contactLimiter := appmiddleware.NewRateLimiter(3, 10)
+
 	r.Route("/store", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
 			r.Use(appmiddleware.Cache(c.RedisCache, 5*time.Minute))
 			r.Get("/products", c.Store.ListProducts)
 			r.Get("/products/search", c.Store.SearchProducts)
 			r.Get("/homepage", c.Store.GetHomepage)
+			r.Get("/categories", c.Store.ListCategories)
+			r.Get("/navigation", c.Store.GetNavigation)
+			r.Get("/theme", c.Store.GetTheme)
 		})
 
 		r.Get("/products/{id}/related", c.Store.ListRelatedProducts)
-		r.Get("/products/{slugOrId}", c.Store.GetProduct)
-		r.Get("/categories", c.Store.ListCategories)
+
+		r.Group(func(r chi.Router) {
+			r.Use(appmiddleware.OptionalAuthenticate(c.JWT))
+			r.Get("/products/{slugOrId}", c.Store.GetProduct)
+		})
+
 		r.Get("/brands", c.Store.ListBrands)
 		r.Get("/settings", c.Store.GetSettings)
 		r.Get("/settings/checkout", c.Store.GetCheckoutSettings)
-		r.Get("/theme", c.Store.GetTheme)
 		r.Get("/about", c.Store.GetAbout)
-		r.Get("/navigation", c.Store.GetNavigation)
 		r.Get("/checkout/shipping-methods", c.Store.GetShippingMethods)
 		r.Post("/coupons/validate", c.Store.ValidateCoupon)
 
@@ -251,7 +258,11 @@ func registerStoreRoutes(r chi.Router, c *di.Container) {
 		r.Get("/products/{productId}/reviews/summary", c.ProductReview.GetSummary)
 		r.Get("/products/{productId}/questions", c.ProductQuestion.ListByProduct)
 		r.Post("/products/{productId}/questions", c.ProductQuestion.Ask)
-		r.Post("/contact", c.Contact.Submit)
+
+		r.Group(func(r chi.Router) {
+			r.Use(appmiddleware.RateLimit(contactLimiter))
+			r.Post("/contact", c.Contact.Submit)
+		})
 
 		r.Get("/blog/posts", c.Blog.StoreListPosts)
 		r.Get("/blog/posts/{slug}", c.Blog.StoreGetPost)
