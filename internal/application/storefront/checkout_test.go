@@ -35,6 +35,12 @@ func (m *checkoutProductRepo) List(context.Context, domainproduct.ListFilter, pa
 func (m *checkoutProductRepo) ListStorefront(context.Context, domainproduct.StoreListFilter, pagination.Params) ([]domainproduct.Product, int64, error) {
 	return nil, 0, nil
 }
+func (m *checkoutProductRepo) SearchStorefront(context.Context, string, int) ([]domainproduct.Product, error) {
+	return nil, nil
+}
+func (m *checkoutProductRepo) ListRelatedStorefront(context.Context, uuid.UUID, int) ([]domainproduct.Product, error) {
+	return nil, nil
+}
 func (m *checkoutProductRepo) Search(context.Context, string, pagination.Params) ([]domainproduct.Product, int64, error) {
 	return nil, 0, nil
 }
@@ -92,6 +98,9 @@ func (m *checkoutCustomerRepo) GetLastOrderAt(context.Context, uuid.UUID) (*time
 }
 func (m *checkoutCustomerRepo) ListAddresses(context.Context, uuid.UUID) ([]domaincustomer.Address, error) {
 	return nil, nil
+}
+func (m *checkoutCustomerRepo) ReplaceAddresses(context.Context, uuid.UUID, []domaincustomer.Address) error {
+	return nil
 }
 func (m *checkoutCustomerRepo) ListOrders(context.Context, uuid.UUID, pagination.Params) ([]domainorder.Summary, int64, error) {
 	return nil, 0, nil
@@ -193,7 +202,7 @@ func newCheckoutTestService(products map[uuid.UUID]*domainproduct.Product, coupo
 	orderRepo := &checkoutOrderRepo{}
 	couponRepo := &checkoutCouponRepo{coupons: coupons}
 	orderSvc := apporder.NewService(orderRepo, productRepo, customerRepo, couponRepo, checkoutSettingsRepo{})
-	return NewService(productRepo, nil, orderSvc, couponRepo, customerRepo, checkoutSettingsRepo{}, noopMailer{}), orderRepo, customerRepo
+	return NewService(productRepo, nil, nil, orderSvc, couponRepo, customerRepo, checkoutSettingsRepo{}, noopMailer{}), orderRepo, customerRepo
 }
 
 func TestPreviewCheckout_EmptyCart(t *testing.T) {
