@@ -150,6 +150,15 @@ func (m *mockSlideProductRepo) FindByID(_ context.Context, id uuid.UUID) (*domai
 	}
 	return p, nil
 }
+func (m *mockSlideProductRepo) FindByIDs(_ context.Context, ids []uuid.UUID) ([]domainproduct.Product, error) {
+	out := make([]domainproduct.Product, 0, len(ids))
+	for _, id := range ids {
+		if p, ok := m.products[id]; ok {
+			out = append(out, *p)
+		}
+	}
+	return out, nil
+}
 
 type mockStoreContentSettingsRepo struct{}
 
@@ -185,7 +194,7 @@ func TestCreateSlideItem_InvalidProduct(t *testing.T) {
 			domain.SlideFeatured: {ID: slideID, SlideType: domain.SlideFeatured},
 		},
 	}
-	svc := NewService(repo, &mockSlideProductRepo{products: map[uuid.UUID]*domainproduct.Product{}}, mockStoreContentSettingsRepo{})
+	svc := NewService(repo, &mockSlideProductRepo{products: map[uuid.UUID]*domainproduct.Product{}}, mockStoreContentSettingsRepo{}, nil, nil, nil, nil)
 
 	_, err := svc.CreateSlideItem(context.Background(), "featured", CreateSlideItemInput{
 		ProductID: uuid.New(),
@@ -206,7 +215,7 @@ func TestCreateSlideItem_Success(t *testing.T) {
 	products := map[uuid.UUID]*domainproduct.Product{
 		productID: {ID: productID, Name: "Featured Product", Status: domainproduct.StatusActive},
 	}
-	svc := NewService(repo, &mockSlideProductRepo{products: products}, mockStoreContentSettingsRepo{})
+	svc := NewService(repo, &mockSlideProductRepo{products: products}, mockStoreContentSettingsRepo{}, nil, nil, nil, nil)
 
 	item, err := svc.CreateSlideItem(context.Background(), "featured", CreateSlideItemInput{
 		ProductID: productID,
