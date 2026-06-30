@@ -78,7 +78,15 @@ func (s *Service) PurchaseTheme(ctx context.Context, themeID, userID uuid.UUID) 
 		return nil, err
 	}
 	if has {
-		return nil, domain.ErrAlreadyPurchased
+		purchases, err := s.repo.ListPurchases(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
+		for i := range purchases {
+			if purchases[i].ThemeID == themeID {
+				return &purchases[i], nil
+			}
+		}
 	}
 
 	if t.Price == 0 {
