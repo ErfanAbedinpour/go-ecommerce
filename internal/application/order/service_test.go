@@ -124,6 +124,12 @@ func (m *mockProductRepo) GetStats(context.Context) (*domainproduct.Stats, error
 func (m *mockProductRepo) ListStorefront(context.Context, domainproduct.StoreListFilter, pagination.Params) ([]domainproduct.Product, int64, error) {
 	return nil, 0, nil
 }
+func (m *mockProductRepo) SearchStorefront(context.Context, string, int) ([]domainproduct.Product, error) {
+	return nil, nil
+}
+func (m *mockProductRepo) ListRelatedStorefront(context.Context, uuid.UUID, int) ([]domainproduct.Product, error) {
+	return nil, nil
+}
 func (m *mockProductRepo) CountActive(context.Context) (int64, error) {
 	return 0, nil
 }
@@ -161,6 +167,9 @@ func (m *mockCustomerRepo) List(context.Context, domaincustomer.ListFilter, pagi
 }
 func (m *mockCustomerRepo) ListAddresses(context.Context, uuid.UUID) ([]domaincustomer.Address, error) {
 	return nil, nil
+}
+func (m *mockCustomerRepo) ReplaceAddresses(context.Context, uuid.UUID, []domaincustomer.Address) error {
+	return nil
 }
 func (m *mockCustomerRepo) ListOrders(context.Context, uuid.UUID, pagination.Params) ([]domain.Summary, int64, error) {
 	return nil, 0, nil
