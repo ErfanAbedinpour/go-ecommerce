@@ -1,6 +1,10 @@
 # Missing Endpoints
 
-Endpoints required by the frontend but absent from `router.go` / Swagger.
+> **Last updated:** 2026-06-30  
+> **Status:** All endpoints catalogued below are **implemented** in `router.go`.  
+> Remaining work is **contract alignment** (field names, query params, aggregates) — see [api-contract-diff.md](./api-contract-diff.md) and [backend-todo.md](./backend-todo.md).
+
+Endpoints that were required by the frontend but absent from `router.go` / Swagger at audit time.
 
 ---
 
@@ -253,9 +257,11 @@ Endpoints required by the frontend but absent from `router.go` / Swagger.
 
 ## Summary by priority
 
-| Priority | Count | Endpoints |
-|----------|------:|-----------|
-| P0 | 4 | account profile GET/PUT, payment callback |
-| P1 | 4 | about, navigation, shipping-methods, related products |
-| P2 | 4 | contact stats, checkout settings, product search, brands |
-| P3 | 6 | wishlist shortcuts, blog aliases, moderation aliases |
+| Priority | Count | Status |
+|----------|------:|--------|
+| P0 | 4 | ✅ All implemented (account profile GET/PUT, payment callback) |
+| P1 | 4 | ✅ All implemented (about, navigation, shipping-methods, related products) |
+| P2 | 4 | ✅ All implemented (contact stats, checkout settings, product search, brands) |
+| P3 | 6 | ✅ All implemented (wishlist shortcuts, blog aliases, moderation aliases) |
+
+**Total catalogued:** 18 route groups — **0 remaining missing endpoints** from this document.
