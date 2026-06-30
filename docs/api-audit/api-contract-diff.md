@@ -1,70 +1,23 @@
 # API Contract Differences
 
-> Frontend expectations from `docs/features/` and live UI vs actual backend implementation.
+> Frontend expectations from `docs/features/` and live UI vs actual backend implementation.  
+> **Last updated:** 2026-06-30 (post contract normalization)
 
 ---
 
-## 1. Homepage aggregate
+## Open issues
 
-**Frontend expects** (`GET /api/v1/store/homepage`): `categories[]`, `blog_teaser.posts[]`, full `stats` (`customers_count`, `delivered_orders_count`, `years_experience`), `hero.poster_url`, slide type `new`.
+### 1. Product detail variants
 
-**Backend currently returns:** `product_slides`, `stats.products_count` only; slide type `featured` instead of `new`.
+**Frontend expects:** `variant_axes[]`, per-SKU `price_toman`/`quantity`, `default_sku_id`, `seo` block
 
-**Missing:** `categories`, `blog_teaser`, extended stats, `poster_url`
-
-**Recommended change:** Extend `BuildHomepage()` in `storecontent/homepage.go`.
+**Backend currently:** `skus[]` with `id`, `code`, `attributes` only; product-level inventory. `?include=reviews_summary,wishlist` **implemented**.
 
 **Priority:** P0 | **Breaking?** No
 
 ---
 
-## 2. Catalog sort parameters
-
-**Frontend expects:** `sort=bestseller|newest|discounted`
-
-**Backend currently:** Only `discount`, `price` ASC, `name`, default `created_at`. Swagger lists `bestseller|newest|discounted|price_asc|price_desc` but repo ignores most.
-
-**Missing:** Bestseller aggregation, param aliases, `price_desc`
-
-**Recommended change:** Sort mapping in handler + repo implementation.
-
-**Priority:** P0 | **Breaking?** No
-
----
-
-## 3. Category filter by slug
-
-**Frontend expects:** `?category_slug=tiles&include_children=true`
-
-**Backend currently:** `category_id` UUID only.
-
-**Missing:** `category_slug`, `include_children`, `brand`, `on_sale`, `in_stock`
-
-**Priority:** P0 | **Breaking?** No
-
----
-
-## 4. Product detail variants
-
-**Frontend expects:** `variant_axes[]`, per-SKU `price_toman`/`quantity`, `default_sku_id`, `is_in_wishlist`, `reviews_summary`
-
-**Backend currently:** `skus[]` with `id`, `code`, `attributes` only; product-level inventory.
-
-**Priority:** P0 | **Breaking?** No
-
----
-
-## 5. Account profile
-
-**Frontend expects:** `GET/PUT /api/v1/store/account/profile` with addresses.
-
-**Backend currently:** Endpoints do not exist.
-
-**Priority:** P0 | **Breaking?** No (new)
-
----
-
-## 6. Order detail (customer)
+### 2. Order detail (customer)
 
 **Frontend expects:** `*_toman` integers, `variant_label`, `timeline[]`
 
@@ -74,88 +27,65 @@
 
 ---
 
-## 7. Checkout preview
+### 3. Checkout preview
 
 **Frontend expects:** `shipping_method`, `shipping_city` → server computes shipping/tax.
 
-**Backend currently:** Client sends `shipping_amount`, `tax_amount`.
+**Backend currently:** Client sends `shipping_amount`, `tax_amount`. Shipping **methods** endpoint exists; preview does not use it yet.
 
 **Priority:** P1 | **Breaking?** Yes
 
 ---
 
-## 8. Checkout response
+### 4. Checkout place-order response
 
 **Frontend expects:** `payment_url`, `expires_at`
 
-**Backend currently:** Order metadata only, no PSP redirect.
+**Backend currently:** Order metadata only; **`POST /checkout/payment/callback` implemented** but no PSP redirect URL on checkout response.
 
 **Priority:** P0 | **Breaking?** No
 
 ---
 
-## 9. Wishlist shape
-
-**Frontend expects:** `added_at`, nested `product.price_toman`
-
-**Backend currently:** `created_at`, `product.price` (float)
-
-**Priority:** P1 | **Breaking?** No
-
----
-
-## 10. Blog paths and fields
-
-**Frontend expects:** `/store/blog`, fields `excerpt`, `cover_image_url`
-
-**Backend currently:** `/store/blog/posts`, fields `summary`, `featured_image`
-
-**Priority:** P2 | **Breaking?** No with aliases
-
----
-
-## 11. About page
-
-**Frontend expects:** `GET /api/v1/store/about`
-
-**Backend currently:** Missing.
-
-**Priority:** P1 | **Breaking?** No
-
----
-
-## 12. Public navigation
-
-**Frontend expects:** `GET /api/v1/store/navigation`
-
-**Backend currently:** Admin-only `GET /admin/storefront/navigation`
-
-**Priority:** P1 | **Breaking?** No
-
----
-
-## 13. Admin blog fields
+### 5. Admin blog fields
 
 **Frontend expects:** `excerpt`, `read_time_minutes`, `archived` status
 
-**Backend currently:** `summary`, no read time, `draft|published` only
+**Backend currently:** `summary`, no read time, `draft|published` only. Approve/reject route aliases implemented.
 
 **Priority:** P2 | **Breaking?** Yes if renaming
 
 ---
 
-## 14. Contact inbox stats
-
-**Frontend expects:** `GET /admin/contact-messages/stats`
-
-**Backend currently:** Missing.
-
-**Priority:** P2 | **Breaking?** No
-
 ---
 
-## 15. Reviews path param
+## Resolved since initial audit
 
-**Frontend uses slug in URL;** engagement APIs require product UUID.
+| # | Topic | Resolution |
+|---|--------|------------|
+| — | Homepage aggregate | `categories[]`, `blog_teaser`, extended `stats`, `featured`→`new` slide mapping |
+| — | Catalog filters & sort | `category_slug`, `include_children`, `brand`, `on_sale`, `in_stock`, all documented sort values |
+| — | Product detail includes | `?include=reviews_summary,wishlist` with optional auth |
+| — | Reviews/Q&A slug paths | `productref.ResolveID` on engagement routes |
+| — | Wishlist shape | `added_at` alias, `*_toman` on nested product, idempotent add (200) |
+| — | Blog store fields | `excerpt` + `cover_image_url` aliases alongside legacy fields |
+| — | Theme purchase | Idempotent — returns existing purchase |
+| — | Store caching | Redis 5 min on homepage, products, categories, navigation, theme |
+| — | Contact rate limit | 3 req/min per IP on `POST /store/contact` |
+| — | Catalog indexes | Migration `000016` for bestseller sort |
+| — | Account profile | `GET/PUT /api/v1/store/account/profile` with addresses |
+| — | About page | `GET /api/v1/store/about` |
+| — | Public navigation | `GET /api/v1/store/navigation` |
+| — | Related products | `GET /api/v1/store/products/{id}/related` |
+| — | Product search autocomplete | `GET /api/v1/store/products/search` |
+| — | Public brands | `GET /api/v1/store/brands` |
+| — | Shipping methods | `GET /api/v1/store/checkout/shipping-methods` |
+| — | Checkout settings | `GET /api/v1/store/settings/checkout` |
+| — | Payment callback | `POST /api/v1/store/checkout/payment/callback` |
+| — | Wishlist shortcuts | `GET .../wishlist/ids`, `GET .../wishlist/count` |
+| — | Blog path aliases | `GET /store/blog`, `GET /store/blog/{slug}/comments` |
+| — | Contact inbox stats | `GET /api/v1/admin/contact-messages/stats` |
+| — | Contact read/archive aliases | `PATCH .../read`, `PATCH .../archive` |
+| — | Comment approve/reject aliases | `PATCH .../approve`, `PATCH .../reject` |
 
-**Priority:** P1 | **Breaking?** No
+See [missing-endpoints.md](./missing-endpoints.md) for route details.
