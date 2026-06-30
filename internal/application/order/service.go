@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,6 +14,7 @@ import (
 	domain "app/internal/domain/order"
 	domainproduct "app/internal/domain/product"
 	domainsettings "app/internal/domain/settings"
+	"app/pkg/apperror"
 	"app/pkg/pagination"
 )
 
@@ -385,6 +387,38 @@ func (s *Service) Refund(ctx context.Context, id uuid.UUID, input RefundInput) (
 	}
 
 	return s.repo.FindByID(ctx, id)
+}
+
+// ConfirmPaymentInput holds data for a payment gateway callback.
+type ConfirmPaymentInput struct {
+	OrderID       uuid.UUID
+	TransactionID string
+}
+
+// ConfirmPayment marks an unpaid order as paid after successful gateway callback.
+func (s *Service) ConfirmPayment(ctx context.Context, input ConfirmPaymentInput) (*domain.Order, error) {
+	order, err := s.repo.FindByID(ctx, input.OrderID)
+	if err != nil {
+		return nil, err
+	}
+
+	switch order.PaymentStatus {
+	case domain.PaymentPaid:
+		return nil, domain.ErrPaymentAlreadyPaid
+	case domain.PaymentRefunded:
+		return nil, apperror.Unprocessable("order cannot be paid in its current state")
+	}
+
+	now := time.Now().UTC()
+	order.PaymentStatus = domain.PaymentPaid
+	order.TransactionID = strings.TrimSpace(input.TransactionID)
+	order.UpdatedAt = now
+
+	if err := s.repo.Update(ctx, order); err != nil {
+		return nil, err
+	}
+
+	return s.repo.FindByID(ctx, input.OrderID)
 }
 
 func (s *Service) recordHistory(ctx context.Context, orderID uuid.UUID, from *domain.Status, to domain.Status, note string, changedBy uuid.UUID, at time.Time) error {
