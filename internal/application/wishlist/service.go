@@ -26,14 +26,25 @@ func NewService(repo domain.Repository, products domainproduct.Repository, custo
 	}
 }
 
-func (s *Service) Add(ctx context.Context, userID uuid.UUID, productID uuid.UUID) (*domain.Item, error) {
+func (s *Service) Add(ctx context.Context, userID uuid.UUID, productID uuid.UUID) (*domain.Item, bool, error) {
 	customer, err := s.customers.FindByUserID(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	if _, err := s.products.FindByID(ctx, productID); err != nil {
-		return nil, err
+		return nil, false, err
+	}
+
+	exists, err := s.repo.Exists(ctx, customer.ID, productID)
+	if err != nil {
+		return nil, false, err
+	}
+	if exists {
+		return &domain.Item{
+			CustomerID: customer.ID,
+			ProductID:  productID,
+		}, true, nil
 	}
 
 	item := &domain.Item{
@@ -44,10 +55,16 @@ func (s *Service) Add(ctx context.Context, userID uuid.UUID, productID uuid.UUID
 	}
 
 	if err := s.repo.Add(ctx, item); err != nil {
-		return nil, err
+		if err == domain.ErrAlreadyExists {
+			return &domain.Item{
+				CustomerID: customer.ID,
+				ProductID:  productID,
+			}, true, nil
+		}
+		return nil, false, err
 	}
 
-	return item, nil
+	return item, false, nil
 }
 
 func (s *Service) Remove(ctx context.Context, userID uuid.UUID, productID uuid.UUID) error {
