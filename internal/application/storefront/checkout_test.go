@@ -8,6 +8,8 @@ import (
 	"github.com/google/uuid"
 
 	apporder "app/internal/application/order"
+	appcart "app/internal/application/cart"
+	domaincart "app/internal/domain/cart"
 	domaincoupon "app/internal/domain/coupon"
 	domaincustomer "app/internal/domain/customer"
 	domainorder "app/internal/domain/order"
@@ -217,21 +219,41 @@ func (noopMailer) SendOrderConfirmation(context.Context, string, string, float64
 	return nil
 }
 
-func newCheckoutTestService(products map[uuid.UUID]*domainproduct.Product, coupons map[string]*domaincoupon.Coupon) (*Service, *checkoutOrderRepo, *checkoutCustomerRepo) {
+func newCheckoutTestService(products map[uuid.UUID]*domainproduct.Product, coupons map[string]*domaincoupon.Coupon) (*Service, *checkoutOrderRepo, *checkoutCustomerRepo, *appcart.Service, domaincart.Owner) {
 	productRepo := &checkoutProductRepo{products: products}
 	customerRepo := &checkoutCustomerRepo{}
 	orderRepo := &checkoutOrderRepo{}
 	couponRepo := &checkoutCouponRepo{coupons: coupons}
 	orderSvc := apporder.NewService(orderRepo, productRepo, customerRepo, couponRepo, checkoutSettingsRepo{})
-	return NewService(productRepo, nil, nil, orderSvc, couponRepo, customerRepo, checkoutSettingsRepo{}, noopMailer{}), orderRepo, customerRepo
+	cartRepo := newMemoryCartRepo()
+	cartSvc := appcart.NewService(cartRepo, productRepo)
+	owner := domaincart.Owner{GuestToken: "test-guest-cart"}
+	return NewService(productRepo, nil, nil, orderSvc, couponRepo, customerRepo, checkoutSettingsRepo{}, cartSvc, noopMailer{}), orderRepo, customerRepo, cartSvc, owner
+}
+
+func seedCart(ctx context.Context, carts *appcart.Service, owner domaincart.Owner, items []CheckoutItemInput) error {
+	for _, item := range items {
+		if _, err := carts.AddItem(ctx, owner, appcart.AddItemInput{
+			ProductID: item.ProductID,
+			SkuID:     item.SkuID,
+			Quantity:  item.Quantity,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func TestPreviewCheckout_EmptyCart(t *testing.T) {
-	svc, _, _ := newCheckoutTestService(nil, nil)
+	svc, _, _, _, owner := newCheckoutTestService(nil, nil)
 
-	_, err := svc.PreviewCheckout(context.Background(), PreviewCheckoutInput{})
-	if err != domainorder.ErrEmptyOrder {
-		t.Fatalf("PreviewCheckout() error = %v, want ErrEmptyOrder", err)
+	_, err := svc.PreviewCheckout(context.Background(), PreviewCheckoutInput{
+		Owner:          owner,
+		ShippingMethod: "post",
+		ShippingCity:   "Tehran",
+	})
+	if err != domaincart.ErrEmpty {
+		t.Fatalf("PreviewCheckout() error = %v, want ErrEmpty", err)
 	}
 }
 
@@ -254,11 +276,16 @@ func TestPreviewCheckout_CouponApplied(t *testing.T) {
 			IsActive:      true,
 		},
 	}
-	svc, _, _ := newCheckoutTestService(products, coupons)
+	svc, _, _, carts, owner := newCheckoutTestService(products, coupons)
+	if err := seedCart(context.Background(), carts, owner, []CheckoutItemInput{{ProductID: productID, Quantity: 2}}); err != nil {
+		t.Fatalf("seedCart: %v", err)
+	}
 
 	out, err := svc.PreviewCheckout(context.Background(), PreviewCheckoutInput{
-		Items:      []CheckoutItemInput{{ProductID: productID, Quantity: 2}},
-		CouponCode: "save10",
+		Owner:          owner,
+		CouponCode:     "save10",
+		ShippingMethod: "post",
+		ShippingCity:   "Tehran",
 	})
 	if err != nil {
 		t.Fatalf("PreviewCheckout() error = %v", err)
@@ -268,6 +295,12 @@ func TestPreviewCheckout_CouponApplied(t *testing.T) {
 	}
 	if out.Summary.DiscountToman != 20000 {
 		t.Fatalf("discount = %d, want 20000", out.Summary.DiscountToman)
+	}
+	if out.Summary.ShippingToman != 85000 {
+		t.Fatalf("shipping = %d, want 85000", out.Summary.ShippingToman)
+	}
+	if out.Summary.TotalToman != 265000 {
+		t.Fatalf("total = %d, want 265000", out.Summary.TotalToman)
 	}
 	if out.Coupon == nil || !out.Coupon.IsValid {
 		t.Fatal("expected valid coupon result")
@@ -285,10 +318,15 @@ func TestPreviewCheckout_InsufficientStock(t *testing.T) {
 			Inventory: domainproduct.Inventory{Quantity: 1},
 		},
 	}
-	svc, _, _ := newCheckoutTestService(products, nil)
+	svc, _, _, carts, owner := newCheckoutTestService(products, nil)
+	if err := seedCart(context.Background(), carts, owner, []CheckoutItemInput{{ProductID: productID, Quantity: 3}}); err != nil {
+		t.Fatalf("seedCart: %v", err)
+	}
 
 	out, err := svc.PreviewCheckout(context.Background(), PreviewCheckoutInput{
-		Items: []CheckoutItemInput{{ProductID: productID, Quantity: 3}},
+		Owner:          owner,
+		ShippingMethod: "post",
+		ShippingCity:   "Tehran",
 	})
 	if err != nil {
 		t.Fatalf("PreviewCheckout() error = %v", err)
@@ -309,10 +347,15 @@ func TestPlaceCheckout_GuestCustomerCreated(t *testing.T) {
 			Inventory: domainproduct.Inventory{Quantity: 5},
 		},
 	}
-	svc, orderRepo, customerRepo := newCheckoutTestService(products, nil)
+	svc, orderRepo, customerRepo, carts, owner := newCheckoutTestService(products, nil)
+	if err := seedCart(context.Background(), carts, owner, []CheckoutItemInput{{ProductID: productID, Quantity: 1}}); err != nil {
+		t.Fatalf("seedCart: %v", err)
+	}
 
 	out, err := svc.PlaceCheckout(context.Background(), PlaceCheckoutInput{
-		Items: []CheckoutItemInput{{ProductID: productID, Quantity: 1}},
+		Owner:          owner,
+		ShippingMethod: "post",
+		ShippingCity:   "Tehran",
 		Customer: CheckoutCustomerInput{
 			Email:     "guest@shop.com",
 			FirstName: "Guest",
