@@ -39,7 +39,9 @@ type BlogPostResponse struct {
 	Slug          string     `json:"slug"`
 	Content       string     `json:"content"`
 	Summary       string     `json:"summary,omitempty"`
+	Excerpt       string     `json:"excerpt,omitempty"`
 	FeaturedImage string     `json:"featured_image,omitempty"`
+	CoverImageURL string     `json:"cover_image_url,omitempty"`
 	CategoryID    *string    `json:"category_id,omitempty"`
 	AuthorID      *string    `json:"author_id,omitempty"`
 	Status        string     `json:"status"`
@@ -64,7 +66,9 @@ func ToBlogPostResponse(p domain.Post) BlogPostResponse {
 		Slug:          p.Slug,
 		Content:       p.Content,
 		Summary:       p.Summary,
+		Excerpt:       p.Summary,
 		FeaturedImage: p.FeaturedImage,
+		CoverImageURL: p.FeaturedImage,
 		CategoryID:    catID,
 		AuthorID:      authID,
 		Status:        string(p.Status),
