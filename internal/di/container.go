@@ -22,6 +22,7 @@ import (
 	appsettings "app/internal/application/settings"
 	appstorecontent "app/internal/application/storecontent"
 	appstorefront "app/internal/application/storefront"
+	appcart "app/internal/application/cart"
 	apptheme "app/internal/application/theme"
 	appwishlist "app/internal/application/wishlist"
 	"app/internal/config"
@@ -67,6 +68,7 @@ type Container struct {
 	ProductReviewService *appreview.Service
 	ProductQuestionService *appquestion.Service
 	ContactService     *appcontact.Service
+	CartService        *appcart.Service
 	BlogService        *appblog.Service
 
 	// Handlers
@@ -84,6 +86,7 @@ type Container struct {
 	Attribute *handler.AttributeHandler
 	Upload    *handler.UploadHandler
 	Store     *handler.StoreHandler
+	Cart      *handler.CartHandler
 	Storefront *handler.StorefrontHandler
 	Theme     *handler.ThemeHandler
 	Wishlist  *handler.WishlistHandler
@@ -167,6 +170,10 @@ func New(cfg *config.Config) (*Container, error) {
 		orderRepo,
 	)
 
+	redisCache := cache.NewRedisCache(cfg.Redis)
+	cartRepo := cache.NewCartRepository(redisCache)
+	cartService := appcart.NewService(cartRepo, productRepo)
+
 	storefrontService := appstorefront.NewService(
 		productRepo,
 		categoryRepo,
@@ -175,6 +182,7 @@ func New(cfg *config.Config) (*Container, error) {
 		couponRepo,
 		customerRepo,
 		settingsRepo,
+		cartService,
 		mailer,
 	)
 
@@ -194,8 +202,6 @@ func New(cfg *config.Config) (*Container, error) {
 	contactService := appcontact.NewService(contactRepo)
 
 	auditRepo := postgres.NewAuditRepository(db.DB)
-	
-	redisCache := cache.NewRedisCache(cfg.Redis)
 
 	uploader := storage.NewUploader(cfg.Upload)
 
@@ -227,6 +233,7 @@ func New(cfg *config.Config) (*Container, error) {
 		ProductQuestionService: productQuestionService,
 		ContactService:     contactService,
 		BlogService:        blogService,
+		CartService:        cartService,
 		Health:           handler.NewHealthHandler(db, cfg.App.Version),
 		Auth:            handler.NewAuthHandler(authService, v, log),
 		Product:         handler.NewProductHandler(productService, v, log),
@@ -251,6 +258,7 @@ func New(cfg *config.Config) (*Container, error) {
 			v,
 			log,
 		),
+		Cart: handler.NewCartHandler(cartService, storefrontService, v, log),
 		Storefront:      handler.NewStorefrontHandler(storecontentService, settingsService, v, log),
 		Theme:           handler.NewThemeHandler(themeService, v, log),
 		Wishlist:        handler.NewWishlistHandler(wishlistService, v, log),
