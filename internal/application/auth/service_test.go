@@ -216,6 +216,9 @@ func (m *mockCustomerRepo) ReplaceAddresses(context.Context, uuid.UUID, []custom
 func (m *mockCustomerRepo) ListOrders(context.Context, uuid.UUID, pagination.Params) ([]domainorder.Summary, int64, error) {
 	return nil, 0, nil
 }
+func (m *mockCustomerRepo) Count(context.Context) (int64, error) {
+	return int64(m.created), nil
+}
 
 func newTestService(signupEnabled bool, defaultRole string) (*AuthService, *mockUserRepo, *mockResetRepo, *mockMailer) {
 	hasher := infraauth.NewPasswordHasher()
