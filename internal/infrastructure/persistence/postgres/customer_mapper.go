@@ -1,6 +1,8 @@
 package postgres
 
 import (
+	"github.com/google/uuid"
+
 	"app/internal/domain/customer"
 	"app/internal/infrastructure/persistence/models"
 )
@@ -74,4 +76,22 @@ func toAddressesDomain(items []models.CustomerAddressModel) []customer.Address {
 		result[i] = toAddressDomain(&m)
 	}
 	return result
+}
+
+func toAddressModel(a *customer.Address, customerID uuid.UUID) models.CustomerAddressModel {
+	m := models.CustomerAddressModel{
+		ID:         a.ID,
+		CustomerID: customerID,
+		Type:       a.Type.String(),
+		Street:     a.Street,
+		City:       a.City,
+		PostalCode: a.PostalCode,
+		Country:    a.Country,
+		IsDefault:  a.IsDefault,
+	}
+	if a.State != "" {
+		state := a.State
+		m.State = &state
+	}
+	return m
 }
