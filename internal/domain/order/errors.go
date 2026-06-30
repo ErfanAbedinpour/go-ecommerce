@@ -32,4 +32,6 @@ var (
 	ErrInvalidDateRange = apperror.Validation("invalid date range", map[string]string{
 		"from": "must be before or equal to to",
 	})
+
+	ErrPaymentAlreadyPaid = apperror.Conflict("order is already paid")
 )
