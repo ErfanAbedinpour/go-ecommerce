@@ -20,6 +20,7 @@ type Config struct {
 	Upload   UploadConfig
 	Log      LogConfig
 	Redis    RedisConfig
+	Payment  PaymentConfig
 }
 
 // AppConfig holds application-level settings.
@@ -119,6 +120,11 @@ type RedisConfig struct {
 	Port     int    `env:"REDIS_PORT" envDefault:"6379"`
 	Password string `env:"REDIS_PASSWORD" envDefault:""`
 	DB       int    `env:"REDIS_DB" envDefault:"0"`
+}
+
+// PaymentConfig holds payment gateway settings.
+type PaymentConfig struct {
+	CallbackSecret string `env:"PAYMENT_CALLBACK_SECRET" envDefault:""`
 }
 
 // Load reads configuration from environment variables.
