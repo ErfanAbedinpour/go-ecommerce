@@ -128,3 +128,51 @@ func (h *WishlistHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	response.OK(w, dtoresponse.ToWishlistListResponse(result))
 }
+
+// ListIDs godoc
+// @Summary      List wishlist product IDs
+// @Description  Returns all product IDs in the authenticated customer's wishlist for quick heart-state checks.
+// @Tags         store-wishlist
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  appwishlist.WishlistIDs
+// @Failure      401  {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/store/account/wishlist/ids [get]
+func (h *WishlistHandler) ListIDs(w http.ResponseWriter, r *http.Request) {
+	userID, err := appmiddleware.GetUserID(r.Context())
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	result, err := h.service.ListProductIDs(r.Context(), userID)
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.OK(w, result)
+}
+
+// Count godoc
+// @Summary      Wishlist count
+// @Description  Returns the number of items in the authenticated customer's wishlist.
+// @Tags         store-wishlist
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  appwishlist.WishlistCount
+// @Failure      401  {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/store/account/wishlist/count [get]
+func (h *WishlistHandler) Count(w http.ResponseWriter, r *http.Request) {
+	userID, err := appmiddleware.GetUserID(r.Context())
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	result, err := h.service.Count(r.Context(), userID)
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.OK(w, result)
+}
