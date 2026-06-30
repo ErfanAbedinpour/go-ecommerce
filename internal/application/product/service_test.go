@@ -128,6 +128,16 @@ func (m *mockRepo) CountActive(_ context.Context) (int64, error) {
 	return count, nil
 }
 
+func (m *mockRepo) FindByIDs(_ context.Context, ids []uuid.UUID) ([]domain.Product, error) {
+	out := make([]domain.Product, 0, len(ids))
+	for _, id := range ids {
+		if p, ok := m.products[id]; ok {
+			out = append(out, *p)
+		}
+	}
+	return out, nil
+}
+
 func TestService_Create(t *testing.T) {
 	svc := NewService(newMockRepo())
 	p, err := svc.Create(context.Background(), CreateInput{
