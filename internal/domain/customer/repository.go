@@ -30,4 +30,5 @@ type Repository interface {
 	ListAddresses(ctx context.Context, customerID uuid.UUID) ([]Address, error)
 	ReplaceAddresses(ctx context.Context, customerID uuid.UUID, addresses []Address) error
 	ListOrders(ctx context.Context, customerID uuid.UUID, page pagination.Params) ([]domainorder.Summary, int64, error)
+	Count(ctx context.Context) (int64, error)
 }
