@@ -288,11 +288,18 @@ func (h *StoreHandler) PreviewCheckout(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, r, h.log, err)
 		return
 	}
+
+	owner, ok := appmiddleware.GetCartOwner(r.Context())
+	if !ok {
+		response.Error(w, r, h.log, apperror.Internal("cart session missing"))
+		return
+	}
+
 	result, err := h.storefront.PreviewCheckout(r.Context(), appstorefront.PreviewCheckoutInput{
-		Items:          toCheckoutItems(req.Items),
+		Owner:          owner,
 		CouponCode:     req.CouponCode,
-		ShippingAmount: req.ShippingAmount,
-		TaxAmount:      req.TaxAmount,
+		ShippingMethod: req.ShippingMethod,
+		ShippingCity:   req.ShippingCity,
 	})
 	if err != nil {
 		response.Error(w, r, h.log, err)
@@ -317,14 +324,27 @@ func (h *StoreHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	owner, ok := appmiddleware.GetCartOwner(r.Context())
+	if !ok {
+		response.Error(w, r, h.log, apperror.Internal("cart session missing"))
+		return
+	}
+
 	billing := toOrderAddress(req.ShippingAddress)
 	if req.BillingAddress != nil {
 		billing = toOrderAddress(*req.BillingAddress)
 	}
 
+	shippingCity := strings.TrimSpace(req.ShippingCity)
+	if shippingCity == "" {
+		shippingCity = strings.TrimSpace(req.ShippingAddress.City)
+	}
+
 	input := appstorefront.PlaceCheckoutInput{
-		Items:           toCheckoutItems(req.Items),
-		CouponCode:      req.CouponCode,
+		Owner:          owner,
+		CouponCode:     req.CouponCode,
+		ShippingMethod: req.ShippingMethod,
+		ShippingCity:   shippingCity,
 		Customer: appstorefront.CheckoutCustomerInput{
 			Email:     req.Customer.Email,
 			FirstName: req.Customer.FirstName,
@@ -333,8 +353,6 @@ func (h *StoreHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		},
 		ShippingAddress: toOrderAddress(req.ShippingAddress),
 		BillingAddress:  billing,
-		ShippingAmount:  req.ShippingAmount,
-		TaxAmount:       req.TaxAmount,
 		PaymentMethod:   req.PaymentMethod,
 		Notes:           req.Notes,
 	}
@@ -632,21 +650,3 @@ func toUpdateAccountProfileInput(req request.UpdateStoreAccountProfileRequest) a
 	}
 }
 
-func toCheckoutItems(items []request.StoreCheckoutItemRequest) []appstorefront.CheckoutItemInput {
-	result := make([]appstorefront.CheckoutItemInput, len(items))
-	for i, item := range items {
-		productID, _ := uuid.Parse(item.ProductID)
-		var skuID *uuid.UUID
-		if item.SkuID != nil && *item.SkuID != "" {
-			if id, err := uuid.Parse(*item.SkuID); err == nil {
-				skuID = &id
-			}
-		}
-		result[i] = appstorefront.CheckoutItemInput{
-			ProductID: productID,
-			SkuID:     skuID,
-			Quantity:  item.Quantity,
-		}
-	}
-	return result
-}
