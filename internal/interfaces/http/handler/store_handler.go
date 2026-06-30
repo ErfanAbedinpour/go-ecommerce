@@ -12,8 +12,9 @@ import (
 	appstorefront "app/internal/application/storefront"
 	appstorecontent "app/internal/application/storecontent"
 	appsettings "app/internal/application/settings"
+	appreview "app/internal/application/productreview"
 	apptheme "app/internal/application/theme"
-	domainproduct "app/internal/domain/product"
+	appwishlist "app/internal/application/wishlist"
 	dtoresponse "app/internal/interfaces/http/dto/response"
 	"app/internal/interfaces/http/dto/request"
 	appmiddleware "app/internal/interfaces/http/middleware"
@@ -29,6 +30,8 @@ type StoreHandler struct {
 	storecontent          *appstorecontent.Service
 	settings              *appsettings.Service
 	theme                 *apptheme.Service
+	reviews               *appreview.Service
+	wishlist              *appwishlist.Service
 	paymentCallbackSecret string
 	validator             *validator.Validator
 	log                   *slog.Logger
@@ -40,6 +43,8 @@ func NewStoreHandler(
 	storecontent *appstorecontent.Service,
 	settings *appsettings.Service,
 	theme *apptheme.Service,
+	reviews *appreview.Service,
+	wishlist *appwishlist.Service,
 	paymentCallbackSecret string,
 	v *validator.Validator,
 	log *slog.Logger,
@@ -49,6 +54,8 @@ func NewStoreHandler(
 		storecontent:          storecontent,
 		settings:              settings,
 		theme:                 theme,
+		reviews:               reviews,
+		wishlist:              wishlist,
 		paymentCallbackSecret: paymentCallbackSecret,
 		validator:             v,
 		log:                   log,
@@ -69,17 +76,10 @@ func NewStoreHandler(
 // @Router       /api/v1/store/products [get]
 func (h *StoreHandler) ListProducts(w http.ResponseWriter, r *http.Request) {
 	page := pagination.FromRequest(r)
-	filter := domainproduct.StoreListFilter{
-		Query: r.URL.Query().Get("q"),
-		Sort:  r.URL.Query().Get("sort"),
-	}
-	if catID := r.URL.Query().Get("category_id"); catID != "" {
-		id, err := uuid.Parse(catID)
-		if err != nil {
-			response.Error(w, r, h.log, err)
-			return
-		}
-		filter.CategoryID = &id
+	filter, err := h.storefront.BuildStoreListFilter(r.Context(), r.URL.Query())
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
 	}
 
 	result, err := h.storefront.ListProducts(r.Context(), filter, page)
@@ -189,18 +189,46 @@ func (h *StoreHandler) GetShippingMethods(w http.ResponseWriter, r *http.Request
 // @Description  Returns product detail by slug or UUID including variants and SKUs.
 // @Tags         store
 // @Produce      json
-// @Param        slugOrId  path  string  true  "Product slug or UUID"
-// @Success      200  {object}  appstorefront.ProductDetail
+// @Param        slugOrId  path   string  true   "Product slug or UUID"
+// @Param        include   query  string  false  "Comma-separated embeds: reviews_summary,wishlist"
+// @Success      200  {object}  appstorefront.ProductDetailEnriched
 // @Failure      404  {object}  dtoresponse.ErrorResponse
 // @Router       /api/v1/store/products/{slugOrId} [get]
 func (h *StoreHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
 	slugOrID := chi.URLParam(r, "slugOrId")
-	product, err := h.storefront.GetProduct(r.Context(), slugOrID)
+	includes := parseIncludeSet(r.URL.Query().Get("include"))
+
+	opts := appstorefront.ProductDetailOptions{
+		IncludeReviewsSummary: includes["reviews_summary"],
+		IncludeWishlist:       includes["wishlist"],
+	}
+	if userID, ok := appmiddleware.GetUserIDOptional(r.Context()); ok {
+		opts.UserID = &userID
+	}
+
+	product, err := h.storefront.GetProductEnriched(
+		r.Context(),
+		slugOrID,
+		opts,
+		h.reviews,
+		h.wishlist,
+	)
 	if err != nil {
 		response.Error(w, r, h.log, err)
 		return
 	}
 	response.OK(w, product)
+}
+
+func parseIncludeSet(raw string) map[string]bool {
+	out := make(map[string]bool)
+	for part := range strings.SplitSeq(raw, ",") {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			out[part] = true
+		}
+	}
+	return out
 }
 
 // ListCategories godoc
