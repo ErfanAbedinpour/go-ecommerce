@@ -90,6 +90,16 @@ func (m *mockRepo) IncrementCouponUsage(_ context.Context, _ uuid.UUID) error {
 	return nil
 }
 
+func (m *mockRepo) CountByStatus(_ context.Context, status domain.Status) (int64, error) {
+	var count int64
+	for _, o := range m.orders {
+		if o.Status == status {
+			count++
+		}
+	}
+	return count, nil
+}
+
 type mockProductRepo struct {
 	products map[uuid.UUID]*domainproduct.Product
 }
@@ -140,6 +150,15 @@ func (m *mockProductRepo) FindByID(_ context.Context, id uuid.UUID) (*domainprod
 	}
 	return p, nil
 }
+func (m *mockProductRepo) FindByIDs(_ context.Context, ids []uuid.UUID) ([]domainproduct.Product, error) {
+	out := make([]domainproduct.Product, 0, len(ids))
+	for _, id := range ids {
+		if p, ok := m.products[id]; ok {
+			out = append(out, *p)
+		}
+	}
+	return out, nil
+}
 
 type mockCustomerRepo struct {
 	customers map[uuid.UUID]*domaincustomer.Customer
@@ -182,6 +201,9 @@ func (m *mockCustomerRepo) Delete(context.Context, uuid.UUID) error             
 func (m *mockCustomerRepo) HasOrders(context.Context, uuid.UUID) (bool, error)     { return false, nil }
 func (m *mockCustomerRepo) GetLastOrderAt(context.Context, uuid.UUID) (*time.Time, error) {
 	return nil, nil
+}
+func (m *mockCustomerRepo) Count(context.Context) (int64, error) {
+	return int64(len(m.customers)), nil
 }
 
 type mockCouponRepo struct {
