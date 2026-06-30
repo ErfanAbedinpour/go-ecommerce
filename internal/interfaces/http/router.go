@@ -230,13 +230,20 @@ func registerStoreRoutes(r chi.Router, c *di.Container) {
 		r.Group(func(r chi.Router) {
 			r.Use(appmiddleware.Cache(c.RedisCache, 5*time.Minute))
 			r.Get("/products", c.Store.ListProducts)
+			r.Get("/products/search", c.Store.SearchProducts)
 			r.Get("/homepage", c.Store.GetHomepage)
 		})
-		
+
+		r.Get("/products/{id}/related", c.Store.ListRelatedProducts)
 		r.Get("/products/{slugOrId}", c.Store.GetProduct)
 		r.Get("/categories", c.Store.ListCategories)
+		r.Get("/brands", c.Store.ListBrands)
 		r.Get("/settings", c.Store.GetSettings)
+		r.Get("/settings/checkout", c.Store.GetCheckoutSettings)
 		r.Get("/theme", c.Store.GetTheme)
+		r.Get("/about", c.Store.GetAbout)
+		r.Get("/navigation", c.Store.GetNavigation)
+		r.Get("/checkout/shipping-methods", c.Store.GetShippingMethods)
 		r.Post("/coupons/validate", c.Store.ValidateCoupon)
 
 		// Public engagement & blog storefront routes
@@ -251,6 +258,8 @@ func registerStoreRoutes(r chi.Router, c *di.Container) {
 		r.Get("/blog/categories", c.Blog.StoreListCategories)
 		r.Get("/blog/posts/{postId}/comments", c.Blog.StoreListComments)
 		r.Post("/blog/posts/{postId}/comments", c.Blog.StoreSubmitComment)
+		r.Get("/blog", c.Blog.StoreListPostsAlias)
+		r.Get("/blog/{slug}/comments", c.Blog.StoreListCommentsBySlug)
 
 		checkoutLimiter := appmiddleware.NewRateLimiter(2, 5)
 
@@ -261,6 +270,7 @@ func registerStoreRoutes(r chi.Router, c *di.Container) {
 				r.Use(appmiddleware.RateLimit(checkoutLimiter))
 				r.Post("/checkout/preview", c.Store.PreviewCheckout)
 				r.Post("/checkout", c.Store.Checkout)
+				r.Post("/checkout/payment/callback", c.Store.PaymentCallback)
 			})
 			
 			r.Post("/products/{productId}/reviews", c.ProductReview.Submit)
@@ -269,11 +279,15 @@ func registerStoreRoutes(r chi.Router, c *di.Container) {
 		r.Group(func(r chi.Router) {
 			r.Use(appmiddleware.Authenticate(c.JWT))
 			r.Use(appmiddleware.RequireCustomer())
+			r.Get("/account/profile", c.Store.GetAccountProfile)
+			r.Put("/account/profile", c.Store.UpdateAccountProfile)
 			r.Get("/account/orders", c.Store.ListAccountOrders)
 			r.Get("/account/orders/{id}", c.Store.GetAccountOrder)
 			r.Post("/account/wishlist", c.Wishlist.Add)
 			r.Delete("/account/wishlist/{productId}", c.Wishlist.Remove)
 			r.Get("/account/wishlist", c.Wishlist.List)
+			r.Get("/account/wishlist/ids", c.Wishlist.ListIDs)
+			r.Get("/account/wishlist/count", c.Wishlist.Count)
 		})
 	})
 }
