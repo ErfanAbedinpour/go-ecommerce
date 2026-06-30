@@ -75,6 +75,9 @@ func (m *accountCustomerRepo) ReplaceAddresses(_ context.Context, customerID uui
 func (m *accountCustomerRepo) ListOrders(context.Context, uuid.UUID, pagination.Params) ([]domainorder.Summary, int64, error) {
 	return nil, 0, nil
 }
+func (m *accountCustomerRepo) Count(context.Context) (int64, error) {
+	return int64(len(m.byUser)), nil
+}
 
 type accountSettingsRepo struct {
 	settings domainsettings.StoreSettings
