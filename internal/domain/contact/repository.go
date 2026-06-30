@@ -23,6 +23,7 @@ type Repository interface {
 	Create(ctx context.Context, m *Message) error
 	FindByID(ctx context.Context, id uuid.UUID) (*Message, error)
 	List(ctx context.Context, filter ListFilter, page pagination.Params) ([]Message, int64, error)
+	CountStats(ctx context.Context) (*InboxStats, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status Status) error
 	Delete(ctx context.Context, id uuid.UUID) error
 }
