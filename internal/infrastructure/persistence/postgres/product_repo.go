@@ -169,6 +169,37 @@ func (r *ProductRepository) FindByID(ctx context.Context, id uuid.UUID) (*produc
 	return toProductDomain(&m), nil
 }
 
+func (r *ProductRepository) FindByIDs(ctx context.Context, ids []uuid.UUID) ([]product.Product, error) {
+	if len(ids) == 0 {
+		return []product.Product{}, nil
+	}
+	var items []models.ProductModel
+	err := r.db.WithContext(ctx).
+		Preload("Images", func(db *gorm.DB) *gorm.DB {
+			return db.Order("sort_order ASC")
+		}).
+		Preload("Attributes.Values").
+		Preload("SKUs").
+		Preload("Inventory").
+		Where("id IN ?", ids).
+		Find(&items).Error
+	if err != nil {
+		return nil, err
+	}
+	byID := make(map[uuid.UUID]product.Product, len(items))
+	for _, m := range items {
+		p := *toProductDomain(&m)
+		byID[p.ID] = p
+	}
+	result := make([]product.Product, 0, len(ids))
+	for _, id := range ids {
+		if p, ok := byID[id]; ok && p.Status == product.StatusActive {
+			result = append(result, p)
+		}
+	}
+	return result, nil
+}
+
 func (r *ProductRepository) FindBySlug(ctx context.Context, slug string) (*product.Product, error) {
 	var m models.ProductModel
 	err := r.db.WithContext(ctx).
@@ -353,10 +384,21 @@ func (r *ProductRepository) Search(ctx context.Context, query string, page pagin
 
 func (r *ProductRepository) ListStorefront(ctx context.Context, filter product.StoreListFilter, page pagination.Params) ([]product.Product, int64, error) {
 	query := r.db.WithContext(ctx).Model(&models.ProductModel{}).
-		Where("status = ?", product.StatusActive.String())
+		Where("products.status = ?", product.StatusActive.String())
 
-	if filter.CategoryID != nil {
-		query = query.Where("category_id = ?", *filter.CategoryID)
+	if len(filter.CategoryIDs) > 0 {
+		query = query.Where("products.category_id IN ?", filter.CategoryIDs)
+	} else if filter.CategoryID != nil {
+		query = query.Where("products.category_id = ?", *filter.CategoryID)
+	}
+	if filter.Brand != "" {
+		query = query.Where("LOWER(products.brand) = LOWER(?)", filter.Brand)
+	}
+	if filter.OnSale != nil && *filter.OnSale {
+		query = query.Where("products.sale_price IS NOT NULL AND products.sale_price < products.price")
+	}
+	if filter.InStock != nil && *filter.InStock {
+		query = query.Joins("INNER JOIN inventories ON inventories.product_id = products.id AND inventories.quantity > 0")
 	}
 	if filter.Query != "" {
 		pattern := "%" + strings.ToLower(filter.Query) + "%"
@@ -366,17 +408,7 @@ func (r *ProductRepository) ListStorefront(ctx context.Context, filter product.S
 		)
 	}
 
-	switch filter.Sort {
-	case "discount":
-		query = query.Where("sale_price IS NOT NULL AND sale_price < price").
-			Order("(1 - sale_price / NULLIF(price, 0)) DESC")
-	case "price":
-		query = query.Order("COALESCE(sale_price, price) ASC")
-	case "name":
-		query = query.Order("products.name ASC")
-	default:
-		query = query.Order("products.created_at DESC")
-	}
+	query = applyStorefrontSort(query, filter.Sort)
 
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
@@ -399,6 +431,35 @@ func (r *ProductRepository) ListStorefront(ctx context.Context, filter product.S
 	}
 
 	return toProductsDomain(items), total, nil
+}
+
+func applyStorefrontSort(query *gorm.DB, sort string) *gorm.DB {
+	switch sort {
+	case "bestseller":
+		return query.
+			Joins(`LEFT JOIN (
+				SELECT oi.product_id, SUM(oi.quantity) AS units_sold
+				FROM order_items oi
+				INNER JOIN orders o ON o.id = oi.order_id
+				WHERE o.created_at >= NOW() - INTERVAL '90 days'
+				  AND o.status NOT IN ('cancelled', 'refunded')
+				GROUP BY oi.product_id
+			) storefront_sales ON storefront_sales.product_id = products.id`).
+			Order("COALESCE(storefront_sales.units_sold, 0) DESC, products.created_at DESC")
+	case "newest", "created_at":
+		return query.Order("products.created_at DESC")
+	case "discounted", "discount":
+		return query.Where("products.sale_price IS NOT NULL AND products.sale_price < products.price").
+			Order("(1 - products.sale_price / NULLIF(products.price, 0)) DESC")
+	case "price_asc", "price":
+		return query.Order("COALESCE(products.sale_price, products.price) ASC")
+	case "price_desc":
+		return query.Order("COALESCE(products.sale_price, products.price) DESC")
+	case "name":
+		return query.Order("products.name ASC")
+	default:
+		return query.Order("products.created_at DESC")
+	}
 }
 
 func (r *ProductRepository) CountActive(ctx context.Context) (int64, error) {
