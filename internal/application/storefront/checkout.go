@@ -2,6 +2,7 @@ package storefront
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -10,6 +11,7 @@ import (
 
 	apporder "app/internal/application/order"
 	domaincoupon "app/internal/domain/coupon"
+	domaincart "app/internal/domain/cart"
 	domaincustomer "app/internal/domain/customer"
 	domainorder "app/internal/domain/order"
 	domainproduct "app/internal/domain/product"
@@ -25,10 +27,10 @@ type CheckoutItemInput struct {
 
 // PreviewCheckoutInput holds data for checkout total preview.
 type PreviewCheckoutInput struct {
-	Items          []CheckoutItemInput
+	Owner          domaincart.Owner
 	CouponCode     string
-	ShippingAmount float64
-	TaxAmount      float64
+	ShippingMethod string
+	ShippingCity   string
 }
 
 // PreviewLineItem is a validated checkout line with pricing.
@@ -66,13 +68,13 @@ type PreviewCheckoutOutput struct {
 
 // PlaceCheckoutInput holds data for placing a storefront order.
 type PlaceCheckoutInput struct {
-	Items           []CheckoutItemInput
+	Owner           domaincart.Owner
 	CouponCode      string
 	Customer        CheckoutCustomerInput
 	ShippingAddress domainorder.Address
 	BillingAddress  domainorder.Address
-	ShippingAmount  float64
-	TaxAmount       float64
+	ShippingMethod  string
+	ShippingCity    string
 	PaymentMethod   string
 	Notes           string
 	UserID          *uuid.UUID
@@ -142,13 +144,14 @@ func (s *Service) ValidateCoupon(ctx context.Context, input CouponValidateInput)
 	}, nil
 }
 
-// PreviewCheckout validates cart items and computes totals without creating an order.
+// PreviewCheckout validates the server cart and computes totals without creating an order.
 func (s *Service) PreviewCheckout(ctx context.Context, input PreviewCheckoutInput) (*PreviewCheckoutOutput, error) {
-	if len(input.Items) == 0 {
-		return nil, domainorder.ErrEmptyOrder
+	items, err := cartOwnerCheckoutItems(ctx, s.carts, input.Owner)
+	if err != nil {
+		return nil, err
 	}
 
-	lineItems, subtotal, err := s.buildPreviewLines(ctx, input.Items)
+	lineItems, subtotal, err := s.buildPreviewLines(ctx, items)
 	if err != nil {
 		return nil, err
 	}
@@ -169,11 +172,18 @@ func (s *Service) PreviewCheckout(ctx context.Context, input PreviewCheckoutInpu
 		}
 	}
 
-	shipping := roundMoney(input.ShippingAmount)
-	tax := roundMoney(input.TaxAmount)
+	shipping, err := s.computeShippingAmount(input.ShippingMethod, input.ShippingCity)
+	if err != nil {
+		return nil, err
+	}
+	tax := s.computeTaxAmount(subtotal - discount + shipping)
 	total := roundMoney(subtotal - discount + shipping + tax)
 	if total < 0 {
 		total = 0
+	}
+
+	if err := s.validateMinOrder(ctx, total); err != nil {
+		return nil, err
 	}
 
 	return &PreviewCheckoutOutput{
@@ -191,10 +201,25 @@ func (s *Service) PreviewCheckout(ctx context.Context, input PreviewCheckoutInpu
 	}, nil
 }
 
-// PlaceCheckout creates an unpaid storefront order for a guest or authenticated customer.
+// PlaceCheckout creates an unpaid storefront order from the server cart.
 func (s *Service) PlaceCheckout(ctx context.Context, input PlaceCheckoutInput) (*PlaceCheckoutOutput, error) {
-	if len(input.Items) == 0 {
-		return nil, domainorder.ErrEmptyOrder
+	preview, err := s.PreviewCheckout(ctx, PreviewCheckoutInput{
+		Owner:          input.Owner,
+		CouponCode:     input.CouponCode,
+		ShippingMethod: input.ShippingMethod,
+		ShippingCity:   input.ShippingCity,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if unavailable := unavailablePreviewItems(preview.Items); len(unavailable) > 0 {
+		return nil, stockConflictError(unavailable)
+	}
+
+	items, err := cartOwnerCheckoutItems(ctx, s.carts, input.Owner)
+	if err != nil {
+		return nil, err
 	}
 
 	customerID, err := s.resolveCheckoutCustomer(ctx, input)
@@ -202,8 +227,8 @@ func (s *Service) PlaceCheckout(ctx context.Context, input PlaceCheckoutInput) (
 		return nil, err
 	}
 
-	orderItems := make([]apporder.CreateItemInput, len(input.Items))
-	for i, item := range input.Items {
+	orderItems := make([]apporder.CreateItemInput, len(items))
+	for i, item := range items {
 		orderItems[i] = apporder.CreateItemInput{
 			ProductID: item.ProductID,
 			SkuID:     item.SkuID,
@@ -215,8 +240,8 @@ func (s *Service) PlaceCheckout(ctx context.Context, input PlaceCheckoutInput) (
 		CustomerID:      customerID,
 		Items:           orderItems,
 		CouponCode:      input.CouponCode,
-		ShippingAmount:  input.ShippingAmount,
-		TaxAmount:       input.TaxAmount,
+		ShippingAmount:  float64(preview.Summary.ShippingToman),
+		TaxAmount:       float64(preview.Summary.TaxToman),
 		BillingAddress:  input.BillingAddress,
 		ShippingAddress: input.ShippingAddress,
 		PaymentMethod:   input.PaymentMethod,
@@ -224,6 +249,10 @@ func (s *Service) PlaceCheckout(ctx context.Context, input PlaceCheckoutInput) (
 		Notes:           input.Notes,
 	})
 	if err != nil {
+		return nil, err
+	}
+
+	if err := s.carts.Clear(ctx, input.Owner); err != nil {
 		return nil, err
 	}
 
@@ -447,4 +476,73 @@ func isCourierCity(city string) bool {
 	default:
 		return false
 	}
+}
+
+func (s *Service) computeShippingAmount(method, city string) (float64, error) {
+	method = strings.TrimSpace(strings.ToLower(method))
+	city = strings.TrimSpace(city)
+	if method == "" {
+		return 0, apperror.Validation("shipping method is required", map[string]string{"shipping_method": "is required"})
+	}
+	if city == "" {
+		return 0, apperror.Validation("shipping city is required", map[string]string{"shipping_city": "is required"})
+	}
+
+	switch method {
+	case "post":
+		return 85000, nil
+	case "courier":
+		if !isCourierCity(city) {
+			return 0, apperror.Validation("courier is not available for this city", map[string]string{"shipping_method": "unavailable for city"})
+		}
+		return 120000, nil
+	default:
+		return 0, apperror.Validation("invalid shipping method", map[string]string{"shipping_method": "must be post or courier"})
+	}
+}
+
+func (s *Service) computeTaxAmount(_ float64) float64 {
+	return 0
+}
+
+func (s *Service) validateMinOrder(ctx context.Context, total float64) error {
+	store, err := s.settings.Get(ctx)
+	if err != nil {
+		return err
+	}
+	minOrder := store.Checkout.WithDefaults().MinOrderToman
+	if toMoneyToman(total) < minOrder {
+		return apperror.Validation("order total is below minimum", map[string]string{
+			"total_toman": fmt.Sprintf("must be at least %d", minOrder),
+		})
+	}
+	return nil
+}
+
+type unavailableItem struct {
+	ProductID         string `json:"product_id"`
+	RequestedQuantity int    `json:"requested_quantity"`
+	AvailableQuantity int    `json:"available_quantity"`
+}
+
+func unavailablePreviewItems(items []PreviewLineItem) []unavailableItem {
+	out := make([]unavailableItem, 0)
+	for _, item := range items {
+		if item.IsAvailable {
+			continue
+		}
+		out = append(out, unavailableItem{
+			ProductID:         item.ProductID.String(),
+			RequestedQuantity: item.Quantity,
+			AvailableQuantity: item.AvailableQuantity,
+		})
+	}
+	return out
+}
+
+func stockConflictError(items []unavailableItem) error {
+	if len(items) == 0 {
+		return apperror.Conflict("some items are unavailable")
+	}
+	return apperror.Conflict(fmt.Sprintf("some items are unavailable (first: %s)", items[0].ProductID))
 }
