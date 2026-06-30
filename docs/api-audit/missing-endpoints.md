@@ -6,9 +6,11 @@ Endpoints required by the frontend but absent from `router.go` / Swagger.
 
 ## Store — Account Profile
 
+**Status:** ✅ Implemented
+
 **Purpose:** Load and edit customer profile and saved addresses on `/account`.
 
-**Suggested endpoint:** `GET /api/v1/store/account/profile`  
+**Endpoint:** `GET /api/v1/store/account/profile`  
 **Method:** GET  
 **Authentication:** Bearer JWT, role `customer`  
 **Request:** —  
@@ -31,7 +33,7 @@ Endpoints required by the frontend but absent from `router.go` / Swagger.
 
 ---
 
-**Suggested endpoint:** `PUT /api/v1/store/account/profile`  
+**Endpoint:** `PUT /api/v1/store/account/profile`  
 **Method:** PUT  
 **Authentication:** Bearer JWT, role `customer`  
 **Request:** `{ first_name, last_name, phone, addresses[] }`  
@@ -42,9 +44,11 @@ Endpoints required by the frontend but absent from `router.go` / Swagger.
 
 ## Store — About Page
 
+**Status:** ✅ Implemented
+
 **Purpose:** Render `/about` with company story, team, milestones, stats.
 
-**Suggested endpoint:** `GET /api/v1/store/about`  
+**Endpoint:** `GET /api/v1/store/about`  
 **Method:** GET  
 **Authentication:** None  
 **Request:** —  
@@ -57,9 +61,11 @@ Endpoints required by the frontend but absent from `router.go` / Swagger.
 
 ## Store — Public Navigation
 
+**Status:** ✅ Implemented
+
 **Purpose:** CMS-driven header menu on storefront (mega-menu links).
 
-**Suggested endpoint:** `GET /api/v1/store/navigation`  
+**Endpoint:** `GET /api/v1/store/navigation`  
 **Method:** GET  
 **Authentication:** None  
 **Request:** —  
@@ -72,14 +78,16 @@ Endpoints required by the frontend but absent from `router.go` / Swagger.
 
 ## Store — Related Products
 
+**Status:** ✅ Implemented
+
 **Purpose:** "محصولات مرتبط" section on product detail page.
 
-**Suggested endpoint:** `GET /api/v1/store/products/{id}/related`  
+**Endpoint:** `GET /api/v1/store/products/{id}/related`  
 **Method:** GET  
 **Authentication:** None  
 **Query:** `limit` (default 8)  
 **Response:** `{ "data": [StoreProductCard...] }`  
-**Validation:** Product must exist and be active  
+**Validation:** Product must exist and be active (accepts UUID or slug)  
 **Errors:** `404`  
 **Priority:** P2
 
@@ -87,9 +95,11 @@ Endpoints required by the frontend but absent from `router.go` / Swagger.
 
 ## Store — Product Search (autocomplete)
 
+**Status:** ✅ Implemented
+
 **Purpose:** Quick search suggestions in header.
 
-**Suggested endpoint:** `GET /api/v1/store/products/search`  
+**Endpoint:** `GET /api/v1/store/products/search`  
 **Method:** GET  
 **Authentication:** None  
 **Query:** `q` (required), `limit` (default 10)  
@@ -100,9 +110,11 @@ Endpoints required by the frontend but absent from `router.go` / Swagger.
 
 ## Store — Public Brands
 
+**Status:** ✅ Implemented
+
 **Purpose:** Brand filter chips on catalog (optional).
 
-**Suggested endpoint:** `GET /api/v1/store/brands`  
+**Endpoint:** `GET /api/v1/store/brands`  
 **Method:** GET  
 **Authentication:** None  
 **Response:** `{ "data": [{ "id", "name", "slug", "logo_url" }] }`  
@@ -112,11 +124,13 @@ Endpoints required by the frontend but absent from `router.go` / Swagger.
 
 ## Store — Shipping Methods
 
+**Status:** ✅ Implemented
+
 **Purpose:** Checkout step 2 — select delivery option.
 
-**Suggested endpoint:** `GET /api/v1/store/checkout/shipping-methods`  
+**Endpoint:** `GET /api/v1/store/checkout/shipping-methods`  
 **Method:** GET  
-**Authentication:** Optional  
+**Authentication:** None  
 **Query:** `city` (required)  
 **Response:**
 
@@ -135,41 +149,47 @@ Endpoints required by the frontend but absent from `router.go` / Swagger.
 
 ## Store — Checkout Settings
 
+**Status:** ✅ Implemented
+
 **Purpose:** Minimum order amount, enabled payment methods, COD availability.
 
-**Suggested endpoint:** `GET /api/v1/store/settings/checkout`  
+**Endpoint:** `GET /api/v1/store/settings/checkout`  
 **Method:** GET  
 **Authentication:** None  
-**Response:** `{ min_order_toman, payment_methods[], cod_enabled, cod_cities[] }`  
+**Response:** `{ min_order_toman, payment_methods[], cod_enabled, cod_cities[], currency_label }`  
 **Priority:** P2
 
 ---
 
 ## Store — Payment Callback
 
+**Status:** ✅ Implemented
+
 **Purpose:** PSP redirect callback after online payment.
 
-**Suggested endpoint:** `POST /api/v1/store/checkout/payment/callback`  
+**Endpoint:** `POST /api/v1/store/checkout/payment/callback`  
 **Method:** POST  
-**Authentication:** PSP signature verification  
-**Request:** Provider-specific (e.g. `authority`, `status`)  
+**Authentication:** PSP signature verification (`signature` body field or `X-Payment-Signature` header; HMAC-SHA256 when `PAYMENT_CALLBACK_SECRET` is set)  
+**Request:** `{ order_id, authority, status, signature? }` — `status` is `OK` or `NOK`  
 **Response:** `{ order_id, payment_status }`  
-**Errors:** `400`, `404`, `409`  
+**Errors:** `400`, `401`, `404`, `409`  
 **Priority:** P0
 
 ---
 
 ## Store — Wishlist Shortcuts
 
+**Status:** ✅ Implemented
+
 **Purpose:** Header wishlist badge and quick heart-state checks.
 
-**Suggested endpoint:** `GET /api/v1/store/account/wishlist/ids`  
+**Endpoint:** `GET /api/v1/store/account/wishlist/ids`  
 **Method:** GET  
 **Authentication:** Bearer, customer  
 **Response:** `{ "product_ids": ["uuid", ...] }`  
 **Priority:** P3
 
-**Suggested endpoint:** `GET /api/v1/store/account/wishlist/count`  
+**Endpoint:** `GET /api/v1/store/account/wishlist/count`  
 **Method:** GET  
 **Authentication:** Bearer, customer  
 **Response:** `{ "count": 12 }`  
@@ -179,10 +199,12 @@ Endpoints required by the frontend but absent from `router.go` / Swagger.
 
 ## Store — Blog Path Aliases (optional)
 
+**Status:** ✅ Implemented
+
 **Purpose:** Match frontend docs that use `/blog` instead of `/blog/posts`.
 
-**Suggested endpoint:** `GET /api/v1/store/blog` → alias to `GET /store/blog/posts`  
-**Suggested endpoint:** `GET /api/v1/store/blog/{slug}/comments` → resolve slug to post ID  
+**Endpoint:** `GET /api/v1/store/blog` → alias to `GET /store/blog/posts`  
+**Endpoint:** `GET /api/v1/store/blog/{slug}/comments` → resolve slug to post ID  
 **Priority:** P3 (frontend can adapt to existing paths)
 
 ---
