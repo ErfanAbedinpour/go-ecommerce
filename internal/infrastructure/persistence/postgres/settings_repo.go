@@ -171,6 +171,8 @@ func (r *SettingsRepository) loadOrCreate(ctx context.Context) (*models.StoreSet
 		Contact:              []byte("{}"),
 		Social:               []byte("{}"),
 		SEO:                  []byte("{}"),
+		About:                []byte("{}"),
+		Checkout:             []byte("{}"),
 		Navigation:           []byte("[]"),
 		StorefrontNavigation: []byte("[]"),
 	}
@@ -192,6 +194,8 @@ func toStoreSettingsDomain(m *models.StoreSettingsModel) (*settings.StoreSetting
 	var seo settings.SEO
 	var navigation []settings.NavItem
 	var storefrontNavigation []settings.NavItem
+	var about settings.About
+	var checkout settings.Checkout
 
 	if len(m.Site) > 0 {
 		if err := json.Unmarshal(m.Site, &site); err != nil {
@@ -213,6 +217,16 @@ func toStoreSettingsDomain(m *models.StoreSettingsModel) (*settings.StoreSetting
 			return nil, err
 		}
 	}
+	if len(m.About) > 0 {
+		if err := json.Unmarshal(m.About, &about); err != nil {
+			return nil, err
+		}
+	}
+	if len(m.Checkout) > 0 {
+		if err := json.Unmarshal(m.Checkout, &checkout); err != nil {
+			return nil, err
+		}
+	}
 	if len(m.Navigation) > 0 {
 		if err := json.Unmarshal(m.Navigation, &navigation); err != nil {
 			return nil, err
@@ -229,6 +243,12 @@ func toStoreSettingsDomain(m *models.StoreSettingsModel) (*settings.StoreSetting
 	if storefrontNavigation == nil {
 		storefrontNavigation = []settings.NavItem{}
 	}
+	if about.Milestones == nil {
+		about.Milestones = []settings.AboutMilestone{}
+	}
+	if about.Team == nil {
+		about.Team = []settings.AboutTeamMember{}
+	}
 
 	contactSectionImageURL := ""
 	if m.ContactSectionImageURL != nil {
@@ -240,6 +260,8 @@ func toStoreSettingsDomain(m *models.StoreSettingsModel) (*settings.StoreSetting
 		Contact:                contact,
 		Social:                 social,
 		SEO:                    seo,
+		About:                  about,
+		Checkout:               checkout.WithDefaults(),
 		Navigation:             navigation,
 		StorefrontNavigation:   storefrontNavigation,
 		ContactSectionImageURL: contactSectionImageURL,
