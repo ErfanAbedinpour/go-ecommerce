@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/go-chi/chi/v5"
 
 	appquestion "app/internal/application/productquestion"
 	domainquestion "app/internal/domain/productquestion"
@@ -30,6 +31,10 @@ func NewProductQuestionHandler(service *appquestion.Service, v *validator.Valida
 	}
 }
 
+func (h *ProductQuestionHandler) resolveProductID(r *http.Request) (uuid.UUID, error) {
+	return h.service.ResolveProductID(r.Context(), chi.URLParam(r, "productId"))
+}
+
 // Ask godoc
 // @Summary      Ask a question
 // @Description  Submit a question about a product.
@@ -43,7 +48,7 @@ func NewProductQuestionHandler(service *appquestion.Service, v *validator.Valida
 // @Failure      404  {object}  dtoresponse.ErrorResponse
 // @Router       /api/v1/store/products/{productId}/questions [post]
 func (h *ProductQuestionHandler) Ask(w http.ResponseWriter, r *http.Request) {
-	prodID, err := parseUUIDParam(r, "productId")
+	prodID, err := h.resolveProductID(r)
 	if err != nil {
 		response.Error(w, r, h.log, err)
 		return
@@ -81,7 +86,7 @@ func (h *ProductQuestionHandler) Ask(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  dtoresponse.ErrorResponse
 // @Router       /api/v1/store/products/{productId}/questions [get]
 func (h *ProductQuestionHandler) ListByProduct(w http.ResponseWriter, r *http.Request) {
-	prodID, err := parseUUIDParam(r, "productId")
+	prodID, err := h.resolveProductID(r)
 	if err != nil {
 		response.Error(w, r, h.log, err)
 		return
