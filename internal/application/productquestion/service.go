@@ -8,6 +8,7 @@ import (
 
 	domainproduct "app/internal/domain/product"
 	domain "app/internal/domain/productquestion"
+	"app/internal/pkg/productref"
 	"app/pkg/pagination"
 )
 
@@ -78,4 +79,9 @@ func (s *Service) Answer(ctx context.Context, id uuid.UUID, answer string, answe
 
 func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
 	return s.repo.Delete(ctx, id)
+}
+
+// ResolveProductID resolves a product slug or UUID to a product ID.
+func (s *Service) ResolveProductID(ctx context.Context, ref string) (uuid.UUID, error) {
+	return productref.ResolveID(ctx, s.products, ref)
 }
