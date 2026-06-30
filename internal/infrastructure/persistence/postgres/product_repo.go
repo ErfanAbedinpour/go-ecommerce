@@ -242,6 +242,83 @@ func (r *ProductRepository) List(ctx context.Context, filter product.ListFilter,
 	return toProductsDomain(items), total, nil
 }
 
+func (r *ProductRepository) SearchStorefront(ctx context.Context, query string, limit int) ([]product.Product, error) {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return []product.Product{}, nil
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 50 {
+		limit = 50
+	}
+
+	pattern := "%" + strings.ToLower(query) + "%"
+	var items []models.ProductModel
+	err := r.db.WithContext(ctx).
+		Model(&models.ProductModel{}).
+		Where("status = ?", product.StatusActive.String()).
+		Where(
+			"LOWER(products.name) LIKE ? OR LOWER(COALESCE(products.description, '')) LIKE ? OR LOWER(COALESCE(products.brand, '')) LIKE ? OR EXISTS (SELECT 1 FROM skus WHERE skus.product_id = products.id AND LOWER(skus.code) LIKE ?)",
+			pattern, pattern, pattern, pattern,
+		).
+		Preload("Images", func(db *gorm.DB) *gorm.DB {
+			return db.Order("sort_order ASC")
+		}).
+		Preload("Inventory").
+		Order("products.created_at DESC").
+		Limit(limit).
+		Find(&items).Error
+	if err != nil {
+		return nil, err
+	}
+	return toProductsDomain(items), nil
+}
+
+func (r *ProductRepository) ListRelatedStorefront(ctx context.Context, productID uuid.UUID, limit int) ([]product.Product, error) {
+	if limit <= 0 {
+		limit = 8
+	}
+	if limit > 24 {
+		limit = 24
+	}
+
+	source, err := r.FindByID(ctx, productID)
+	if err != nil {
+		return nil, err
+	}
+	if source.Status != product.StatusActive {
+		return nil, product.ErrNotFound
+	}
+
+	db := r.db.WithContext(ctx).
+		Model(&models.ProductModel{}).
+		Where("status = ?", product.StatusActive.String()).
+		Where("id <> ?", productID)
+
+	switch {
+	case source.CategoryID != nil:
+		db = db.Where("category_id = ?", *source.CategoryID)
+	case source.Brand != "":
+		db = db.Where("brand = ?", source.Brand)
+	}
+
+	var items []models.ProductModel
+	err = db.
+		Preload("Images", func(db *gorm.DB) *gorm.DB {
+			return db.Order("sort_order ASC")
+		}).
+		Preload("Inventory").
+		Order("products.created_at DESC").
+		Limit(limit).
+		Find(&items).Error
+	if err != nil {
+		return nil, err
+	}
+	return toProductsDomain(items), nil
+}
+
 func (r *ProductRepository) Search(ctx context.Context, query string, page pagination.Params) ([]product.Product, int64, error) {
 	pattern := "%" + strings.ToLower(query) + "%"
 	db := r.db.WithContext(ctx).Model(&models.ProductModel{}).
