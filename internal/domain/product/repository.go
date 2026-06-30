@@ -19,9 +19,14 @@ type ListFilter struct {
 
 // StoreListFilter holds filters for public storefront product listing.
 type StoreListFilter struct {
-	Query      string
-	CategoryID *uuid.UUID
-	Sort       string
+	Query           string
+	CategoryID      *uuid.UUID
+	CategoryIDs     []uuid.UUID
+	Brand           string
+	Sort            string
+	OnSale          *bool
+	InStock         *bool
+	IncludeChildren bool
 }
 
 // Repository defines the port for product persistence.
@@ -30,6 +35,7 @@ type Repository interface {
 	Update(ctx context.Context, product *Product) error
 	SoftDelete(ctx context.Context, id uuid.UUID) error
 	FindByID(ctx context.Context, id uuid.UUID) (*Product, error)
+	FindByIDs(ctx context.Context, ids []uuid.UUID) ([]Product, error)
 	FindBySlug(ctx context.Context, slug string) (*Product, error)
 	FindBySKU(ctx context.Context, sku string) (*Product, error)
 	List(ctx context.Context, filter ListFilter, page pagination.Params) ([]Product, int64, error)
