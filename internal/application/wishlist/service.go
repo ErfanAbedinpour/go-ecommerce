@@ -87,3 +87,40 @@ func (s *Service) BatchCheck(ctx context.Context, userID uuid.UUID, productIDs [
 	}
 	return s.repo.BatchCheck(ctx, customer.ID, productIDs)
 }
+
+// WishlistIDs holds product IDs in a customer's wishlist.
+type WishlistIDs struct {
+	ProductIDs []uuid.UUID `json:"product_ids"`
+}
+
+// WishlistCount holds the wishlist item count.
+type WishlistCount struct {
+	Count int64 `json:"count"`
+}
+
+func (s *Service) ListProductIDs(ctx context.Context, userID uuid.UUID) (*WishlistIDs, error) {
+	customer, err := s.customers.FindByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	ids, err := s.repo.ListProductIDs(ctx, customer.ID)
+	if err != nil {
+		return nil, err
+	}
+	if ids == nil {
+		ids = []uuid.UUID{}
+	}
+	return &WishlistIDs{ProductIDs: ids}, nil
+}
+
+func (s *Service) Count(ctx context.Context, userID uuid.UUID) (*WishlistCount, error) {
+	customer, err := s.customers.FindByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	count, err := s.repo.Count(ctx, customer.ID)
+	if err != nil {
+		return nil, err
+	}
+	return &WishlistCount{Count: count}, nil
+}
