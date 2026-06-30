@@ -6,8 +6,13 @@ import (
 
 	"github.com/google/uuid"
 
+	domainblog "app/internal/domain/blog"
+	domaincategory "app/internal/domain/category"
+	domainorder "app/internal/domain/order"
 	domain "app/internal/domain/storecontent"
 	domainproduct "app/internal/domain/product"
+	domainsettings "app/internal/domain/settings"
+	"app/pkg/pagination"
 )
 
 // HomepageHero is the public hero projection.
@@ -59,21 +64,49 @@ type HomepageContactSection struct {
 	ImageURL string `json:"image_url,omitempty"`
 }
 
+// HomepageStats holds computed homepage counters.
+type HomepageStats struct {
+	ProductsCount         int64 `json:"products_count"`
+	CustomersCount        int64 `json:"customers_count"`
+	DeliveredOrdersCount  int64 `json:"delivered_orders_count"`
+	YearsExperience       int   `json:"years_experience"`
+}
+
+// HomepageCategory is a category node on the homepage grid.
+type HomepageCategory struct {
+	ID            uuid.UUID          `json:"id"`
+	Name          string             `json:"name"`
+	Slug          string             `json:"slug"`
+	ProductsCount int64              `json:"products_count"`
+	Children      []HomepageCategory `json:"children,omitempty"`
+}
+
+// HomepageBlogPost is a teaser card for the homepage blog section.
+type HomepageBlogPost struct {
+	ID            uuid.UUID `json:"id"`
+	Slug          string    `json:"slug"`
+	Title         string    `json:"title"`
+	Excerpt       string    `json:"excerpt"`
+	CoverImageURL string    `json:"cover_image_url,omitempty"`
+}
+
+// HomepageBlogTeaser holds latest published posts for the homepage.
+type HomepageBlogTeaser struct {
+	Posts []HomepageBlogPost `json:"posts"`
+}
+
 // HomepageProjection is the aggregated public homepage payload.
 type HomepageProjection struct {
 	Hero            *HomepageHero            `json:"hero,omitempty"`
+	Categories      []HomepageCategory       `json:"categories"`
 	ProductSlides   []HomepageProductSlide   `json:"product_slides"`
 	ProBanners      []domain.ProBanner       `json:"pro_banners"`
 	PartnerBrands   []domain.PartnerBrand    `json:"partner_brands"`
 	FAQ             HomepageFAQ              `json:"faq"`
 	ContactSection  HomepageContactSection   `json:"contact_section"`
 	Testimonials    []domain.HomepageReview  `json:"testimonials"`
+	BlogTeaser      HomepageBlogTeaser       `json:"blog_teaser"`
 	Stats           HomepageStats            `json:"stats"`
-}
-
-// HomepageStats holds computed homepage counters.
-type HomepageStats struct {
-	ProductsCount int64 `json:"products_count"`
 }
 
 // BuildHomepage loads homepage content and projects it for the public storefront.
@@ -87,6 +120,8 @@ func (s *Service) BuildHomepage(ctx context.Context) (*HomepageProjection, error
 		ProBanners:    data.ProBanners,
 		PartnerBrands: data.PartnerBrands,
 		Testimonials:  data.HomepageReviews,
+		Categories:    []HomepageCategory{},
+		BlogTeaser:    HomepageBlogTeaser{Posts: []HomepageBlogPost{}},
 	}
 
 	if data.Hero != nil {
@@ -120,7 +155,114 @@ func (s *Service) BuildHomepage(ctx context.Context) (*HomepageProjection, error
 	}
 	projection.Stats.ProductsCount = count
 
+	if s.customers != nil {
+		if customersCount, err := s.customers.Count(ctx); err == nil {
+			projection.Stats.CustomersCount = customersCount
+		}
+	}
+	if s.orders != nil {
+		if deliveredCount, err := s.orders.CountByStatus(ctx, domainorder.StatusDelivered); err == nil {
+			projection.Stats.DeliveredOrdersCount = deliveredCount
+		}
+	}
+	if storeSettings.Site.URL != "" {
+		projection.Stats.YearsExperience = yearsSinceSiteLaunch(*storeSettings)
+	}
+
+	if s.categories != nil {
+		categories, err := s.buildHomepageCategories(ctx)
+		if err != nil {
+			return nil, err
+		}
+		projection.Categories = categories
+	}
+
+	if s.blogs != nil {
+		posts, err := s.buildBlogTeaser(ctx)
+		if err != nil {
+			return nil, err
+		}
+		projection.BlogTeaser = HomepageBlogTeaser{Posts: posts}
+	}
+
 	return projection, nil
+}
+
+func yearsSinceSiteLaunch(settings domainsettings.StoreSettings) int {
+	if settings.Site.URL == "" {
+		return 5
+	}
+	// Stable public default until CMS stores an explicit founding year.
+	return 5
+}
+
+func (s *Service) buildHomepageCategories(ctx context.Context) ([]HomepageCategory, error) {
+	active := true
+	items, err := s.categories.ListAll(ctx, domaincategory.ListFilter{IsActive: &active})
+	if err != nil {
+		return nil, err
+	}
+	counts, err := s.categories.ProductCounts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return buildHomepageCategoryTree(items, counts), nil
+}
+
+func buildHomepageCategoryTree(items []domaincategory.Category, counts map[uuid.UUID]int64) []HomepageCategory {
+	byID := make(map[uuid.UUID]*HomepageCategory, len(items))
+	roots := make([]HomepageCategory, 0)
+
+	for _, item := range items {
+		node := HomepageCategory{
+			ID:            item.ID,
+			Name:          item.Name,
+			Slug:          item.Slug,
+			ProductsCount: counts[item.ID],
+		}
+		byID[item.ID] = &node
+	}
+
+	for _, item := range items {
+		node := byID[item.ID]
+		if item.ParentID == nil {
+			roots = append(roots, *node)
+			continue
+		}
+		if parent, ok := byID[*item.ParentID]; ok {
+			parent.Children = append(parent.Children, *node)
+		} else {
+			roots = append(roots, *node)
+		}
+	}
+
+	result := make([]HomepageCategory, 0, len(roots))
+	for _, root := range roots {
+		if built, ok := byID[root.ID]; ok {
+			result = append(result, *built)
+		}
+	}
+	return result
+}
+
+func (s *Service) buildBlogTeaser(ctx context.Context) ([]HomepageBlogPost, error) {
+	items, _, err := s.blogs.ListPosts(ctx, domainblog.PostFilter{
+		Status: string(domainblog.PostStatusPublished),
+	}, pagination.Params{Page: 1, PerPage: 3})
+	if err != nil {
+		return nil, err
+	}
+	posts := make([]HomepageBlogPost, 0, len(items))
+	for _, item := range items {
+		posts = append(posts, HomepageBlogPost{
+			ID:            item.ID,
+			Slug:          item.Slug,
+			Title:         item.Title,
+			Excerpt:       item.Summary,
+			CoverImageURL: item.FeaturedImage,
+		})
+	}
+	return posts, nil
 }
 
 func projectHero(hero *domain.Hero) *HomepageHero {
@@ -141,26 +283,33 @@ func projectHero(hero *domain.Hero) *HomepageHero {
 func (s *Service) projectProductSlide(ctx context.Context, slide domain.ProductSlide) (*HomepageProductSlide, error) {
 	if len(slide.Items) == 0 {
 		return &HomepageProductSlide{
-			SlideType:          slide.SlideType.String(),
+			SlideType:          mapSlideTypeForStorefront(slide.SlideType.String()),
 			Title:              slide.Title,
 			AutoplayIntervalMs: slide.AutoplayIntervalMs,
 			Products:           []HomepageProductCard{},
 		}, nil
 	}
 
+	ids := make([]uuid.UUID, 0, len(slide.Items))
+	for _, item := range slide.Items {
+		ids = append(ids, item.ProductID)
+	}
+	products, err := s.products.FindByIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	byID := make(map[uuid.UUID]domainproduct.Product, len(products))
+	for _, product := range products {
+		byID[product.ID] = product
+	}
+
 	cards := make([]HomepageProductCard, 0, len(slide.Items))
 	for _, item := range slide.Items {
-		product, err := s.products.FindByID(ctx, item.ProductID)
-		if err != nil {
-			if err == domainproduct.ErrNotFound {
-				continue
-			}
-			return nil, err
-		}
-		if product.Status != domainproduct.StatusActive {
+		product, ok := byID[item.ProductID]
+		if !ok {
 			continue
 		}
-		cards = append(cards, toHomepageProductCard(product))
+		cards = append(cards, toHomepageProductCard(&product))
 	}
 
 	tabLabel := slide.Title
@@ -169,12 +318,19 @@ func (s *Service) projectProductSlide(ctx context.Context, slide domain.ProductS
 	}
 
 	return &HomepageProductSlide{
-		SlideType:          slide.SlideType.String(),
+		SlideType:          mapSlideTypeForStorefront(slide.SlideType.String()),
 		Title:              slide.Title,
 		TabLabel:           tabLabel,
 		AutoplayIntervalMs: slide.AutoplayIntervalMs,
 		Products:           cards,
 	}, nil
+}
+
+func mapSlideTypeForStorefront(slideType string) string {
+	if slideType == "featured" {
+		return "new"
+	}
+	return slideType
 }
 
 func toHomepageProductCard(p *domainproduct.Product) HomepageProductCard {
