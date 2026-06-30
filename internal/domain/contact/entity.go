@@ -24,6 +24,12 @@ const (
 	StatusArchived Status = "archived"
 )
 
+// InboxStats holds aggregate contact inbox counters.
+type InboxStats struct {
+	UnreadCount int64
+	TotalCount  int64
+}
+
 // Message represents a contact form submission.
 type Message struct {
 	ID        uuid.UUID
