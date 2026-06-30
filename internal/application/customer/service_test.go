@@ -62,6 +62,10 @@ func (m *mockRepo) List(_ context.Context, _ domain.ListFilter, page pagination.
 func (m *mockRepo) ListAddresses(_ context.Context, customerID uuid.UUID) ([]domain.Address, error) {
 	return m.addresses[customerID], nil
 }
+func (m *mockRepo) ReplaceAddresses(_ context.Context, customerID uuid.UUID, addresses []domain.Address) error {
+	m.addresses[customerID] = addresses
+	return nil
+}
 
 func (m *mockRepo) ListOrders(_ context.Context, customerID uuid.UUID, page pagination.Params) ([]domainorder.Summary, int64, error) {
 	orders := m.orders[customerID]
