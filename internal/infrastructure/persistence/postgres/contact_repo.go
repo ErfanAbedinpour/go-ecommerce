@@ -62,6 +62,26 @@ func (r *ContactMessageRepository) List(ctx context.Context, filter contact.List
 	return toContactMessagesDomain(items), total, nil
 }
 
+func (r *ContactMessageRepository) CountStats(ctx context.Context) (*contact.InboxStats, error) {
+	var total int64
+	if err := r.db.WithContext(ctx).Model(&models.ContactMessageModel{}).Count(&total).Error; err != nil {
+		return nil, err
+	}
+
+	var unread int64
+	if err := r.db.WithContext(ctx).
+		Model(&models.ContactMessageModel{}).
+		Where("status = ?", string(contact.StatusUnread)).
+		Count(&unread).Error; err != nil {
+		return nil, err
+	}
+
+	return &contact.InboxStats{
+		UnreadCount: unread,
+		TotalCount:  total,
+	}, nil
+}
+
 func (r *ContactMessageRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status contact.Status) error {
 	result := r.db.WithContext(ctx).
 		Model(&models.ContactMessageModel{}).
