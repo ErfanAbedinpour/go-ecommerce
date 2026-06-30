@@ -13,6 +13,8 @@ type StoreSettingsModel struct {
 	Contact                []byte    `gorm:"type:jsonb;not null;default:'{}'"`
 	Social                 []byte    `gorm:"type:jsonb;not null;default:'{}'"`
 	SEO                    []byte    `gorm:"type:jsonb;not null;default:'{}'"`
+	About                  []byte    `gorm:"type:jsonb;not null;default:'{}'"`
+	Checkout               []byte    `gorm:"type:jsonb;not null;default:'{}'"`
 	Navigation             []byte    `gorm:"type:jsonb;not null;default:'[]'"`
 	StorefrontNavigation   []byte    `gorm:"type:jsonb;not null;default:'[]'"`
 	ContactSectionImageURL *string   `gorm:"type:varchar(500)"`
