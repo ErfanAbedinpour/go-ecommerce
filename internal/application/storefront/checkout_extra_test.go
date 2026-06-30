@@ -14,7 +14,7 @@ import (
 )
 
 func TestGetCheckoutSettings_ReturnsDefaults(t *testing.T) {
-	svc := NewService(nil, nil, nil, nil, nil, nil, checkoutSettingsRepoWithDefaults{}, noopMailer{})
+	svc := NewService(nil, nil, nil, nil, nil, nil, checkoutSettingsRepoWithDefaults{}, nil, noopMailer{})
 
 	settings, err := svc.GetCheckoutSettings(context.Background())
 	if err != nil {
@@ -45,7 +45,7 @@ func TestHandlePaymentCallback_ConfirmsPayment(t *testing.T) {
 		},
 	}
 	orderSvc := apporder.NewService(orderRepo, nil, nil, nil, checkoutSettingsRepoWithDefaults{})
-	svc := NewService(nil, nil, nil, orderSvc, nil, nil, checkoutSettingsRepoWithDefaults{}, noopMailer{})
+	svc := NewService(nil, nil, nil, orderSvc, nil, nil, checkoutSettingsRepoWithDefaults{}, nil, noopMailer{})
 
 	out, err := svc.HandlePaymentCallback(context.Background(), PaymentCallbackInput{
 		OrderID:   orderID,
@@ -72,7 +72,7 @@ func TestHandlePaymentCallback_AlreadyPaidConflict(t *testing.T) {
 		},
 	}
 	orderSvc := apporder.NewService(orderRepo, nil, nil, nil, checkoutSettingsRepoWithDefaults{})
-	svc := NewService(nil, nil, nil, orderSvc, nil, nil, checkoutSettingsRepoWithDefaults{}, noopMailer{})
+	svc := NewService(nil, nil, nil, orderSvc, nil, nil, checkoutSettingsRepoWithDefaults{}, nil, noopMailer{})
 
 	_, err := svc.HandlePaymentCallback(context.Background(), PaymentCallbackInput{
 		OrderID:   orderID,
