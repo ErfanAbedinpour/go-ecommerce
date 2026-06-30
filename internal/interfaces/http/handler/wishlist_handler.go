@@ -61,13 +61,18 @@ func (h *WishlistHandler) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := h.service.Add(r.Context(), userID, prodID)
+	item, alreadyExists, err := h.service.Add(r.Context(), userID, prodID)
 	if err != nil {
 		response.Error(w, r, h.log, err)
 		return
 	}
 
-	response.Created(w, map[string]string{"id": item.ID.String()})
+	body := map[string]string{"id": item.ID.String(), "product_id": item.ProductID.String()}
+	if alreadyExists {
+		response.OK(w, body)
+		return
+	}
+	response.Created(w, body)
 }
 
 // Remove godoc
