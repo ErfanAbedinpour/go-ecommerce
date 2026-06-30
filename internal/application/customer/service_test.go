@@ -71,6 +71,9 @@ func (m *mockRepo) ListOrders(_ context.Context, customerID uuid.UUID, page pagi
 	orders := m.orders[customerID]
 	return orders, int64(len(orders)), nil
 }
+func (m *mockRepo) Count(context.Context) (int64, error) {
+	return int64(len(m.customers)), nil
+}
 
 func (m *mockRepo) FindByEmail(_ context.Context, email string) (*domain.Customer, error) {
 	for _, c := range m.customers {
