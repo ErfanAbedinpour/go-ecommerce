@@ -1,6 +1,7 @@
 # Backend Improvements
 
-Architectural and API design recommendations from the 2026-06-30 audit.
+Architectural and API design recommendations from the 2026-06-30 audit.  
+**Last updated:** 2026-06-30 — contract normalization pass: catalog filters/sort, homepage aggregate, product detail `?include=`, wishlist/blog field aliases, caching, and rate limits implemented.
 
 ---
 
@@ -20,11 +21,11 @@ Admin DTOs can retain richer internal fields. Sharing `OrderDetailResponse` betw
 
 The homepage, about page, and product detail benefit from **Backend-for-Frontend (BFF)** aggregates:
 
-| Page | Current calls | Target |
-|------|---------------|--------|
-| `/` | homepage + categories + theme | Single `GET /store/homepage` |
-| `/about` | settings (partial) | `GET /store/about` |
-| `/products/:id` | product + reviews summary + wishlist state | Optional `?include=reviews_summary,wishlist` |
+| Page | Current calls | Target | Status |
+|------|---------------|--------|--------|
+| `/` | homepage + categories + theme | Single `GET /store/homepage` with embedded categories | **Done** — categories, blog teaser, extended stats embedded |
+| `/about` | settings (partial) | `GET /store/about` | **Done** |
+| `/products/:id` | product + reviews summary + wishlist state | Optional `?include=reviews_summary,wishlist` | **Done** — optional auth on GET product |
 
 Reduces waterfall requests on slow mobile networks (primary Store OS audience).
 
@@ -36,11 +37,11 @@ Product detail accepts slug; reviews, Q&A, and wishlist use UUID. **Standardize 
 func ResolveProductID(ctx, slugOrID string) (uuid.UUID, error)
 ```
 
-Apply to all `/store/products/{ref}/...` sub-routes.
+Apply to all `/store/products/{ref}/...` sub-routes. **Done** for reviews, Q&A, and related products via `productref.ResolveID`.
 
 ### 4. OpenAPI as contract gate
 
-Swagger documents `sort=bestseller|newest|discounted` but repository ignores them. Add CI check:
+Swagger documents `sort=bestseller|newest|discounted` — **repo now maps all documented values** (migration `000016` adds sort indexes). **Regenerate Swagger** to include `?include=` on product detail and new field aliases, then add CI check:
 
 ```bash
 go test ./internal/... # integration tests per documented query param
@@ -54,20 +55,23 @@ Or generate contract tests from `swagger.yaml`.
 
 ### Consistent path naming
 
-| Issue | Current | Recommended |
-|-------|---------|-------------|
-| Blog list | `/store/blog/posts` | Keep; document alias `/store/blog` |
-| Admin reviews | `/admin/reviews` | Docs say `/admin/product-reviews` — pick one |
-| FAQ | Split `/faq` + `/faq/items` | OK for REST; document atomic save pattern for UI |
+| Issue | Current | Recommended | Status |
+|-------|---------|-------------|--------|
+| Blog list | `/store/blog/posts` + alias `/store/blog` | Document both | **Done** |
+| Admin reviews | `/admin/reviews` | Docs say `/admin/product-reviews` — pick one | Open |
+| FAQ | Split `/faq` + `/faq/items` | OK for REST; document atomic save pattern for UI | Open |
+| Contact moderation | `PATCH .../status` + `/read` + `/archive` | Document aliases | **Done** |
+| Blog moderation | `PATCH .../status` + `/approve` + `/reject` | Document aliases | **Done** |
 
 ### HTTP verbs and status codes
 
 | Pattern | Recommendation |
 |---------|----------------|
-| Wishlist duplicate add | `200` idempotent preferred over `409` for UX |
+| Wishlist duplicate add | `200` idempotent preferred over `409` for UX | **Done** |
 | Contact status update | Return `200` + body instead of `204` for SPA state updates |
 | Stock conflict on checkout | `409` with structured `unavailable_items[]` |
 | Review moderation | `PATCH /status` is fine; document enum values |
+| Payment callback | Idempotent; return `409` if already paid (**implemented**) |
 
 ### Pagination envelope
 
@@ -132,7 +136,7 @@ One function `ToStoreProductCard(product, opts)` used by:
 - Catalog list
 - Homepage slides
 - Wishlist nested product
-- Related products
+- Related products (**implemented** — verify shared mapper)
 
 Eliminates `price` vs `price_toman` drift.
 
@@ -146,7 +150,7 @@ Store order DTOs should never expose `float64` currency. Use integer Toman throu
 
 ### Catalog
 
-Implement documented filters in `StoreListFilter`:
+**Done** — `StoreListFilter` implements `category_slug`, `include_children`, `brand`, `on_sale`, `in_stock`, and sort mapping (`bestseller`, `newest`, `discounted`, `price_asc`, `price_desc`).
 
 ```go
 type StoreListFilter struct {
@@ -175,21 +179,21 @@ Add pagination to: themes, partner brands, homepage reviews, FAQ items (when lis
 
 ### Caching (already started)
 
-Redis cache on `GET /store/products` and `GET /store/homepage` (5 min TTL). Extend to:
+Redis cache on `GET /store/products` and `GET /store/homepage` (5 min TTL). **Extended to:**
 
-- `GET /store/categories` (invalidate on category CRUD)
-- `GET /store/navigation` (when added)
-- `GET /store/theme` (invalidate on style update)
+- `GET /store/categories` (**Done** — invalidate on category CRUD still TODO)
+- `GET /store/navigation` (**Done**)
+- `GET /store/theme` (**Done** — invalidate on style update still TODO)
 
 Use cache tags or key prefixes for targeted invalidation on admin content updates.
 
 ### Homepage stats
 
-Precompute `customers_count`, `delivered_orders_count` in a materialized view or Redis counter updated on order/customer events — avoid heavy COUNT on every homepage load.
+**Done** — `customers_count`, `delivered_orders_count`, `years_experience` computed on each homepage load. Future: materialized view or Redis counter for scale.
 
 ### N+1 on product slides
 
-`BuildHomepage` should batch-load products for all slide items in one query.
+**Done** — `BuildHomepage` batch-loads slide products via `FindByIDs`.
 
 ---
 
@@ -197,7 +201,7 @@ Precompute `customers_count`, `delivered_orders_count` in a materialized view or
 
 ### Public endpoints
 
-- Rate-limit `POST /store/contact` (auth routes already limited)
+- Rate-limit `POST /store/contact` (**Done** — 3 req/min burst 10)
 - Honeypot field `website` on contact forms
 - CAPTCHA on contact/checkout for production
 
@@ -214,6 +218,10 @@ Order detail and wishlist must verify `customer_id` matches JWT subject — audi
 ### Audit log
 
 Admin audit middleware is wired — ensure sensitive reads (customer PII export) are logged if added.
+
+### Payment callback
+
+`PAYMENT_CALLBACK_SECRET` + HMAC signature verification implemented — enforce secret in production.
 
 ---
 
@@ -233,7 +241,7 @@ Verify rollback on any failure (partially implemented — add integration test).
 
 ### Theme purchase
 
-`PurchaseTheme` should be idempotent if user already owns theme.
+`PurchaseTheme` is idempotent if user already owns theme (**Done** — returns existing purchase).
 
 ---
 
@@ -245,19 +253,15 @@ Current schema has `skus` table but inventory is product-level. For building mat
 
 ### About content
 
-Options:
-
-1. JSONB column on `store_settings` (`about_page`)
-2. Dedicated `about_sections` table
-
-Prefer JSONB for v1 speed; normalize if CMS grows.
+**Implemented:** JSONB `about` column on `store_settings` (migration `000014`). Checkout settings in JSONB `checkout` (migration `000015`). Add admin edit API when CMS UI is ready.
 
 ### Indexes for catalog sort
 
-Add index supporting bestseller query:
+Add index supporting bestseller query (**Done** — migration `000016`):
 
 ```sql
-CREATE INDEX idx_order_items_product_created ON order_items(product_id, created_at);
+CREATE INDEX idx_order_items_product_id ON order_items(product_id);
+CREATE INDEX idx_orders_status_created ON orders(status, created_at DESC);
 ```
 
 ---
@@ -280,7 +284,7 @@ Use a simple job table or Redis queue before introducing full worker service.
 
 ### Payment webhooks
 
-Payment callback should be idempotent and fast — verify signature, update order, enqueue email, return 200 immediately.
+Payment callback should be idempotent and fast — verify signature, update order, enqueue email, return 200 immediately (**callback handler implemented**; add PSP-specific verification when provider is chosen).
 
 ---
 
@@ -288,22 +292,23 @@ Payment callback should be idempotent and fast — verify signature, update orde
 
 ### Documentation sync
 
-These files are **stale** and contradict `router.go`:
+These files may still be **stale** relative to `router.go`:
 
 - `docs/architecture/gap-analysis.md`
 - `docs/api/admin-api.md`
 - `docs/README.md` executive summary (partially)
 
-Point all docs to `docs/api-audit/` after this audit. Regenerate `admin-api.md` from Swagger.
+**Authoritative audit docs:** `docs/api-audit/` (this folder). Regenerate `admin-api.md` from Swagger.
 
 ### Feature flags
 
 Use config for:
 
 - `AUTH_SIGNUP_ENABLED`
-- COD payment enabled
+- COD payment enabled (`store_settings.checkout` JSONB)
 - Guest checkout enabled
 - Review auto-publish vs moderation
+- `PAYMENT_CALLBACK_SECRET` for gateway verification
 
 ### Test coverage gaps
 
@@ -311,7 +316,7 @@ Add contract tests for:
 
 - Catalog sort params (each documented value)
 - Homepage projection completeness
-- Checkout preview → place order happy path
+- Checkout preview → place order → payment callback happy path
 - Customer order isolation (403 on other user's order)
 
 ---
@@ -321,14 +326,18 @@ Add contract tests for:
 ```mermaid
 flowchart LR
     A[Fix sort + category_slug] --> B[Homepage aggregate]
-    B --> C[Account profile API]
-    C --> D[Payment gateway]
-    D --> E[About + navigation]
-    E --> F[DTO normalization *_toman]
-    F --> G[Per-SKU inventory]
+    B --> C[DTO normalization *_toman]
+    C --> D[payment_url + PSP]
+    D --> E[Per-SKU inventory]
+    F[Account profile]:::done
+    G[About + navigation]:::done
+    H[Payment callback]:::done
+    classDef done fill:#d4edda,stroke:#28a745
 ```
 
-1. **Week 1:** Catalog sort/filter fixes, homepage extensions, Swagger sync  
-2. **Week 2:** Account profile, public navigation, about page  
-3. **Week 3:** Payment integration, shipping methods, checkout hardening  
-4. **Week 4:** DTO normalization, related products, wishlist polish, doc cleanup
+1. **Next:** Swagger regen, cache invalidation hooks, `payment_url` + PSP  
+2. **Then:** `*_toman` normalization on account orders, per-SKU inventory  
+3. **Then:** Persian validation messages, `seo` block on product detail  
+4. **Later:** Versioned store DTO package, background jobs for email
+
+**Completed:** Account profile, navigation, about, related products, shipping methods, checkout settings, payment callback, wishlist shortcuts, blog/contact admin aliases, catalog filters/sort, homepage aggregate, product `?include=`, wishlist/blog field aliases, theme idempotent purchase, contact rate limit, catalog sort indexes.
