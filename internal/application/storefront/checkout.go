@@ -226,6 +226,21 @@ func (s *Service) PlaceCheckout(ctx context.Context, input PlaceCheckoutInput) (
 		return nil, err
 	}
 
+	if s.mailer != nil {
+		emailTo := input.Customer.Email
+		if emailTo == "" {
+			customer, err := s.customers.FindByID(ctx, customerID)
+			if err == nil && customer != nil {
+				emailTo = customer.Email
+			}
+		}
+		if emailTo != "" {
+			go func() {
+				_ = s.mailer.SendOrderConfirmation(context.Background(), emailTo, order.OrderNumber, order.Total)
+			}()
+		}
+	}
+
 	return &PlaceCheckoutOutput{
 		OrderID:       order.ID,
 		OrderNumber:   order.OrderNumber,
