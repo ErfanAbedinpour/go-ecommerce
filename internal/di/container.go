@@ -4,28 +4,30 @@ import (
 	"log/slog"
 	"os"
 
+	appadminuser "app/internal/application/adminuser"
 	appattr "app/internal/application/attributedef"
 	appattrval "app/internal/application/attributevalue"
 	appauth "app/internal/application/auth"
+	appblog "app/internal/application/blog"
 	appbrand "app/internal/application/brand"
 	appcategory "app/internal/application/category"
+	appcontact "app/internal/application/contact"
 	appcoupon "app/internal/application/coupon"
-	appadminuser "app/internal/application/adminuser"
 	appcustomer "app/internal/application/customer"
 	appdashboard "app/internal/application/dashboard"
 	apporder "app/internal/application/order"
 	appproduct "app/internal/application/product"
+	appquestion "app/internal/application/productquestion"
+	appreview "app/internal/application/productreview"
 	appsettings "app/internal/application/settings"
 	appstorecontent "app/internal/application/storecontent"
 	appstorefront "app/internal/application/storefront"
 	apptheme "app/internal/application/theme"
 	appwishlist "app/internal/application/wishlist"
-	appreview "app/internal/application/productreview"
-	appquestion "app/internal/application/productquestion"
-	appcontact "app/internal/application/contact"
-	appblog "app/internal/application/blog"
 	"app/internal/config"
+	domainaudit "app/internal/domain/audit"
 	infraauth "app/internal/infrastructure/auth"
+	"app/internal/infrastructure/cache"
 	"app/internal/infrastructure/email"
 	"app/internal/infrastructure/persistence/postgres"
 	"app/internal/infrastructure/storage"
@@ -43,6 +45,8 @@ type Container struct {
 	// Infrastructure
 	JWT    *infraauth.JWTService
 	Hasher *infraauth.PasswordHasher
+	AuditRepo domainaudit.Repository
+	RedisCache *cache.RedisCache
 
 	// Services
 	AuthService     *appauth.AuthService
@@ -159,6 +163,7 @@ func New(cfg *config.Config) (*Container, error) {
 		couponRepo,
 		customerRepo,
 		settingsRepo,
+		mailer,
 	)
 
 	themeRepo := postgres.NewThemeRepository(db.DB)
@@ -179,6 +184,10 @@ func New(cfg *config.Config) (*Container, error) {
 	blogRepo := postgres.NewBlogRepository(db.DB)
 	blogService := appblog.NewService(blogRepo)
 
+	auditRepo := postgres.NewAuditRepository(db.DB)
+	
+	redisCache := cache.NewRedisCache(cfg.Redis)
+
 	uploader := storage.NewUploader(cfg.Upload)
 
 	c := &Container{
@@ -188,6 +197,8 @@ func New(cfg *config.Config) (*Container, error) {
 		Validator:       v,
 		JWT:             jwtService,
 		Hasher:          hasher,
+		AuditRepo:       auditRepo,
+		RedisCache:      redisCache,
 		AuthService:     authService,
 		ProductService:  productService,
 		CategoryService: categoryService,
