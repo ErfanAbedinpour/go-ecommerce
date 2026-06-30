@@ -354,8 +354,11 @@ func registerAdminEngagementRoutes(r chi.Router, c *di.Container) {
 	})
 
 	r.Route("/contact-messages", func(r chi.Router) {
+		r.Get("/stats", c.Contact.Stats)
 		r.Get("/", c.Contact.List)
 		r.Get("/{id}", c.Contact.Get)
+		r.Patch("/{id}/read", c.Contact.MarkRead)
+		r.Patch("/{id}/archive", c.Contact.MarkArchive)
 		r.Patch("/{id}/status", c.Contact.UpdateStatus)
 		r.Delete("/{id}", c.Contact.Delete)
 	})
@@ -381,6 +384,8 @@ func registerAdminBlogRoutes(r chi.Router, c *di.Container) {
 
 		r.Route("/comments", func(r chi.Router) {
 			r.Get("/", c.Blog.AdminListComments)
+			r.Patch("/{id}/approve", c.Blog.AdminApproveComment)
+			r.Patch("/{id}/reject", c.Blog.AdminRejectComment)
 			r.Patch("/{id}/status", c.Blog.AdminModerateComment)
 			r.Delete("/{id}", c.Blog.AdminDeleteComment)
 		})
