@@ -24,18 +24,34 @@ func NewSMTPMailer(cfg config.SMTPConfig, log *slog.Logger) *SMTPMailer {
 
 // SendPasswordReset sends a password reset link to the user.
 func (m *SMTPMailer) SendPasswordReset(ctx context.Context, to, resetLink string) error {
-	_ = ctx
+	subject := "Password Reset Request"
+	body := fmt.Sprintf(`
+		<h2>Password Reset Request</h2>
+		<p>You recently requested to reset your password. Click the link below to proceed:</p>
+		<p><a href="%s">Reset Password</a></p>
+		<p>If you did not request this, please ignore this email.</p>
+	`, resetLink)
 
-	subject := "Reset your password"
-	body := fmt.Sprintf(
-		"Hello,\n\nWe received a request to reset your password. Click the link below to choose a new password:\n\n%s\n\nIf you did not request this, you can safely ignore this email.\n\nThis link expires in a short time.\n",
-		resetLink,
-	)
+	return m.send(to, subject, body)
+}
 
+func (m *SMTPMailer) SendOrderConfirmation(ctx context.Context, to string, orderNumber string, total float64) error {
+	subject := fmt.Sprintf("Order Confirmation - %s", orderNumber)
+	body := fmt.Sprintf(`
+		<h2>Thank you for your order!</h2>
+		<p>Your order <strong>%s</strong> has been received and is being processed.</p>
+		<p>Order Total: $%.2f</p>
+		<p>We will notify you when it ships.</p>
+	`, orderNumber, total)
+
+	return m.send(to, subject, body)
+}
+
+func (m *SMTPMailer) send(to, subject, body string) error {
 	if !m.cfg.Enabled {
-		m.log.Info("smtp disabled — password reset link",
+		m.log.Info("smtp disabled — sending email",
 			slog.String("to", to),
-			slog.String("reset_link", resetLink),
+			slog.String("subject", subject),
 		)
 		return nil
 	}
