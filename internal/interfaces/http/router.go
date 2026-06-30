@@ -275,15 +275,22 @@ func registerStoreRoutes(r chi.Router, c *di.Container) {
 		checkoutLimiter := appmiddleware.NewRateLimiter(2, 5)
 
 		r.Group(func(r chi.Router) {
+			r.Use(appmiddleware.CartSession())
 			r.Use(appmiddleware.OptionalAuthenticate(c.JWT))
-			
+
+			r.Get("/cart", c.Cart.GetCart)
+			r.Post("/cart/items", c.Cart.AddCartItem)
+			r.Patch("/cart/items/{productId}", c.Cart.UpdateCartItem)
+			r.Delete("/cart/items/{productId}", c.Cart.RemoveCartItem)
+			r.Delete("/cart", c.Cart.ClearCart)
+
 			r.Group(func(r chi.Router) {
 				r.Use(appmiddleware.RateLimit(checkoutLimiter))
 				r.Post("/checkout/preview", c.Store.PreviewCheckout)
 				r.Post("/checkout", c.Store.Checkout)
 				r.Post("/checkout/payment/callback", c.Store.PaymentCallback)
 			})
-			
+
 			r.Post("/products/{productId}/reviews", c.ProductReview.Submit)
 		})
 
