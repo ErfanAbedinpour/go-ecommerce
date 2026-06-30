@@ -172,6 +172,72 @@ func (h *ContactHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	response.NoContent(w)
 }
 
+// Stats godoc
+// @Summary      Contact inbox stats (Admin)
+// @Description  Returns unread and total contact message counts for the admin nav badge.
+// @Tags         admin-contact
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  appcontact.InboxStatsOutput
+// @Failure      401  {object}  dtoresponse.ErrorResponse
+// @Failure      403  {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/admin/contact-messages/stats [get]
+func (h *ContactHandler) Stats(w http.ResponseWriter, r *http.Request) {
+	stats, err := h.service.GetStats(r.Context())
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.OK(w, stats)
+}
+
+// MarkRead godoc
+// @Summary      Mark contact message as read (Admin)
+// @Description  Convenience alias for PATCH .../status with status read.
+// @Tags         admin-contact
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  string  true  "Message ID"
+// @Success      204
+// @Failure      401  {object}  dtoresponse.ErrorResponse
+// @Failure      403  {object}  dtoresponse.ErrorResponse
+// @Failure      404  {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/admin/contact-messages/{id}/read [patch]
+func (h *ContactHandler) MarkRead(w http.ResponseWriter, r *http.Request) {
+	h.updateContactStatus(w, r, string(domaincontact.StatusRead))
+}
+
+// MarkArchive godoc
+// @Summary      Archive contact message (Admin)
+// @Description  Convenience alias for PATCH .../status with status archived.
+// @Tags         admin-contact
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  string  true  "Message ID"
+// @Success      204
+// @Failure      401  {object}  dtoresponse.ErrorResponse
+// @Failure      403  {object}  dtoresponse.ErrorResponse
+// @Failure      404  {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/admin/contact-messages/{id}/archive [patch]
+func (h *ContactHandler) MarkArchive(w http.ResponseWriter, r *http.Request) {
+	h.updateContactStatus(w, r, string(domaincontact.StatusArchived))
+}
+
+func (h *ContactHandler) updateContactStatus(w http.ResponseWriter, r *http.Request, status string) {
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	if err := h.service.UpdateStatus(r.Context(), id, status); err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	response.NoContent(w)
+}
+
 // Delete godoc
 // @Summary      Delete contact message (Admin)
 // @Description  Delete a contact message.
