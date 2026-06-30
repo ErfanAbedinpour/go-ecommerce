@@ -121,6 +121,12 @@ func (m *mockSlideProductRepo) List(context.Context, domainproduct.ListFilter, p
 func (m *mockSlideProductRepo) ListStorefront(context.Context, domainproduct.StoreListFilter, pagination.Params) ([]domainproduct.Product, int64, error) {
 	return nil, 0, nil
 }
+func (m *mockSlideProductRepo) SearchStorefront(context.Context, string, int) ([]domainproduct.Product, error) {
+	return nil, nil
+}
+func (m *mockSlideProductRepo) ListRelatedStorefront(context.Context, uuid.UUID, int) ([]domainproduct.Product, error) {
+	return nil, nil
+}
 func (m *mockSlideProductRepo) Search(context.Context, string, pagination.Params) ([]domainproduct.Product, int64, error) {
 	return nil, 0, nil
 }
