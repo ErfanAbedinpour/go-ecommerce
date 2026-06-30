@@ -287,4 +287,10 @@ func (r *CustomerRepository) orderOrderClause(page pagination.Params) string {
 	return fmt.Sprintf("%s %s", column, order)
 }
 
+func (r *CustomerRepository) Count(ctx context.Context) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&models.CustomerModel{}).Count(&count).Error
+	return count, err
+}
+
 var _ customer.Repository = (*CustomerRepository)(nil)
