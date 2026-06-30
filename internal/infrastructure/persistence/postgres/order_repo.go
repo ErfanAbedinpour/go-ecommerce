@@ -296,4 +296,13 @@ func (r *OrderRepository) orderClause(page pagination.Params) string {
 	return fmt.Sprintf("%s %s", column, orderDir)
 }
 
+func (r *OrderRepository) CountByStatus(ctx context.Context, status order.Status) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&models.OrderModel{}).
+		Where("status = ?", status.String()).
+		Count(&count).Error
+	return count, err
+}
+
 var _ order.Repository = (*OrderRepository)(nil)
