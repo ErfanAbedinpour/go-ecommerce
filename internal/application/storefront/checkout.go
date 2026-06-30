@@ -13,6 +13,7 @@ import (
 	domaincustomer "app/internal/domain/customer"
 	domainorder "app/internal/domain/order"
 	domainproduct "app/internal/domain/product"
+	"app/pkg/apperror"
 )
 
 // CheckoutItemInput is a cart line for checkout preview or placement.
@@ -395,4 +396,55 @@ func couponErrorMessage(err error) string {
 
 func roundMoney(value float64) float64 {
 	return math.Round(value*100) / 100
+}
+
+// ShippingMethod is an available delivery option at checkout.
+type ShippingMethod struct {
+	Code       string `json:"code"`
+	Label      string `json:"label"`
+	PriceToman int64  `json:"price_toman"`
+	EtaDays    string `json:"eta_days"`
+}
+
+// ShippingMethodList is the response for available shipping methods.
+type ShippingMethodList struct {
+	Data []ShippingMethod `json:"data"`
+}
+
+// GetShippingMethods returns delivery options for a destination city.
+func (s *Service) GetShippingMethods(_ context.Context, city string) (*ShippingMethodList, error) {
+	city = strings.TrimSpace(city)
+	if city == "" {
+		return nil, apperror.Validation("city is required", map[string]string{"city": "is required"})
+	}
+
+	methods := []ShippingMethod{
+		{
+			Code:       "post",
+			Label:      "پست پیشتاز",
+			PriceToman: 85000,
+			EtaDays:    "2-4",
+		},
+	}
+
+	if isCourierCity(city) {
+		methods = append(methods, ShippingMethod{
+			Code:       "courier",
+			Label:      "پیک",
+			PriceToman: 120000,
+			EtaDays:    "1",
+		})
+	}
+
+	return &ShippingMethodList{Data: methods}, nil
+}
+
+func isCourierCity(city string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(city))
+	switch normalized {
+	case "tehran", "تهران", "karaj", "کرج":
+		return true
+	default:
+		return false
+	}
 }
