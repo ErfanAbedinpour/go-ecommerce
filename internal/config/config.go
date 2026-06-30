@@ -19,6 +19,7 @@ type Config struct {
 	CORS     CORSConfig
 	Upload   UploadConfig
 	Log      LogConfig
+	Redis    RedisConfig
 }
 
 // AppConfig holds application-level settings.
@@ -92,16 +93,32 @@ type CORSConfig struct {
 
 // UploadConfig holds file upload settings.
 type UploadConfig struct {
+	Provider     string   `env:"UPLOAD_PROVIDER" envDefault:"local"` // "local" or "s3"
 	Dir          string   `env:"UPLOAD_DIR" envDefault:"./uploads"`
 	MaxSizeMB    int      `env:"UPLOAD_MAX_SIZE_MB" envDefault:"5"`
 	BaseURL      string   `env:"UPLOAD_BASE_URL" envDefault:"http://localhost:8080/uploads"`
 	AllowedTypes []string `env:"UPLOAD_ALLOWED_TYPES" envDefault:"image/jpeg,image/png,image/webp,image/gif,video/mp4"`
+	
+	// S3 specific configs
+	S3Bucket     string   `env:"UPLOAD_S3_BUCKET" envDefault:""`
+	S3Region     string   `env:"UPLOAD_S3_REGION" envDefault:"us-east-1"`
+	S3Endpoint   string   `env:"UPLOAD_S3_ENDPOINT" envDefault:""` // For minio or custom endpoint
+	S3AccessKey  string   `env:"UPLOAD_S3_ACCESS_KEY" envDefault:""`
+	S3SecretKey  string   `env:"UPLOAD_S3_SECRET_KEY" envDefault:""`
 }
 
 // LogConfig holds logging settings.
 type LogConfig struct {
 	Level  string `env:"LOG_LEVEL" envDefault:"info"`
 	Format string `env:"LOG_FORMAT" envDefault:"json"`
+}
+
+// RedisConfig holds Redis settings.
+type RedisConfig struct {
+	Host     string `env:"REDIS_HOST" envDefault:"localhost"`
+	Port     int    `env:"REDIS_PORT" envDefault:"6379"`
+	Password string `env:"REDIS_PASSWORD" envDefault:""`
+	DB       int    `env:"REDIS_DB" envDefault:"0"`
 }
 
 // Load reads configuration from environment variables.
