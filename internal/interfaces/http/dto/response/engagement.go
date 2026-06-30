@@ -1,6 +1,7 @@
 package response
 
 import (
+	"math"
 	"time"
 
 	domaincontact "app/internal/domain/contact"
@@ -13,18 +14,22 @@ import (
 // ── Wishlist Responses ──────────────────────────────────────────
 
 type WishlistProductSummaryResponse struct {
-	Name      string   `json:"name"`
-	Slug      string   `json:"slug"`
-	Price     float64  `json:"price"`
-	SalePrice *float64 `json:"sale_price,omitempty"`
-	ImageURL  string   `json:"image_url,omitempty"`
-	IsInStock bool     `json:"is_in_stock"`
+	Name           string   `json:"name"`
+	Slug           string   `json:"slug"`
+	Price          float64  `json:"price"`
+	PriceToman     int64    `json:"price_toman"`
+	SalePrice      *float64 `json:"sale_price,omitempty"`
+	SalePriceToman *int64   `json:"sale_price_toman,omitempty"`
+	ImageURL       string   `json:"image_url,omitempty"`
+	ThumbnailURL   string   `json:"thumbnail_url,omitempty"`
+	IsInStock      bool     `json:"is_in_stock"`
 }
 
 type WishlistItemResponse struct {
 	ID        string                         `json:"id"`
 	ProductID string                         `json:"product_id"`
 	CreatedAt string                         `json:"created_at"`
+	AddedAt   string                         `json:"added_at"`
 	Product   WishlistProductSummaryResponse `json:"product"`
 }
 
@@ -34,18 +39,28 @@ type WishlistListResponse struct {
 }
 
 func ToWishlistItemResponse(item domainwishlist.ListItem) WishlistItemResponse {
+	createdAt := item.CreatedAt.UTC().Format(time.RFC3339)
+	priceToman := int64(math.Round(item.Product.Price))
+	product := WishlistProductSummaryResponse{
+		Name:         item.Product.Name,
+		Slug:         item.Product.Slug,
+		Price:        item.Product.Price,
+		PriceToman:   priceToman,
+		SalePrice:    item.Product.SalePrice,
+		ImageURL:     item.Product.ImageURL,
+		ThumbnailURL: item.Product.ImageURL,
+		IsInStock:    item.Product.IsInStock,
+	}
+	if item.Product.SalePrice != nil {
+		sale := int64(math.Round(*item.Product.SalePrice))
+		product.SalePriceToman = &sale
+	}
 	return WishlistItemResponse{
 		ID:        item.ID.String(),
 		ProductID: item.ProductID.String(),
-		CreatedAt: item.CreatedAt.UTC().Format(time.RFC3339),
-		Product: WishlistProductSummaryResponse{
-			Name:      item.Product.Name,
-			Slug:      item.Product.Slug,
-			Price:     item.Product.Price,
-			SalePrice: item.Product.SalePrice,
-			ImageURL:  item.Product.ImageURL,
-			IsInStock: item.Product.IsInStock,
-		},
+		CreatedAt: createdAt,
+		AddedAt:   createdAt,
+		Product:   product,
 	}
 }
 
