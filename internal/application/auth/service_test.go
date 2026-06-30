@@ -156,6 +156,10 @@ func (m *mockMailer) SendPasswordReset(_ context.Context, to, _ string) error {
 	return nil
 }
 
+func (m *mockMailer) SendOrderConfirmation(_ context.Context, _ string, _ string, _ float64) error {
+	return nil
+}
+
 type mockJWT struct{}
 
 func (mockJWT) GenerateTokenPair(_ infraauth.TokenInput) (*infraauth.TokenPair, string, uuid.UUID, error) {
