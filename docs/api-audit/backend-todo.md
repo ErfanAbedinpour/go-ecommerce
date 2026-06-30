@@ -1,6 +1,7 @@
 # Backend Implementation Checklist
 
 > Generated from API audit comparing [Store OS](https://store-os-eta.vercel.app/) + [Admin Panel](https://shop-panel-react.vercel.app/) against current Go backend.  
+> **Last updated:** 2026-06-30 — contract normalization pass complete (catalog, homepage, product includes, wishlist/blog aliases).
 > Check items that are **not yet done** or need **contract fixes**.
 
 ---
@@ -23,18 +24,17 @@
 
 - [x] Aggregated homepage (`GET /api/v1/store/homepage`)
 - [x] Public store navigation (`GET /api/v1/store/navigation`)
-- [ ] Embed `categories[]` in homepage response (or document separate call)
-- [ ] Add `blog_teaser.posts[]` (latest 3 published posts)
-- [ ] Extend `stats` with `customers_count`, `delivered_orders_count`, `years_experience`
+- [x] Embed `categories[]` in homepage response (or document separate call)
+- [x] Add `blog_teaser.posts[]` (latest 3 published posts)
+- [x] Extend `stats` with `customers_count`, `delivered_orders_count`, `years_experience`
 - [ ] Add `hero.poster_url` fallback image
-- [ ] Align `product_slides[].slide_type` enum: `featured` → `new` (or document mapping)
-- [ ] Public store navigation (`GET /api/v1/store/navigation`)
+- [x] Align `product_slides[].slide_type` enum: `featured` → `new` (or document mapping)
 - [x] Theme tokens (`GET /api/v1/store/theme`)
 - [x] Public settings (`GET /api/v1/store/settings`)
 - [x] Contact form submit (`POST /api/v1/store/contact`)
 - [ ] Require `source` enum validation (`homepage|about|contact_page`)
 - [ ] Simplify contact response to `{ id, message }` or document full object
-- [ ] Rate-limit `POST /store/contact` by IP
+- [x] Rate-limit `POST /store/contact` by IP
 
 ---
 
@@ -44,15 +44,15 @@
 - [x] Pagination (`page`, `per_page`)
 - [x] Search (`q`)
 - [x] Category filter by UUID (`category_id`)
-- [ ] Category filter by slug (`category_slug`)
-- [ ] Include child categories (`include_children`, default true)
-- [ ] Brand filter (`brand`)
-- [ ] On-sale filter (`on_sale`)
-- [ ] In-stock filter (`in_stock`)
-- [ ] Sort: `bestseller` (90-day sales aggregation)
-- [ ] Sort: map `newest` → `created_at DESC`
-- [ ] Sort: map `discounted` → existing `discount` logic
-- [ ] Sort: `price_desc` (currently only `price` ASC)
+- [x] Category filter by slug (`category_slug`)
+- [x] Include child categories (`include_children`, default true)
+- [x] Brand filter (`brand`)
+- [x] On-sale filter (`on_sale`)
+- [x] In-stock filter (`in_stock`)
+- [x] Sort: `bestseller` (90-day sales aggregation)
+- [x] Sort: map `newest` → `created_at DESC`
+- [x] Sort: map `discounted` → existing `discount` logic
+- [x] Sort: `price_desc` (currently only `price` ASC)
 - [ ] Product card fields: `short_description`, `category`, `is_new`, `has_variants`, `variant_count`, `price_from_toman`, `price_to_toman`
 - [ ] Response echo `filters_applied`
 - [x] Category tree (`GET /api/v1/store/categories`)
@@ -69,8 +69,8 @@
 - [ ] `variant_axes[]` projection from attributes
 - [ ] `default_sku_id`
 - [ ] Nested `category { id, name, slug }`
-- [ ] `reviews_summary` embedded in detail response
-- [ ] `is_in_wishlist` (requires optional auth middleware on GET)
+- [x] `reviews_summary` embedded in detail response (`?include=reviews_summary`)
+- [x] `is_in_wishlist` (optional auth middleware on GET + `?include=wishlist`)
 - [ ] `seo` block
 - [x] Related products (`GET /api/v1/store/products/{id}/related`)
 
@@ -81,7 +81,7 @@
 - [x] List reviews (`GET /api/v1/store/products/{productId}/reviews`)
 - [x] Review summary (`GET /api/v1/store/products/{productId}/reviews/summary`)
 - [x] Submit review (`POST /api/v1/store/products/{productId}/reviews`)
-- [ ] Accept product slug in path (or document UUID-only)
+- [x] Accept product slug in path (or document UUID-only)
 - [ ] Embed `summary` in list response
 - [ ] Add `is_verified_buyer` flag
 - [ ] Enforce customer-only review submission (403 for non-buyers)
@@ -100,7 +100,7 @@
 - [ ] Server-side shipping calculation from `shipping_method` + `shipping_city`
 - [ ] Remove client-supplied `shipping_amount` / `tax_amount` from preview (or document)
 - [ ] `warnings[]` in preview response for price changes
-- [ ] `payment_url` and `expires_at` in checkout response
+- [ ] `payment_url` and `expires_at` in checkout response (callback route implemented; PSP redirect URL still pending)
 - [ ] Idempotency-Key header support
 - [ ] `409 CONFLICT` with `unavailable_items[]` for stock errors
 - [x] Shipping methods (`GET /api/v1/store/checkout/shipping-methods?city=`)
@@ -131,9 +131,9 @@
 - [x] List wishlist (`GET /api/v1/store/account/wishlist`)
 - [x] Add item (`POST /api/v1/store/account/wishlist`)
 - [x] Remove item (`DELETE /api/v1/store/account/wishlist/{productId}`)
-- [ ] Rename `created_at` → `added_at` (or alias both)
-- [ ] Nested product card with `*_toman` fields
-- [ ] Idempotent add (200 on duplicate vs 409)
+- [x] Rename `created_at` → `added_at` (or alias both)
+- [x] Nested product card with `*_toman` fields
+- [x] Idempotent add (200 on duplicate vs 409)
 - [x] Wishlist IDs shortcut (`GET .../wishlist/ids`)
 - [x] Wishlist count (`GET .../wishlist/count`)
 
@@ -147,8 +147,8 @@
 - [x] Comments list/submit (`/blog/posts/{postId}/comments`)
 - [ ] `category_slug` filter on list
 - [ ] `posts_count` on categories
-- [ ] `excerpt` alias for `summary`
-- [ ] `cover_image_url` alias for `featured_image`
+- [x] `excerpt` alias for `summary`
+- [x] `cover_image_url` alias for `featured_image`
 - [ ] `read_time_minutes` on posts
 - [ ] `related_posts[]` on detail
 - [ ] `content_html` / `content_markdown` split
@@ -294,5 +294,5 @@
 - [x] Redis response cache on product list + homepage
 - [x] Audit log middleware on admin mutations
 - [ ] Consistent `*_toman` integer types across all store DTOs
-- [ ] OpenAPI/Swagger sync with actual sort param values
+- [ ] OpenAPI/Swagger sync with actual sort param values and newly added routes
 - [ ] Update stale docs (`docs/architecture/gap-analysis.md`, `docs/api/admin-api.md`)
