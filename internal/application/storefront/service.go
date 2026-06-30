@@ -7,6 +7,7 @@ import (
 	domainproduct "app/internal/domain/product"
 	domainsettings "app/internal/domain/settings"
 	apporder "app/internal/application/order"
+	"app/internal/infrastructure/email"
 )
 
 // Service handles public storefront use cases.
@@ -17,6 +18,7 @@ type Service struct {
 	coupons    domaincoupon.Repository
 	customers  domaincustomer.Repository
 	settings   domainsettings.Repository
+	mailer     email.Sender
 }
 
 // NewService creates a new storefront Service.
@@ -27,6 +29,7 @@ func NewService(
 	coupons domaincoupon.Repository,
 	customers domaincustomer.Repository,
 	settings domainsettings.Repository,
+	mailer email.Sender,
 ) *Service {
 	return &Service{
 		products:   products,
@@ -35,5 +38,6 @@ func NewService(
 		coupons:    coupons,
 		customers:  customers,
 		settings:   settings,
+		mailer:     mailer,
 	}
 }
