@@ -185,6 +185,25 @@ func (r *CustomerRepository) ListAddresses(ctx context.Context, customerID uuid.
 	return toAddressesDomain(items), nil
 }
 
+func (r *CustomerRepository) ReplaceAddresses(ctx context.Context, customerID uuid.UUID, addresses []customer.Address) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("customer_id = ?", customerID).Delete(&models.CustomerAddressModel{}).Error; err != nil {
+			return err
+		}
+		for _, address := range addresses {
+			if address.ID == uuid.Nil {
+				address.ID = uuid.New()
+			}
+			address.CustomerID = customerID
+			m := toAddressModel(&address, customerID)
+			if err := tx.Create(&m).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 func (r *CustomerRepository) ListOrders(ctx context.Context, customerID uuid.UUID, page pagination.Params) ([]domainorder.Summary, int64, error) {
 	query := r.db.WithContext(ctx).
 		Model(&models.OrderModel{}).
