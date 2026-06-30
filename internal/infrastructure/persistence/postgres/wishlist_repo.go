@@ -142,4 +142,23 @@ func (r *WishlistRepository) BatchCheck(ctx context.Context, customerID uuid.UUI
 	return ids, err
 }
 
+func (r *WishlistRepository) ListProductIDs(ctx context.Context, customerID uuid.UUID) ([]uuid.UUID, error) {
+	var ids []uuid.UUID
+	err := r.db.WithContext(ctx).
+		Model(&models.WishlistItemModel{}).
+		Where("customer_id = ?", customerID).
+		Order("created_at DESC").
+		Pluck("product_id", &ids).Error
+	return ids, err
+}
+
+func (r *WishlistRepository) Count(ctx context.Context, customerID uuid.UUID) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&models.WishlistItemModel{}).
+		Where("customer_id = ?", customerID).
+		Count(&count).Error
+	return count, err
+}
+
 var _ wishlist.Repository = (*WishlistRepository)(nil)
