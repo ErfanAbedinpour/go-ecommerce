@@ -111,6 +111,12 @@ func (m *mockRepo) GetStats(_ context.Context) (*domain.Stats, error) {
 func (m *mockRepo) ListStorefront(_ context.Context, _ domain.StoreListFilter, page pagination.Params) ([]domain.Product, int64, error) {
 	return m.List(context.Background(), domain.ListFilter{Status: string(domain.StatusActive)}, page)
 }
+func (m *mockRepo) SearchStorefront(context.Context, string, int) ([]domain.Product, error) {
+	return nil, nil
+}
+func (m *mockRepo) ListRelatedStorefront(context.Context, uuid.UUID, int) ([]domain.Product, error) {
+	return nil, nil
+}
 
 func (m *mockRepo) CountActive(_ context.Context) (int64, error) {
 	var count int64
