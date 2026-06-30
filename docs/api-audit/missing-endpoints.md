@@ -211,9 +211,11 @@ Endpoints required by the frontend but absent from `router.go` / Swagger.
 
 ## Admin — Contact Inbox Stats
 
+**Status:** ✅ Implemented
+
 **Purpose:** Unread badge on `/contact` nav item.
 
-**Suggested endpoint:** `GET /api/v1/admin/contact-messages/stats`  
+**Endpoint:** `GET /api/v1/admin/contact-messages/stats`  
 **Method:** GET  
 **Authentication:** Bearer, admin  
 **Response:** `{ "unread_count": 5, "total_count": 142 }`  
@@ -223,10 +225,12 @@ Endpoints required by the frontend but absent from `router.go` / Swagger.
 
 ## Admin — Contact Read/Archive Aliases (optional)
 
+**Status:** ✅ Implemented
+
 **Purpose:** Match UI buttons that call dedicated routes.
 
-**Suggested endpoint:** `PATCH /api/v1/admin/contact-messages/{id}/read`  
-**Suggested endpoint:** `PATCH /api/v1/admin/contact-messages/{id}/archive`  
+**Endpoint:** `PATCH /api/v1/admin/contact-messages/{id}/read`  
+**Endpoint:** `PATCH /api/v1/admin/contact-messages/{id}/archive`  
 
 *Note: Unified `PATCH .../status` already works; these are convenience aliases.*
 
@@ -236,8 +240,10 @@ Endpoints required by the frontend but absent from `router.go` / Swagger.
 
 ## Admin — Blog Comment Approve/Reject Aliases (optional)
 
-**Suggested endpoint:** `PATCH /api/v1/admin/blog/comments/{id}/approve`  
-**Suggested endpoint:** `PATCH /api/v1/admin/blog/comments/{id}/reject`  
+**Status:** ✅ Implemented
+
+**Endpoint:** `PATCH /api/v1/admin/blog/comments/{id}/approve`  
+**Endpoint:** `PATCH /api/v1/admin/blog/comments/{id}/reject`  
 
 *Note: `PATCH .../status` with `{ status: "approved" }` already works.*
 
