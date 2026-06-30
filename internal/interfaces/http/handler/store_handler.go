@@ -3,6 +3,8 @@ package handler
 import (
 	"log/slog"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -16,18 +18,20 @@ import (
 	"app/internal/interfaces/http/dto/request"
 	appmiddleware "app/internal/interfaces/http/middleware"
 	"app/internal/interfaces/http/response"
+	"app/pkg/apperror"
 	"app/pkg/pagination"
 	"app/pkg/validator"
 )
 
 // StoreHandler handles public storefront HTTP endpoints.
 type StoreHandler struct {
-	storefront   *appstorefront.Service
-	storecontent *appstorecontent.Service
-	settings     *appsettings.Service
-	theme        *apptheme.Service
-	validator    *validator.Validator
-	log          *slog.Logger
+	storefront            *appstorefront.Service
+	storecontent          *appstorecontent.Service
+	settings              *appsettings.Service
+	theme                 *apptheme.Service
+	paymentCallbackSecret string
+	validator             *validator.Validator
+	log                   *slog.Logger
 }
 
 // NewStoreHandler creates a new StoreHandler.
@@ -36,16 +40,18 @@ func NewStoreHandler(
 	storecontent *appstorecontent.Service,
 	settings *appsettings.Service,
 	theme *apptheme.Service,
+	paymentCallbackSecret string,
 	v *validator.Validator,
 	log *slog.Logger,
 ) *StoreHandler {
 	return &StoreHandler{
-		storefront:   storefront,
-		storecontent: storecontent,
-		settings:     settings,
-		theme:        theme,
-		validator:    v,
-		log:          log,
+		storefront:            storefront,
+		storecontent:          storecontent,
+		settings:              settings,
+		theme:                 theme,
+		paymentCallbackSecret: paymentCallbackSecret,
+		validator:             v,
+		log:                   log,
 	}
 }
 
@@ -82,6 +88,100 @@ func (h *StoreHandler) ListProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.OK(w, dtoresponse.ToStoreProductListResponse(result))
+}
+
+// SearchProducts godoc
+// @Summary      Search storefront products
+// @Description  Returns quick product suggestions for header autocomplete.
+// @Tags         store
+// @Produce      json
+// @Param        q      query  string  true   "Search query"
+// @Param        limit  query  int     false  "Max results"  default(10)
+// @Success      200    {object}  appstorefront.ProductSearchResult
+// @Failure      400    {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/store/products/search [get]
+func (h *StoreHandler) SearchProducts(w http.ResponseWriter, r *http.Request) {
+	query := strings.TrimSpace(r.URL.Query().Get("q"))
+	if query == "" {
+		response.Error(w, r, h.log, apperror.Validation("search query is required", map[string]string{"q": "is required"}))
+		return
+	}
+
+	limit := 10
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+
+	result, err := h.storefront.SearchProducts(r.Context(), query, limit)
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.OK(w, result)
+}
+
+// ListRelatedProducts godoc
+// @Summary      List related products
+// @Description  Returns related active products for a product detail page.
+// @Tags         store
+// @Produce      json
+// @Param        id     path   string  true   "Product ID or slug"
+// @Param        limit  query  int     false  "Max results"  default(8)
+// @Success      200    {object}  appstorefront.ProductListData
+// @Failure      404    {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/store/products/{id}/related [get]
+func (h *StoreHandler) ListRelatedProducts(w http.ResponseWriter, r *http.Request) {
+	productRef := chi.URLParam(r, "id")
+	limit := 8
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+
+	result, err := h.storefront.ListRelatedProducts(r.Context(), productRef, limit)
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.OK(w, result)
+}
+
+// ListBrands godoc
+// @Summary      List storefront brands
+// @Description  Returns active brands for catalog filters.
+// @Tags         store
+// @Produce      json
+// @Success      200  {object}  appstorefront.StoreBrandList
+// @Router       /api/v1/store/brands [get]
+func (h *StoreHandler) ListBrands(w http.ResponseWriter, r *http.Request) {
+	result, err := h.storefront.ListBrands(r.Context())
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.OK(w, result)
+}
+
+// GetShippingMethods godoc
+// @Summary      List shipping methods
+// @Description  Returns available delivery options for a destination city.
+// @Tags         store
+// @Produce      json
+// @Param        city  query  string  true  "Destination city"
+// @Success      200   {object}  appstorefront.ShippingMethodList
+// @Failure      400   {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/store/checkout/shipping-methods [get]
+func (h *StoreHandler) GetShippingMethods(w http.ResponseWriter, r *http.Request) {
+	city := strings.TrimSpace(r.URL.Query().Get("city"))
+	result, err := h.storefront.GetShippingMethods(r.Context(), city)
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.OK(w, result)
 }
 
 // GetProduct godoc
@@ -223,6 +323,66 @@ func (h *StoreHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 	response.Created(w, result)
 }
 
+// GetCheckoutSettings godoc
+// @Summary      Get checkout settings
+// @Description  Returns minimum order amount, enabled payment methods, and COD availability.
+// @Tags         store
+// @Produce      json
+// @Success      200  {object}  appstorefront.CheckoutSettingsOutput
+// @Router       /api/v1/store/settings/checkout [get]
+func (h *StoreHandler) GetCheckoutSettings(w http.ResponseWriter, r *http.Request) {
+	settings, err := h.storefront.GetCheckoutSettings(r.Context())
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.OK(w, settings)
+}
+
+// PaymentCallback godoc
+// @Summary      Payment gateway callback
+// @Description  Handles PSP redirect callback after online payment and updates order payment status.
+// @Tags         store
+// @Accept       json
+// @Produce      json
+// @Param        body  body  request.StorePaymentCallbackRequest  true  "Payment callback"
+// @Success      200   {object}  appstorefront.PaymentCallbackOutput
+// @Failure      400   {object}  dtoresponse.ErrorResponse
+// @Failure      401   {object}  dtoresponse.ErrorResponse
+// @Failure      404   {object}  dtoresponse.ErrorResponse
+// @Failure      409   {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/store/checkout/payment/callback [post]
+func (h *StoreHandler) PaymentCallback(w http.ResponseWriter, r *http.Request) {
+	var req request.StorePaymentCallbackRequest
+	if err := decodeAndValidate(r, &req, h.validator); err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	orderID, err := uuid.Parse(req.OrderID)
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	signature := req.Signature
+	if signature == "" {
+		signature = r.Header.Get("X-Payment-Signature")
+	}
+
+	result, err := h.storefront.HandlePaymentCallback(r.Context(), appstorefront.PaymentCallbackInput{
+		OrderID:   orderID,
+		Authority: req.Authority,
+		Status:    req.Status,
+		Signature: signature,
+	}, h.paymentCallbackSecret)
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.OK(w, result)
+}
+
 // GetHomepage godoc
 // @Summary      Get homepage content
 // @Description  Returns aggregated homepage sections for the storefront.
@@ -325,6 +485,123 @@ func (h *StoreHandler) GetAccountOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.OK(w, dtoresponse.ToOrderDetailResponse(order))
+}
+
+// GetAccountProfile godoc
+// @Summary      Get customer profile
+// @Description  Returns profile, addresses, and purchase stats for the authenticated customer.
+// @Tags         store
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  appstorefront.AccountProfile
+// @Failure      401  {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/store/account/profile [get]
+func (h *StoreHandler) GetAccountProfile(w http.ResponseWriter, r *http.Request) {
+	userID, err := appmiddleware.GetUserID(r.Context())
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	profile, err := h.storefront.GetAccountProfile(r.Context(), userID)
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.OK(w, profile)
+}
+
+// UpdateAccountProfile godoc
+// @Summary      Update customer profile
+// @Description  Updates profile fields and replaces saved addresses for the authenticated customer.
+// @Tags         store
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body  request.UpdateStoreAccountProfileRequest  true  "Profile update"
+// @Success      200   {object}  appstorefront.AccountProfile
+// @Failure      401   {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/store/account/profile [put]
+func (h *StoreHandler) UpdateAccountProfile(w http.ResponseWriter, r *http.Request) {
+	userID, err := appmiddleware.GetUserID(r.Context())
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	var req request.UpdateStoreAccountProfileRequest
+	if err := decodeAndValidate(r, &req, h.validator); err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	profile, err := h.storefront.UpdateAccountProfile(r.Context(), userID, toUpdateAccountProfileInput(req))
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.OK(w, profile)
+}
+
+// GetAbout godoc
+// @Summary      Get about page content
+// @Description  Returns aggregated about page content for the public storefront.
+// @Tags         store
+// @Produce      json
+// @Success      200  {object}  appstorefront.AboutPage
+// @Router       /api/v1/store/about [get]
+func (h *StoreHandler) GetAbout(w http.ResponseWriter, r *http.Request) {
+	page, err := h.storefront.GetAboutPage(r.Context())
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.OK(w, page)
+}
+
+// GetNavigation godoc
+// @Summary      Get storefront navigation
+// @Description  Returns the active storefront navigation menu.
+// @Tags         store
+// @Produce      json
+// @Success      200  {object}  appstorefront.StoreNavigation
+// @Router       /api/v1/store/navigation [get]
+func (h *StoreHandler) GetNavigation(w http.ResponseWriter, r *http.Request) {
+	navigation, err := h.storefront.GetStoreNavigation(r.Context())
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.OK(w, navigation)
+}
+
+func toUpdateAccountProfileInput(req request.UpdateStoreAccountProfileRequest) appstorefront.UpdateAccountProfileInput {
+	addresses := make([]appstorefront.UpdateAccountAddressInput, len(req.Addresses))
+	for i, address := range req.Addresses {
+		var id *uuid.UUID
+		if address.ID != nil && *address.ID != "" {
+			if parsed, err := uuid.Parse(*address.ID); err == nil {
+				id = &parsed
+			}
+		}
+		addresses[i] = appstorefront.UpdateAccountAddressInput{
+			ID:         id,
+			Type:       address.Type,
+			Street:     address.Street,
+			City:       address.City,
+			State:      address.State,
+			PostalCode: address.PostalCode,
+			Country:    address.Country,
+			IsDefault:  address.IsDefault,
+		}
+	}
+
+	return appstorefront.UpdateAccountProfileInput{
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		Phone:     req.Phone,
+		Addresses: addresses,
+	}
 }
 
 func toCheckoutItems(items []request.StoreCheckoutItemRequest) []appstorefront.CheckoutItemInput {
