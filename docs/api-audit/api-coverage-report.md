@@ -1,38 +1,40 @@
 # API Coverage Report
 
 > **Audit date:** 2026-06-30  
-> **Storefront UI:** [store-os-eta.vercel.app](https://store-os-eta.vercel.app/)  
-> **Admin UI:** [shop-panel-react.vercel.app](https://shop-panel-react.vercel.app/)  
-> **Backend source of truth:** `internal/interfaces/http/router.go` + `docs/swagger/swagger.yaml`  
-> **Swagger UI:** `http://localhost:8080/swagger/index.html`
+> **Last updated:** 2026-06-30 (post contract normalization)
 
 ---
 
 ## Summary
 
-| Metric | Count |
-|--------|------:|
-| **Frontend features / user interactions audited** | 94 |
-| **Backend API endpoints (Swagger paths)** | 100 |
-| **Fully implemented (frontend ↔ API contract match)** | 38 (40%) |
-| **Partially implemented (endpoint exists, contract gaps)** | 41 (44%) |
-| **Missing (no endpoint or unusable for UI)** | 15 (16%) |
-| **Overall coverage (Full + Partial endpoint existence)** | **84%** |
-| **Contract-complete coverage (Full only)** | **40%** |
+| Metric | Initial audit | After endpoints | After contract pass |
+|--------|--------------:|----------------:|--------------------:|
+| **Frontend features / user interactions audited** | 94 | 94 | 94 |
+| **Backend API endpoints (router paths)** | ~100 | ~118 | ~118 |
+| **Fully implemented (frontend ↔ API contract match)** | 38 (40%) | 52 (55%) | 64 (68%) |
+| **Partially implemented (endpoint exists, contract gaps)** | 41 (44%) | 37 (39%) | 25 (27%) |
+| **Missing (no endpoint or unusable for UI)** | 15 (16%) | 5 (5%) | 5 (5%) |
+| **Overall coverage (Full + Partial endpoint existence)** | **84%** | **95%** | **95%** |
+| **Contract-complete coverage (Full only)** | **40%** | **55%** | **68%** |
 
 ### By application surface
 
 | Surface | Features | Full | Partial | Missing |
 |---------|----------|-----:|--------:|--------:|
-| Customer store ([Store OS](https://store-os-eta.vercel.app/)) | 52 | 14 | 30 | 8 |
-| Admin panel ([shop-panel-react](https://shop-panel-react.vercel.app/)) | 42 | 24 | 11 | 7 |
+| Customer store ([Store OS](https://store-os-eta.vercel.app/)) | 52 | 24 | 23 | 5 |
+| Admin panel ([shop-panel-react](https://shop-panel-react.vercel.app/)) | 42 | 28 | 14 | 0 |
 
 ### Headline findings
 
-1. **The backend is substantially built** — most modules that were marked ❌ in older `docs/architecture/gap-analysis.md` now have routes (storefront, context CMS, themes, blog, contact, wishlist, reviews, Q&A).
-2. **Contract mismatches are the main blocker** — field naming (`price` vs `price_toman`), missing query params (`category_slug`, `bestseller` sort), path differences (`/blog/posts` vs `/blog`), and incomplete aggregate responses (homepage missing `categories`, `blog_teaser`, full `stats`).
-3. **Critical missing store APIs:** account profile (`GET/PUT /store/account/profile`), about page (`GET /store/about`), public navigation (`GET /store/navigation`), payment gateway flow (`payment_url`, callback).
-4. **Admin panel is largely wire-ready** for core commerce (dashboard, products, orders, customers, coupons, settings). Gaps concentrate in blog field names, contact inbox stats, theme pagination, and video upload for hero.
+1. **Contract normalization pass complete** — Catalog filters/sort, homepage aggregate (`categories`, `blog_teaser`, stats), product `?include=reviews_summary,wishlist`, wishlist/blog field aliases, slug-based engagement paths, caching, and contact rate limits are implemented.
+2. **Remaining contract gaps** — Per-SKU inventory projection, account order `*_toman` fields, checkout `payment_url`, server-side shipping in preview, and product `seo` block.
+3. **Checkout payment is partially unblocked** — Callback route and settings exist; PSP redirect URL on place-order still pending.
+4. **Admin panel is wire-ready** for core commerce; remaining gaps are CMS pagination, video upload for hero, and admin blog field renames.
+
+> **Storefront UI:** [store-os-eta.vercel.app](https://store-os-eta.vercel.app/)  
+> **Admin UI:** [shop-panel-react.vercel.app](https://shop-panel-react.vercel.app/)  
+> **Backend source of truth:** `internal/interfaces/http/router.go` + `docs/swagger/swagger.yaml`  
+> **Swagger UI:** `http://localhost:8080/swagger/index.html`
 
 ---
 
@@ -55,10 +57,10 @@
 
 | Feature | API Exists | Status | Notes |
 |---------|:----------:|--------|-------|
-| Mega-menu categories | ✅ | **Partial** | `GET /store/categories` exists; not embedded in homepage |
-| Store header navigation | ❌ | **Missing** | UI expects `GET /store/navigation`; only admin route exists |
+| Mega-menu categories | ✅ | **Full** | Embedded in `GET /store/homepage` + `GET /store/categories` |
+| Store header navigation | ✅ | **Full** | `GET /store/navigation` |
 | Theme / CSS variables | ✅ | **Full** | `GET /store/theme` |
-| Site settings (footer, contact) | ✅ | **Partial** | `GET /store/settings` — no `about` block, no `whatsapp`/`telegram` |
+| Site settings (footer, contact) | ✅ | **Partial** | `GET /store/settings` — no `whatsapp`/`telegram` in social |
 | Mobile bottom nav | — | **N/A** | Client-side routing only |
 
 ### Customer store — homepage (`/`)
@@ -66,32 +68,32 @@
 | Feature | API Exists | Status | Notes |
 |---------|:----------:|--------|-------|
 | Hero video + CTAs | ✅ | **Partial** | In `GET /store/homepage`; missing `poster_url` |
-| Category grid | ⚠️ | **Partial** | Separate `GET /store/categories`; not in homepage aggregate |
-| Product carousels (3 tabs) | ✅ | **Partial** | `product_slides` in homepage; slide type `featured` vs UI `new` |
+| Category grid | ✅ | **Full** | `categories[]` embedded in homepage |
+| Product carousels (3 tabs) | ✅ | **Full** | `product_slides`; `featured` mapped to `new` |
 | Pro banners | ✅ | **Full** | In homepage aggregate |
 | Partner brands | ✅ | **Full** | In homepage aggregate |
-| Stats counters | ✅ | **Partial** | Only `products_count`; UI shows years, products, provinces |
+| Stats counters | ✅ | **Partial** | `products_count`, `customers_count`, `delivered_orders_count`, `years_experience` |
 | FAQ accordion | ✅ | **Full** | In homepage aggregate |
-| Contact form | ✅ | **Partial** | `POST /store/contact`; response shape differs |
+| Contact form | ✅ | **Partial** | `POST /store/contact`; rate-limited; response shape differs |
 | Customer testimonials | ✅ | **Full** | `testimonials` in homepage |
-| Blog teaser (latest 3) | ❌ | **Missing** | Not in `HomepageProjection` |
-| Search shortcut | ✅ | **Partial** | Catalog `q` param; no dedicated search endpoint |
+| Blog teaser (latest 3) | ✅ | **Full** | `blog_teaser.posts[]` in homepage |
+| Search shortcut | ✅ | **Full** | `GET /store/products/search` |
 
 ### Customer store — catalog (`/products`)
 
 | Feature | API Exists | Status | Notes |
 |---------|:----------:|--------|-------|
-| Product grid | ✅ | **Partial** | `GET /store/products` |
-| Text search | ✅ | **Partial** | `q` param works |
-| Category filter by slug | ❌ | **Missing** | Only `category_id` (UUID) |
-| Sort: bestseller | ❌ | **Missing** | Swagger documents `bestseller`; repo ignores it |
-| Sort: newest | ✅ | **Partial** | Default `created_at DESC`; param `newest` not mapped |
-| Sort: discounted | ✅ | **Partial** | Repo uses `discount`; swagger says `discounted` |
-| Brand filter | ❌ | **Missing** | No `brand` query param |
-| On-sale / in-stock filters | ❌ | **Missing** | No `on_sale`, `in_stock` params |
+| Product grid | ✅ | **Partial** | `GET /store/products` — card fields still incomplete |
+| Text search | ✅ | **Full** | `q` on list + `GET /store/products/search` |
+| Category filter by slug | ✅ | **Full** | `category_slug` + `include_children` |
+| Sort: bestseller | ✅ | **Full** | 90-day sales aggregation |
+| Sort: newest | ✅ | **Full** | `newest` → `created_at DESC` |
+| Sort: discounted | ✅ | **Full** | `discounted` alias mapped |
+| Brand filter | ✅ | **Full** | `brand` query param |
+| On-sale / in-stock filters | ✅ | **Full** | `on_sale`, `in_stock` params |
 | Pagination | ✅ | **Full** | `page`, `per_page` + meta |
 | Product card badges | ✅ | **Partial** | Missing `is_new`, `has_variants`, `price_from_toman` |
-| Add to wishlist (heart) | ✅ | **Partial** | `POST /store/account/wishlist`; field naming gaps |
+| Add to wishlist (heart) | ✅ | **Partial** | `POST /store/account/wishlist`; `GET .../wishlist/ids` for badge |
 | Add to cart | — | **N/A** | Client-side `localStorage` cart (v1 design) |
 
 ### Customer store — product detail (`/products/:id`)
@@ -101,12 +103,12 @@
 | Load by slug or UUID | ✅ | **Full** | `GET /store/products/{slugOrId}` |
 | Image gallery | ✅ | **Full** | `images[]` in response |
 | Variant / SKU selection | ✅ | **Partial** | `skus[]` lacks per-SKU price/stock |
-| Reviews tab | ✅ | **Partial** | `GET .../reviews`; no `summary` in list; UUID path only |
-| Review summary | ✅ | **Full** | `GET .../reviews/summary` (separate endpoint) |
+| Reviews tab | ✅ | **Partial** | Slug or UUID in path; no `summary` in list |
+| Review summary | ✅ | **Full** | Separate endpoint or `?include=reviews_summary` on product |
 | Submit review | ✅ | **Partial** | Guest allowed; docs expect customer-only |
-| Q&A tab | ✅ | **Partial** | `GET/POST .../questions`; UUID path only |
-| Related products | ❌ | **Missing** | No `GET .../related` |
-| Wishlist state on detail | ❌ | **Missing** | `is_in_wishlist` not populated |
+| Q&A tab | ✅ | **Full** | Slug or UUID in path |
+| Related products | ✅ | **Full** | `GET /store/products/{id}/related` |
+| Wishlist state on detail | ✅ | **Full** | `?include=wishlist` with optional auth |
 | SEO meta | ❌ | **Missing** | No `seo` block in product detail |
 
 ### Customer store — checkout (`/checkout`)
@@ -116,10 +118,11 @@
 | Cart review (step 1) | — | **N/A** | Client-side cart |
 | Checkout preview | ✅ | **Partial** | `POST /store/checkout/preview` |
 | Coupon validation | ✅ | **Partial** | `POST /store/coupons/validate` |
-| Shipping address (step 2) | ✅ | **Partial** | Part of checkout body; no saved addresses API |
-| Shipping methods | ❌ | **Missing** | No `GET /store/checkout/shipping-methods` |
+| Shipping address (step 2) | ✅ | **Partial** | Checkout body + profile addresses |
+| Shipping methods | ✅ | **Full** | `GET /store/checkout/shipping-methods?city=` |
+| Checkout settings | ✅ | **Full** | `GET /store/settings/checkout` |
 | Payment (step 3) | ✅ | **Partial** | `POST /store/checkout`; no `payment_url` |
-| Payment gateway callback | ❌ | **Missing** | No callback endpoint |
+| Payment gateway callback | ✅ | **Full** | `POST /store/checkout/payment/callback` |
 | Guest checkout | ✅ | **Full** | Creates guest customer |
 | Order confirmation email | ✅ | **Partial** | Mailer wired; no `payment_url` in response |
 
@@ -127,28 +130,29 @@
 
 | Feature | API Exists | Status | Notes |
 |---------|:----------:|--------|-------|
-| Profile view/edit | ❌ | **Missing** | No `/store/account/profile` |
-| Saved addresses | ❌ | **Missing** | Part of profile spec |
+| Profile view/edit | ✅ | **Full** | `GET/PUT /store/account/profile` |
+| Saved addresses | ✅ | **Full** | Part of profile update |
 | Order history list | ✅ | **Partial** | `GET /store/account/orders`; no `status` filter |
 | Order detail | ✅ | **Partial** | Uses `float64` amounts, not `*_toman`; no `timeline` |
 | Wishlist page | ✅ | **Partial** | `GET /store/account/wishlist`; `created_at` not `added_at` |
+| Wishlist badge / IDs | ✅ | **Full** | `GET .../wishlist/count`, `GET .../wishlist/ids` |
 | Auth guard redirect | ✅ | **Full** | `GET /auth/me` |
 
 ### Customer store — blog (`/blog`)
 
 | Feature | API Exists | Status | Notes |
 |---------|:----------:|--------|-------|
-| Post listing | ✅ | **Partial** | `GET /store/blog/posts` (not `/blog`) |
-| Category filter | ✅ | **Partial** | `category_id` only; no `category_slug` |
+| Post listing | ✅ | **Full** | `GET /store/blog/posts` + alias `GET /store/blog` |
+| Category filter | ✅ | **Full** | `category_id` or `category_slug` + `include_children` |
 | Post detail | ✅ | **Partial** | `GET /store/blog/posts/{slug}` |
-| Comments list/submit | ✅ | **Partial** | Uses `postId` UUID, not slug |
+| Comments list/submit | ✅ | **Partial** | UUID `postId`; slug alias `GET /blog/{slug}/comments` |
 | Categories sidebar | ✅ | **Partial** | No `posts_count` per category |
 
 ### Customer store — about (`/about`)
 
 | Feature | API Exists | Status | Notes |
 |---------|:----------:|--------|-------|
-| About page content | ❌ | **Missing** | No `GET /store/about` |
+| About page content | ✅ | **Full** | `GET /store/about` |
 | Contact form | ✅ | **Partial** | `POST /store/contact` with `source=about` |
 
 ### Admin panel — dashboard (`/`)
@@ -217,41 +221,35 @@
 | Style customization | ✅ | **Full** | `GET/PUT /admin/store-style` |
 | Blog posts CRUD | ✅ | **Partial** | `summary` not `excerpt`; no `read_time_minutes` |
 | Blog categories CRUD | ✅ | **Full** | |
-| Comment moderation | ✅ | **Partial** | Unified `PATCH .../status` vs approve/reject routes |
-| Contact inbox | ✅ | **Partial** | No `stats` endpoint; unified status PATCH |
+| Comment moderation | ✅ | **Full** | `PATCH .../status` + `.../approve` + `.../reject` aliases |
+| Contact inbox | ✅ | **Full** | Stats, list, detail, status, read/archive aliases |
 | Review / Q&A moderation | ✅ | **Full** | |
 
 ---
 
 ## Missing Endpoints
 
-See [missing-endpoints.md](./missing-endpoints.md) for the full catalog. Highest-impact:
+All routes catalogued in [missing-endpoints.md](./missing-endpoints.md) are **implemented**. Remaining **feature gaps** (not separate routes):
 
-| Endpoint | Blocks |
-|----------|--------|
-| `GET /api/v1/store/account/profile` | Account profile tab |
-| `PUT /api/v1/store/account/profile` | Profile editing, saved addresses |
-| `GET /api/v1/store/about` | About page |
-| `GET /api/v1/store/navigation` | Store header menu |
-| `GET /api/v1/store/products/{id}/related` | Product detail related section |
-| `GET /api/v1/store/checkout/shipping-methods` | Checkout step 2 |
-| `POST /api/v1/store/checkout/payment/callback` | Online payment completion |
-| `GET /api/v1/admin/contact-messages/stats` | Inbox unread badge |
+| Gap | Blocks | Suggested fix |
+|-----|--------|---------------|
+| `payment_url` on checkout response | PSP redirect before callback | Payment provider integration |
+| Product `seo` block | Meta tags on detail | Extend `ProductDetail` DTO |
+| Per-SKU price/stock projection | Variant selector on detail | Extend SKU DTO + inventory model |
+| `hero.poster_url` | Hero fallback image | CMS field on hero config |
 
 ---
 
 ## Wrong Contracts
 
-See [api-contract-diff.md](./api-contract-diff.md). Top mismatches:
+See [api-contract-diff.md](./api-contract-diff.md). Top **open** mismatches:
 
-1. **Toman integer fields** — wishlist and order detail still use `float64` `price`/`total` while catalog uses `*_toman`.
-2. **Catalog sort param** — Swagger says `bestseller|newest|discounted`; repository implements `discount|price|name|created_at`.
-3. **Blog paths** — Backend uses `/store/blog/posts`; frontend docs expect `/store/blog`.
-4. **Blog fields** — `summary` vs `excerpt`, `featured_image` vs `cover_image_url`.
-5. **Homepage aggregate** — missing `categories`, `blog_teaser`, full `stats`.
-6. **Checkout response** — missing `payment_url`, `expires_at`; preview expects client-supplied shipping/tax.
-7. **Wishlist** — `created_at` vs `added_at`; duplicate add returns 409 vs idempotent 200.
-8. **Product engagement paths** — reviews/Q&A require product UUID; detail page may use slug.
+1. **Toman integer fields** — account order detail still uses `float64` `total` while catalog/wishlist use `*_toman`.
+2. **Checkout preview** — client-supplied `shipping_amount`/`tax_amount` vs server-side calculation.
+3. **Product variants** — per-SKU `price_toman`/`quantity`, `variant_axes`, `default_sku_id`.
+4. **`payment_url`** — missing on place-order response (callback route exists).
+
+**Resolved since contract pass:** catalog sort/filters, homepage aggregate, product `?include=`, wishlist `added_at`/`_*toman`/idempotent add, blog field aliases, engagement slug paths, contact rate limit, Redis cache on categories/navigation/theme.
 
 ---
 
@@ -259,47 +257,38 @@ See [api-contract-diff.md](./api-contract-diff.md). Top mismatches:
 
 | Endpoint | Missing fields |
 |----------|----------------|
-| `GET /store/homepage` | `categories[]`, `blog_teaser.posts[]`, `stats.customers_count`, `stats.delivered_orders_count`, `stats.years_experience`, `hero.poster_url` |
+| `GET /store/homepage` | `hero.poster_url` |
 | `GET /store/products` (card) | `short_description`, `category`, `is_new`, `has_variants`, `variant_count`, `price_from_toman`, `price_to_toman`, `filters_applied` |
-| `GET /store/products/{id}` | `category`, `default_sku_id`, `variant_axes`, per-SKU `price_toman`/`quantity`, `reviews_summary`, `is_in_wishlist`, `seo`, `related_products` |
+| `GET /store/products/{id}` | `category`, `default_sku_id`, `variant_axes`, per-SKU `price_toman`/`quantity`, `seo` |
 | `GET /store/account/orders/{id}` | `*_toman` integers, `variant_label` on items, `timeline[]` |
-| `GET /store/account/wishlist` | `added_at`, nested product `*_toman` fields |
+| `POST /store/checkout` | `payment_url`, `expires_at` |
 | Admin blog post | `read_time_minutes`, `excerpt` (has `summary`), `archived` status |
 
 ---
 
 ## High Priority Issues (blockers)
 
-1. **Account profile APIs missing** — `/account` page cannot load or save profile/addresses.
-2. **About page API missing** — `/about` has no content endpoint.
-3. **Public store navigation missing** — header menu cannot be CMS-driven without admin token.
-4. **Payment gateway flow incomplete** — no `payment_url` or callback; online payment step cannot complete.
-5. **Catalog sort tabs broken** — UI tabs map to `bestseller`/`newest`/`discounted`; backend does not implement `bestseller` or map `newest`/`discounted`.
-6. **Category filter by slug** — homepage links use `?category=slug`; API only accepts UUID.
-7. **Homepage stats show zeros** — UI counters need `years_experience`, product/customer counts beyond `products_count`.
-8. **SKU variant pricing on detail** — variant selector cannot show per-SKU price/stock.
+1. **SKU variant pricing on detail** — variant selector cannot show per-SKU price/stock.
+2. **`payment_url` missing on checkout** — callback exists but client cannot redirect to PSP without URL in place-order response.
+3. **Account order `*_toman` fields** — store order detail still uses floats.
+
+**Resolved since contract pass:** catalog sort/filters, homepage aggregate, wishlist/blog aliases, product includes, engagement slug paths.
 
 ---
 
 ## Recommendations (prioritized)
 
-| Priority | Action | Impact |
-|----------|--------|--------|
-| P0 | Implement `GET/PUT /store/account/profile` with addresses | Unblocks account page |
-| P0 | Fix catalog `sort` mapping (`bestseller`, `newest`, `discounted`) + `category_slug` | Unblocks product listing from homepage |
-| P0 | Extend `GET /store/homepage` with `categories`, `blog_teaser`, full `stats` | Reduces homepage round-trips; fixes stat counters |
-| P0 | Add `payment_url` to checkout response + payment callback route | Unblocks online payment |
-| P1 | Implement `GET /store/about` | Unblocks about page |
-| P1 | Add `GET /store/navigation` (public read of storefront nav) | Unblocks CMS-driven header |
-| P1 | Align response field names to `*_toman` across wishlist, orders, checkout | Prevents frontend adapter bugs |
-| P1 | Per-SKU price/stock on product detail + `variant_axes` projection | Unblocks variant selector |
-| P2 | `GET /store/products/{id}/related` | Product detail cross-sell |
-| P2 | Blog field aliases or frontend mapping doc (`summary`↔`excerpt`) | Blog integration |
-| P2 | `GET /admin/contact-messages/stats` | Inbox unread badge |
-| P2 | Video upload support for hero (`context=hero` on uploads) | Hero video management |
-| P3 | Wishlist idempotent add, `is_in_wishlist` on product detail | UX polish |
-| P3 | Shipping methods endpoint + server-side shipping calculation | Checkout step 2 accuracy |
-| P3 | Persian error messages for coupon/checkout validation | RTL UX |
+| Priority | Action | Impact | Status |
+|----------|--------|--------|--------|
+| P0 | Add `payment_url` to checkout response (callback already exists) | Unblocks online payment redirect | Partial |
+| P1 | Align account order fields to `*_toman` integers | Prevents frontend adapter bugs | Open |
+| P1 | Per-SKU price/stock on product detail + `variant_axes` projection | Unblocks variant selector | Open |
+| P2 | Video upload support for hero (`context=hero` on uploads) | Hero video management | Open |
+| P3 | Server-side shipping calculation in preview | Checkout accuracy | Open |
+| P3 | Persian error messages for coupon/checkout validation | RTL UX | Open |
+| P3 | Cache invalidation on category/theme CMS updates | Stale public cache | Open |
+| — | Catalog sort/filters, homepage aggregate, product includes, wishlist/blog aliases, contact rate limit | — | **Done** |
+| — | Account profile, about, navigation, related products, shipping, callback, wishlist shortcuts, blog/contact admin aliases | — | **Done** |
 
 ---
 
