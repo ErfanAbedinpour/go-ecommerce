@@ -1,10 +1,34 @@
 package request
 
-// StoreCheckoutItemRequest is a cart line item for storefront checkout.
-type StoreCheckoutItemRequest struct {
+// StoreCartAddItemRequest adds a product to the server-side cart.
+type StoreCartAddItemRequest struct {
 	ProductID string  `json:"product_id" validate:"required,uuid"`
 	SkuID     *string `json:"sku_id" validate:"omitempty,uuid"`
-	Quantity  int     `json:"quantity" validate:"required,gt=0"`
+	Quantity  int     `json:"quantity" validate:"omitempty,gt=0"`
+}
+
+// StoreCartUpdateItemRequest updates a cart line quantity.
+type StoreCartUpdateItemRequest struct {
+	Quantity int `json:"quantity" validate:"required,gte=0"`
+}
+
+// StoreCheckoutPreviewRequest validates the server cart and computes totals.
+type StoreCheckoutPreviewRequest struct {
+	CouponCode     string `json:"coupon_code" validate:"omitempty,max=50"`
+	ShippingMethod string `json:"shipping_method" validate:"required,oneof=post courier"`
+	ShippingCity   string `json:"shipping_city" validate:"required,max=100"`
+}
+
+// StoreCheckoutRequest places an order from the server cart.
+type StoreCheckoutRequest struct {
+	CouponCode      string                       `json:"coupon_code" validate:"omitempty,max=50"`
+	ShippingMethod  string                       `json:"shipping_method" validate:"required,oneof=post courier"`
+	ShippingCity    string                       `json:"shipping_city" validate:"required,max=100"`
+	Customer        StoreCheckoutCustomerRequest `json:"customer" validate:"required"`
+	ShippingAddress OrderAddressRequest          `json:"shipping_address" validate:"required"`
+	BillingAddress  *OrderAddressRequest         `json:"billing_address" validate:"omitempty"`
+	PaymentMethod   string                       `json:"payment_method" validate:"omitempty,max=50"`
+	Notes           string                       `json:"notes" validate:"omitempty,max=2000"`
 }
 
 // StoreCheckoutCustomerRequest holds customer info for checkout.
@@ -13,27 +37,6 @@ type StoreCheckoutCustomerRequest struct {
 	FirstName string `json:"first_name" validate:"required,max=100"`
 	LastName  string `json:"last_name" validate:"required,max=100"`
 	Phone     string `json:"phone" validate:"omitempty,max=20"`
-}
-
-// StoreCheckoutPreviewRequest validates a cart and computes totals.
-type StoreCheckoutPreviewRequest struct {
-	Items          []StoreCheckoutItemRequest `json:"items" validate:"required,min=1,dive"`
-	CouponCode     string                     `json:"coupon_code" validate:"omitempty,max=50"`
-	ShippingAmount float64                    `json:"shipping_amount" validate:"omitempty,gte=0"`
-	TaxAmount      float64                    `json:"tax_amount" validate:"omitempty,gte=0"`
-}
-
-// StoreCheckoutRequest places a storefront order.
-type StoreCheckoutRequest struct {
-	Items           []StoreCheckoutItemRequest   `json:"items" validate:"required,min=1,dive"`
-	CouponCode      string                       `json:"coupon_code" validate:"omitempty,max=50"`
-	Customer        StoreCheckoutCustomerRequest `json:"customer" validate:"required"`
-	ShippingAddress OrderAddressRequest          `json:"shipping_address" validate:"required"`
-	BillingAddress  *OrderAddressRequest         `json:"billing_address" validate:"omitempty"`
-	ShippingAmount  float64                      `json:"shipping_amount" validate:"omitempty,gte=0"`
-	TaxAmount       float64                      `json:"tax_amount" validate:"omitempty,gte=0"`
-	PaymentMethod   string                       `json:"payment_method" validate:"omitempty,max=50"`
-	Notes           string                       `json:"notes" validate:"omitempty,max=2000"`
 }
 
 // StoreCouponValidateRequest validates a coupon code.
