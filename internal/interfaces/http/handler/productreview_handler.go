@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/go-chi/chi/v5"
 
 	appreview "app/internal/application/productreview"
 	domainreview "app/internal/domain/productreview"
@@ -31,6 +32,10 @@ func NewProductReviewHandler(service *appreview.Service, v *validator.Validator,
 	}
 }
 
+func (h *ProductReviewHandler) resolveProductID(r *http.Request) (uuid.UUID, error) {
+	return h.service.ResolveProductID(r.Context(), chi.URLParam(r, "productId"))
+}
+
 // Submit godoc
 // @Summary      Submit a review
 // @Description  Submit a review for a product. Customer ID is linked if authenticated.
@@ -44,7 +49,7 @@ func NewProductReviewHandler(service *appreview.Service, v *validator.Validator,
 // @Failure      409  {object}  dtoresponse.ErrorResponse
 // @Router       /api/v1/store/products/{productId}/reviews [post]
 func (h *ProductReviewHandler) Submit(w http.ResponseWriter, r *http.Request) {
-	prodID, err := parseUUIDParam(r, "productId")
+	prodID, err := h.resolveProductID(r)
 	if err != nil {
 		response.Error(w, r, h.log, err)
 		return
@@ -90,7 +95,7 @@ func (h *ProductReviewHandler) Submit(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  dtoresponse.ErrorResponse
 // @Router       /api/v1/store/products/{productId}/reviews [get]
 func (h *ProductReviewHandler) ListByProduct(w http.ResponseWriter, r *http.Request) {
-	prodID, err := parseUUIDParam(r, "productId")
+	prodID, err := h.resolveProductID(r)
 	if err != nil {
 		response.Error(w, r, h.log, err)
 		return
@@ -118,7 +123,7 @@ func (h *ProductReviewHandler) ListByProduct(w http.ResponseWriter, r *http.Requ
 // @Failure      440  {object}  dtoresponse.ErrorResponse
 // @Router       /api/v1/store/products/{productId}/reviews/summary [get]
 func (h *ProductReviewHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
-	prodID, err := parseUUIDParam(r, "productId")
+	prodID, err := h.resolveProductID(r)
 	if err != nil {
 		response.Error(w, r, h.log, err)
 		return
