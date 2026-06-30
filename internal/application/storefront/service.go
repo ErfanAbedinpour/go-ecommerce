@@ -1,6 +1,7 @@
 package storefront
 
 import (
+	domainbrand "app/internal/domain/brand"
 	domaincategory "app/internal/domain/category"
 	domaincoupon "app/internal/domain/coupon"
 	domaincustomer "app/internal/domain/customer"
@@ -14,6 +15,7 @@ import (
 type Service struct {
 	products   domainproduct.Repository
 	categories domaincategory.Repository
+	brands     domainbrand.Repository
 	orders     *apporder.Service
 	coupons    domaincoupon.Repository
 	customers  domaincustomer.Repository
@@ -25,6 +27,7 @@ type Service struct {
 func NewService(
 	products domainproduct.Repository,
 	categories domaincategory.Repository,
+	brands domainbrand.Repository,
 	orders *apporder.Service,
 	coupons domaincoupon.Repository,
 	customers domaincustomer.Repository,
@@ -34,6 +37,7 @@ func NewService(
 	return &Service{
 		products:   products,
 		categories: categories,
+		brands:     brands,
 		orders:     orders,
 		coupons:    coupons,
 		customers:  customers,
