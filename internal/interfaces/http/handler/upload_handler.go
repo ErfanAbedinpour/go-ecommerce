@@ -14,12 +14,12 @@ var _ = dtoresponse.UploadResponse{}
 
 // UploadHandler handles file upload HTTP endpoints.
 type UploadHandler struct {
-	uploader *storage.Uploader
+	uploader storage.Uploader
 	log      *slog.Logger
 }
 
 // NewUploadHandler creates a new UploadHandler.
-func NewUploadHandler(uploader *storage.Uploader, log *slog.Logger) *UploadHandler {
+func NewUploadHandler(uploader storage.Uploader, log *slog.Logger) *UploadHandler {
 	return &UploadHandler{uploader: uploader, log: log}
 }
 
