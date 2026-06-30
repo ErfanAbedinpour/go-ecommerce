@@ -257,7 +257,7 @@
 - [ ] `read_time_minutes` field
 - [ ] `archived` post status
 - [ ] `excerpt` field alias (currently `summary`)
-- [ ] Separate approve/reject routes (optional — unified status works)
+- [x] Separate approve/reject routes (`PATCH .../comments/{id}/approve|reject`)
 
 ---
 
@@ -265,7 +265,9 @@
 
 - [x] List with filters (`status`, `source`, `q`, `from`, `to`)
 - [x] Detail, status update, delete
-- [ ] Inbox stats (`GET /api/v1/admin/contact-messages/stats`)
+- [x] Inbox stats (`GET /api/v1/admin/contact-messages/stats`)
+- [x] Mark read alias (`PATCH .../contact-messages/{id}/read`)
+- [x] Archive alias (`PATCH .../contact-messages/{id}/archive`)
 - [ ] Auto-mark-read on GET detail
 - [ ] Return body on status PATCH (currently 204)
 
