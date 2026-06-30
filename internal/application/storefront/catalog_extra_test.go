@@ -73,6 +73,15 @@ func (m *catalogExtraProductRepo) SearchStorefront(_ context.Context, _ string, 
 func (m *catalogExtraProductRepo) ListRelatedStorefront(_ context.Context, _ uuid.UUID, _ int) ([]domainproduct.Product, error) {
 	return m.related, nil
 }
+func (m *catalogExtraProductRepo) FindByIDs(_ context.Context, ids []uuid.UUID) ([]domainproduct.Product, error) {
+	out := make([]domainproduct.Product, 0, len(ids))
+	for _, id := range ids {
+		if p, ok := m.products[id]; ok {
+			out = append(out, *p)
+		}
+	}
+	return out, nil
+}
 
 type catalogExtraBrandRepo struct {
 	brands []domainbrand.Brand
