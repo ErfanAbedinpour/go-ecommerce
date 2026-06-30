@@ -159,6 +159,7 @@ func New(cfg *config.Config) (*Container, error) {
 	storefrontService := appstorefront.NewService(
 		productRepo,
 		categoryRepo,
+		brandRepo,
 		orderService,
 		couponRepo,
 		customerRepo,
@@ -231,7 +232,7 @@ func New(cfg *config.Config) (*Container, error) {
 		Brand:           handler.NewBrandHandler(brandService, v, log),
 		Attribute:       handler.NewAttributeHandler(attrDefService, attrValService, v, log),
 		Upload:          handler.NewUploadHandler(uploader, log),
-		Store:           handler.NewStoreHandler(storefrontService, storecontentService, settingsService, themeService, v, log),
+		Store:           handler.NewStoreHandler(storefrontService, storecontentService, settingsService, themeService, cfg.Payment.CallbackSecret, v, log),
 		Storefront:      handler.NewStorefrontHandler(storecontentService, settingsService, v, log),
 		Theme:           handler.NewThemeHandler(themeService, v, log),
 		Wishlist:        handler.NewWishlistHandler(wishlistService, v, log),
