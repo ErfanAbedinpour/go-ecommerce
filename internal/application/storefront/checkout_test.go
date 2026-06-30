@@ -64,6 +64,15 @@ func (m *checkoutProductRepo) FindByID(_ context.Context, id uuid.UUID) (*domain
 	}
 	return p, nil
 }
+func (m *checkoutProductRepo) FindByIDs(_ context.Context, ids []uuid.UUID) ([]domainproduct.Product, error) {
+	out := make([]domainproduct.Product, 0, len(ids))
+	for _, id := range ids {
+		if p, ok := m.products[id]; ok {
+			out = append(out, *p)
+		}
+	}
+	return out, nil
+}
 
 type checkoutCustomerRepo struct {
 	created []*domaincustomer.Customer
@@ -105,6 +114,9 @@ func (m *checkoutCustomerRepo) ReplaceAddresses(context.Context, uuid.UUID, []do
 func (m *checkoutCustomerRepo) ListOrders(context.Context, uuid.UUID, pagination.Params) ([]domainorder.Summary, int64, error) {
 	return nil, 0, nil
 }
+func (m *checkoutCustomerRepo) Count(context.Context) (int64, error) {
+	return int64(len(m.created)), nil
+}
 
 type checkoutOrderRepo struct {
 	orders map[uuid.UUID]*domainorder.Order
@@ -139,6 +151,15 @@ func (m *checkoutOrderRepo) NextOrderNumber(context.Context) (string, error) {
 	return "ORD-000001", nil
 }
 func (m *checkoutOrderRepo) IncrementCouponUsage(context.Context, uuid.UUID) error { return nil }
+func (m *checkoutOrderRepo) CountByStatus(_ context.Context, status domainorder.Status) (int64, error) {
+	var count int64
+	for _, o := range m.orders {
+		if o.Status == status {
+			count++
+		}
+	}
+	return count, nil
+}
 
 type checkoutCouponRepo struct {
 	coupons map[string]*domaincoupon.Coupon
