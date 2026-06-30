@@ -6,6 +6,10 @@ import (
 
 	"github.com/google/uuid"
 
+	domainblog "app/internal/domain/blog"
+	domaincategory "app/internal/domain/category"
+	domaincustomer "app/internal/domain/customer"
+	domainorder "app/internal/domain/order"
 	domain "app/internal/domain/storecontent"
 	domainproduct "app/internal/domain/product"
 	domainsettings "app/internal/domain/settings"
@@ -13,9 +17,13 @@ import (
 
 // Service handles storefront CMS content use cases.
 type Service struct {
-	repo     domain.Repository
-	products domainproduct.Repository
-	settings domainsettings.Repository
+	repo       domain.Repository
+	products   domainproduct.Repository
+	settings   domainsettings.Repository
+	categories domaincategory.Repository
+	blogs      domainblog.Repository
+	customers  domaincustomer.Repository
+	orders     domainorder.Repository
 }
 
 // NewService creates a new storecontent Service.
@@ -23,8 +31,20 @@ func NewService(
 	repo domain.Repository,
 	products domainproduct.Repository,
 	settings domainsettings.Repository,
+	categories domaincategory.Repository,
+	blogs domainblog.Repository,
+	customers domaincustomer.Repository,
+	orders domainorder.Repository,
 ) *Service {
-	return &Service{repo: repo, products: products, settings: settings}
+	return &Service{
+		repo:       repo,
+		products:   products,
+		settings:   settings,
+		categories: categories,
+		blogs:      blogs,
+		customers:  customers,
+		orders:     orders,
+	}
 }
 
 // GetHero returns the singleton hero configuration.
