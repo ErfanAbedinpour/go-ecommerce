@@ -34,6 +34,8 @@ type Repository interface {
 	FindBySKU(ctx context.Context, sku string) (*Product, error)
 	List(ctx context.Context, filter ListFilter, page pagination.Params) ([]Product, int64, error)
 	ListStorefront(ctx context.Context, filter StoreListFilter, page pagination.Params) ([]Product, int64, error)
+	SearchStorefront(ctx context.Context, query string, limit int) ([]Product, error)
+	ListRelatedStorefront(ctx context.Context, productID uuid.UUID, limit int) ([]Product, error)
 	Search(ctx context.Context, query string, page pagination.Params) ([]Product, int64, error)
 	CountActive(ctx context.Context) (int64, error)
 	UpdateInventory(ctx context.Context, productID uuid.UUID, inventory Inventory) error
