@@ -42,6 +42,14 @@ type StoreCouponValidateRequest struct {
 	SubtotalToman int64  `json:"subtotal_toman" validate:"required,gte=0"`
 }
 
+// StorePaymentCallbackRequest is the PSP payment callback payload.
+type StorePaymentCallbackRequest struct {
+	OrderID   string `json:"order_id" validate:"required,uuid"`
+	Authority string `json:"authority" validate:"required,max=100"`
+	Status    string `json:"status" validate:"required,oneof=OK NOK ok nok"`
+	Signature string `json:"signature" validate:"omitempty,max=128"`
+}
+
 // UpdateHeroRequest updates storefront hero settings.
 type UpdateHeroRequest struct {
 	VideoURL         string `json:"video_url" validate:"omitempty,max=500"`
