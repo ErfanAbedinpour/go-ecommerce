@@ -71,6 +71,23 @@ func (s *Service) List(ctx context.Context, filter domain.ListFilter, page pagin
 	return pagination.NewPaginated(items, page.Page, page.PerPage, total), nil
 }
 
+// InboxStatsOutput is the admin contact inbox stats response.
+type InboxStatsOutput struct {
+	UnreadCount int64 `json:"unread_count"`
+	TotalCount  int64 `json:"total_count"`
+}
+
+func (s *Service) GetStats(ctx context.Context) (*InboxStatsOutput, error) {
+	stats, err := s.repo.CountStats(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &InboxStatsOutput{
+		UnreadCount: stats.UnreadCount,
+		TotalCount:  stats.TotalCount,
+	}, nil
+}
+
 func (s *Service) UpdateStatus(ctx context.Context, id uuid.UUID, status string) error {
 	var stat domain.Status
 	switch status {
