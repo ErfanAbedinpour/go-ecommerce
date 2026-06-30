@@ -175,6 +175,55 @@ func (h *BlogHandler) StoreListComments(w http.ResponseWriter, r *http.Request) 
 	response.OK(w, dtoresponse.ToBlogCommentListResponse(result))
 }
 
+// StoreListPostsAlias godoc
+// @Summary      List blog posts (alias)
+// @Description  Alias for GET /store/blog/posts for frontend compatibility.
+// @Tags         blog
+// @Produce      json
+// @Param        page         query  int     false  "Page number"     default(1)
+// @Param        per_page     query  int     false  "Items per page"  default(20)
+// @Param        q            query  string  false  "Search query"
+// @Param        category_id  query  string  false  "Category ID filter"
+// @Success      200  {object}  dtoresponse.BlogPostListResponse
+// @Failure      400  {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/store/blog [get]
+func (h *BlogHandler) StoreListPostsAlias(w http.ResponseWriter, r *http.Request) {
+	h.StoreListPosts(w, r)
+}
+
+// StoreListCommentsBySlug godoc
+// @Summary      List post comments by slug
+// @Description  Get approved comments for a published blog post resolved by slug.
+// @Tags         blog
+// @Produce      json
+// @Param        slug      path   string  true  "Post slug"
+// @Param        page      query  int     false  "Page number"     default(1)
+// @Param        per_page  query  int     false  "Items per page"  default(20)
+// @Success      200  {object}  dtoresponse.BlogCommentListResponse
+// @Failure      404  {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/store/blog/{slug}/comments [get]
+func (h *BlogHandler) StoreListCommentsBySlug(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+	post, err := h.service.GetPostBySlug(r.Context(), slug)
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	if post.Status != domainblog.PostStatusPublished {
+		response.Error(w, r, h.log, domainblog.ErrPostNotFound)
+		return
+	}
+
+	page := pagination.FromRequest(r)
+	result, err := h.service.ListComments(r.Context(), post.ID, page)
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	response.OK(w, dtoresponse.ToBlogCommentListResponse(result))
+}
+
 // ── Admin Categories Handlers ─────────────────────────────────────
 
 // AdminListCategories godoc
