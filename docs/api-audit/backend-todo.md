@@ -22,6 +22,7 @@
 # Store — Homepage & Layout
 
 - [x] Aggregated homepage (`GET /api/v1/store/homepage`)
+- [x] Public store navigation (`GET /api/v1/store/navigation`)
 - [ ] Embed `categories[]` in homepage response (or document separate call)
 - [ ] Add `blog_teaser.posts[]` (latest 3 published posts)
 - [ ] Extend `stats` with `customers_count`, `delivered_orders_count`, `years_experience`
@@ -56,8 +57,8 @@
 - [ ] Response echo `filters_applied`
 - [x] Category tree (`GET /api/v1/store/categories`)
 - [ ] Support `tree` / `with_products_count` query params (or document always-on behavior)
-- [ ] Dedicated search endpoint (`GET /api/v1/store/products/search?limit=`)
-- [ ] Public brands list (`GET /api/v1/store/brands`) — optional
+- [x] Product search autocomplete (`GET /api/v1/store/products/search`)
+- [x] Public brands list (`GET /api/v1/store/brands`)
 
 ---
 
@@ -71,7 +72,7 @@
 - [ ] `reviews_summary` embedded in detail response
 - [ ] `is_in_wishlist` (requires optional auth middleware on GET)
 - [ ] `seo` block
-- [ ] Related products (`GET /api/v1/store/products/{id}/related`)
+- [x] Related products (`GET /api/v1/store/products/{id}/related`)
 
 ---
 
@@ -102,9 +103,9 @@
 - [ ] `payment_url` and `expires_at` in checkout response
 - [ ] Idempotency-Key header support
 - [ ] `409 CONFLICT` with `unavailable_items[]` for stock errors
-- [ ] Shipping methods (`GET /api/v1/store/checkout/shipping-methods?city=`)
-- [ ] Checkout settings (`GET /api/v1/store/settings/checkout`)
-- [ ] Payment callback (`POST /api/v1/store/checkout/payment/callback`)
+- [x] Shipping methods (`GET /api/v1/store/checkout/shipping-methods?city=`)
+- [x] Checkout settings (`GET /api/v1/store/settings/checkout`)
+- [x] Payment callback (`POST /api/v1/store/checkout/payment/callback`)
 - [ ] Persian validation messages for coupons
 - [x] Order confirmation email (mailer wired)
 
@@ -112,9 +113,9 @@
 
 # Store — Account
 
-- [ ] Profile read (`GET /api/v1/store/account/profile`)
-- [ ] Profile update (`PUT /api/v1/store/account/profile`)
-- [ ] Address book CRUD within profile
+- [x] Profile read (`GET /api/v1/store/account/profile`)
+- [x] Profile update (`PUT /api/v1/store/account/profile`)
+- [x] Address book replace within profile update
 - [x] Order list (`GET /api/v1/store/account/orders`)
 - [ ] Order list `status` filter
 - [x] Order detail (`GET /api/v1/store/account/orders/{id}`)
@@ -133,8 +134,8 @@
 - [ ] Rename `created_at` → `added_at` (or alias both)
 - [ ] Nested product card with `*_toman` fields
 - [ ] Idempotent add (200 on duplicate vs 409)
-- [ ] Wishlist IDs shortcut (`GET .../wishlist/ids`)
-- [ ] Wishlist count (`GET .../wishlist/count`)
+- [x] Wishlist IDs shortcut (`GET .../wishlist/ids`)
+- [x] Wishlist count (`GET .../wishlist/count`)
 
 ---
 
@@ -151,14 +152,16 @@
 - [ ] `read_time_minutes` on posts
 - [ ] `related_posts[]` on detail
 - [ ] `content_html` / `content_markdown` split
-- [ ] Comment routes by slug (`/blog/{slug}/comments`) — optional alias
+- [x] Blog list alias (`GET /api/v1/store/blog`)
+- [x] Comment routes by slug (`GET /api/v1/store/blog/{slug}/comments`)
 
 ---
 
 # Store — About
 
-- [ ] About page aggregate (`GET /api/v1/store/about`)
-- [ ] `about` JSON in settings or dedicated table (hero, story, mission, vision, milestones, team, stats)
+- [x] About page aggregate (`GET /api/v1/store/about`)
+- [x] `about` JSONB in `store_settings` (migration `000014`)
+- [ ] Admin API to edit about content (future)
 - [x] Contact form reuse (`POST /api/v1/store/contact`)
 
 ---
