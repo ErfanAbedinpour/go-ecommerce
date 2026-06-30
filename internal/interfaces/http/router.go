@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
@@ -55,7 +56,10 @@ func NewRouter(c *di.Container) http.Handler {
 
 // registerPublicRoutes — accessible without a token.
 func registerPublicRoutes(r chi.Router, c *di.Container) {
+	authLimiter := appmiddleware.NewRateLimiter(5, 10)
+
 	r.Route("/auth", func(r chi.Router) {
+		r.Use(appmiddleware.RateLimit(authLimiter))
 		r.Post("/login", c.Auth.Login)
 		r.Post("/refresh", c.Auth.Refresh)
 		r.Post("/signup", c.Auth.Signup)
@@ -78,6 +82,7 @@ func registerAdminRoutes(r chi.Router, c *di.Container) {
 	r.Route("/admin", func(r chi.Router) {
 		r.Use(appmiddleware.Authenticate(c.JWT))
 		r.Use(appmiddleware.RequireRole(user.RoleAdmin))
+		r.Use(appmiddleware.AuditLog(c.AuditRepo))
 
 		r.Get("/", handler.AdminIndex)
 
@@ -222,10 +227,14 @@ func registerCouponRoutes(r chi.Router, c *di.Container) {
 
 func registerStoreRoutes(r chi.Router, c *di.Container) {
 	r.Route("/store", func(r chi.Router) {
-		r.Get("/products", c.Store.ListProducts)
+		r.Group(func(r chi.Router) {
+			r.Use(appmiddleware.Cache(c.RedisCache, 5*time.Minute))
+			r.Get("/products", c.Store.ListProducts)
+			r.Get("/homepage", c.Store.GetHomepage)
+		})
+		
 		r.Get("/products/{slugOrId}", c.Store.GetProduct)
 		r.Get("/categories", c.Store.ListCategories)
-		r.Get("/homepage", c.Store.GetHomepage)
 		r.Get("/settings", c.Store.GetSettings)
 		r.Get("/theme", c.Store.GetTheme)
 		r.Post("/coupons/validate", c.Store.ValidateCoupon)
@@ -243,10 +252,17 @@ func registerStoreRoutes(r chi.Router, c *di.Container) {
 		r.Get("/blog/posts/{postId}/comments", c.Blog.StoreListComments)
 		r.Post("/blog/posts/{postId}/comments", c.Blog.StoreSubmitComment)
 
+		checkoutLimiter := appmiddleware.NewRateLimiter(2, 5)
+
 		r.Group(func(r chi.Router) {
 			r.Use(appmiddleware.OptionalAuthenticate(c.JWT))
-			r.Post("/checkout/preview", c.Store.PreviewCheckout)
-			r.Post("/checkout", c.Store.Checkout)
+			
+			r.Group(func(r chi.Router) {
+				r.Use(appmiddleware.RateLimit(checkoutLimiter))
+				r.Post("/checkout/preview", c.Store.PreviewCheckout)
+				r.Post("/checkout", c.Store.Checkout)
+			})
+			
 			r.Post("/products/{productId}/reviews", c.ProductReview.Submit)
 		})
 
