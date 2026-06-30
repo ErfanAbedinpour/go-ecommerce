@@ -153,8 +153,19 @@ func New(cfg *config.Config) (*Container, error) {
 	attrValRepo := postgres.NewAttributeValueRepository(db.DB)
 	attrValService := appattrval.NewService(attrValRepo)
 
+	blogRepo := postgres.NewBlogRepository(db.DB)
+	blogService := appblog.NewService(blogRepo)
+
 	storecontentRepo := postgres.NewStoreContentRepository(db.DB)
-	storecontentService := appstorecontent.NewService(storecontentRepo, productRepo, settingsRepo)
+	storecontentService := appstorecontent.NewService(
+		storecontentRepo,
+		productRepo,
+		settingsRepo,
+		categoryRepo,
+		blogRepo,
+		customerRepo,
+		orderRepo,
+	)
 
 	storefrontService := appstorefront.NewService(
 		productRepo,
@@ -181,9 +192,6 @@ func New(cfg *config.Config) (*Container, error) {
 
 	contactRepo := postgres.NewContactMessageRepository(db.DB)
 	contactService := appcontact.NewService(contactRepo)
-
-	blogRepo := postgres.NewBlogRepository(db.DB)
-	blogService := appblog.NewService(blogRepo)
 
 	auditRepo := postgres.NewAuditRepository(db.DB)
 	
@@ -232,7 +240,17 @@ func New(cfg *config.Config) (*Container, error) {
 		Brand:           handler.NewBrandHandler(brandService, v, log),
 		Attribute:       handler.NewAttributeHandler(attrDefService, attrValService, v, log),
 		Upload:          handler.NewUploadHandler(uploader, log),
-		Store:           handler.NewStoreHandler(storefrontService, storecontentService, settingsService, themeService, cfg.Payment.CallbackSecret, v, log),
+		Store: handler.NewStoreHandler(
+			storefrontService,
+			storecontentService,
+			settingsService,
+			themeService,
+			productReviewService,
+			wishlistService,
+			cfg.Payment.CallbackSecret,
+			v,
+			log,
+		),
 		Storefront:      handler.NewStorefrontHandler(storecontentService, settingsService, v, log),
 		Theme:           handler.NewThemeHandler(themeService, v, log),
 		Wishlist:        handler.NewWishlistHandler(wishlistService, v, log),
