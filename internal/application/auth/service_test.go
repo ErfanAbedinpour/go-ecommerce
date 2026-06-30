@@ -210,6 +210,9 @@ func (m *mockCustomerRepo) GetLastOrderAt(context.Context, uuid.UUID) (*time.Tim
 func (m *mockCustomerRepo) ListAddresses(context.Context, uuid.UUID) ([]customer.Address, error) {
 	return nil, nil
 }
+func (m *mockCustomerRepo) ReplaceAddresses(context.Context, uuid.UUID, []customer.Address) error {
+	return nil
+}
 func (m *mockCustomerRepo) ListOrders(context.Context, uuid.UUID, pagination.Params) ([]domainorder.Summary, int64, error) {
 	return nil, 0, nil
 }
