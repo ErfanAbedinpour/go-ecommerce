@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -108,6 +109,7 @@ func (r *WishlistRepository) List(ctx context.Context, customerID uuid.UUID, pag
 				ID:         rw.ID,
 				CustomerID: rw.CustomerID,
 				ProductID:  rw.ProductID,
+				CreatedAt:  parseWishlistCreatedAt(rw.CreatedAt),
 			},
 			Product: wishlist.ProductSummary{
 				Name:      rw.ProductName,
@@ -159,6 +161,22 @@ func (r *WishlistRepository) Count(ctx context.Context, customerID uuid.UUID) (i
 		Where("customer_id = ?", customerID).
 		Count(&count).Error
 	return count, err
+}
+
+func parseWishlistCreatedAt(raw string) time.Time {
+	if raw == "" {
+		return time.Time{}
+	}
+	if t, err := time.Parse(time.RFC3339, raw); err == nil {
+		return t
+	}
+	if t, err := time.Parse("2006-01-02 15:04:05.999999-07", raw); err == nil {
+		return t
+	}
+	if t, err := time.Parse("2006-01-02 15:04:05.999999+00", raw); err == nil {
+		return t
+	}
+	return time.Time{}
 }
 
 var _ wishlist.Repository = (*WishlistRepository)(nil)
