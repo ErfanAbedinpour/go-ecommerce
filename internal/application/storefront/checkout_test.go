@@ -180,13 +180,20 @@ func (checkoutSettingsRepo) UpdateContactSectionImage(context.Context, string) (
 	return "", nil
 }
 
+type noopMailer struct{}
+
+func (noopMailer) SendPasswordReset(context.Context, string, string) error { return nil }
+func (noopMailer) SendOrderConfirmation(context.Context, string, string, float64) error {
+	return nil
+}
+
 func newCheckoutTestService(products map[uuid.UUID]*domainproduct.Product, coupons map[string]*domaincoupon.Coupon) (*Service, *checkoutOrderRepo, *checkoutCustomerRepo) {
 	productRepo := &checkoutProductRepo{products: products}
 	customerRepo := &checkoutCustomerRepo{}
 	orderRepo := &checkoutOrderRepo{}
 	couponRepo := &checkoutCouponRepo{coupons: coupons}
 	orderSvc := apporder.NewService(orderRepo, productRepo, customerRepo, couponRepo, checkoutSettingsRepo{})
-	return NewService(productRepo, nil, orderSvc, couponRepo, customerRepo, checkoutSettingsRepo{}), orderRepo, customerRepo
+	return NewService(productRepo, nil, orderSvc, couponRepo, customerRepo, checkoutSettingsRepo{}, noopMailer{}), orderRepo, customerRepo
 }
 
 func TestPreviewCheckout_EmptyCart(t *testing.T) {
