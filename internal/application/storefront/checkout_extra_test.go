@@ -142,3 +142,9 @@ func (m *paymentCallbackOrderRepo) NextOrderNumber(context.Context) (string, err
 	return "ORD-1001", nil
 }
 func (m *paymentCallbackOrderRepo) IncrementCouponUsage(context.Context, uuid.UUID) error { return nil }
+func (m *paymentCallbackOrderRepo) CountByStatus(_ context.Context, status domainorder.Status) (int64, error) {
+	if m.order != nil && m.order.Status == status {
+		return 1, nil
+	}
+	return 0, nil
+}
