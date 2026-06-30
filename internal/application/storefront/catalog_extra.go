@@ -58,7 +58,7 @@ func (s *Service) SearchProducts(ctx context.Context, query string, limit int) (
 
 // ListRelatedProducts returns related active products for a product detail page.
 func (s *Service) ListRelatedProducts(ctx context.Context, productRef string, limit int) (*ProductListData, error) {
-	productID, err := resolveProductID(ctx, s.products, productRef)
+	productID, err := s.ResolveProductID(ctx, productRef)
 	if err != nil {
 		return nil, err
 	}
@@ -108,26 +108,4 @@ func toProductSearchHit(p *domainproduct.Product) ProductSearchHit {
 		hit.ThumbnailURL = p.Images[0].URL
 	}
 	return hit
-}
-
-func resolveProductID(ctx context.Context, products domainproduct.Repository, ref string) (uuid.UUID, error) {
-	if id, err := uuid.Parse(ref); err == nil {
-		product, err := products.FindByID(ctx, id)
-		if err != nil {
-			return uuid.Nil, err
-		}
-		if product.Status != domainproduct.StatusActive {
-			return uuid.Nil, domainproduct.ErrNotFound
-		}
-		return product.ID, nil
-	}
-
-	product, err := products.FindBySlug(ctx, ref)
-	if err != nil {
-		return uuid.Nil, err
-	}
-	if product.Status != domainproduct.StatusActive {
-		return uuid.Nil, domainproduct.ErrNotFound
-	}
-	return product.ID, nil
 }
