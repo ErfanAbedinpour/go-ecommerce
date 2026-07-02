@@ -24,8 +24,8 @@ func NewRefreshTokenRepository(db *gorm.DB) *RefreshTokenRepository {
 
 func (r *RefreshTokenRepository) Create(ctx context.Context, token *user.RefreshToken) error {
 	m := &models.RefreshTokenModel{
-		ID:          token.ID,
-		AdminUserID: token.UserID,
+		ID:        token.ID,
+		UserID:    token.UserID,
 		TokenHash:   token.TokenHash,
 		FamilyID:    token.FamilyID,
 		ExpiresAt:   token.ExpiresAt,
@@ -66,6 +66,6 @@ func (r *RefreshTokenRepository) RevokeAllByUser(ctx context.Context, userID uui
 	now := time.Now().UTC()
 	return r.db.WithContext(ctx).
 		Model(&models.RefreshTokenModel{}).
-		Where("admin_user_id = ? AND revoked_at IS NULL", userID).
+		Where("user_id = ? AND revoked_at IS NULL", userID).
 		Update("revoked_at", now).Error
 }
