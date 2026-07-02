@@ -84,11 +84,11 @@ func AuditLog(repo domain.Repository) func(http.Handler) http.Handler {
 				// Async save audit log
 				go func() {
 					log := &domain.AuditLog{
-						AdminUserID:  userID.String(),
+						UserID:       userID.String(),
 						Action:       r.Method,
 						ResourceType: resourceType,
 						ResourceID:   resourceID,
-						NewValue:     reqBody, // Save request body as new value
+						NewValue:     redactJSON(reqBody),
 						IPAddress:    r.RemoteAddr,
 						UserAgent:    r.UserAgent(),
 					}
