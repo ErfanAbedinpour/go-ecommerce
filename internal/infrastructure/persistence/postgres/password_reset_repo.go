@@ -24,8 +24,8 @@ func NewPasswordResetRepository(db *gorm.DB) *PasswordResetRepository {
 
 func (r *PasswordResetRepository) Create(ctx context.Context, token *user.PasswordResetToken) error {
 	m := &models.PasswordResetTokenModel{
-		ID:          token.ID,
-		AdminUserID: token.UserID,
+		ID:        token.ID,
+		UserID:    token.UserID,
 		TokenHash:   token.TokenHash,
 		ExpiresAt:   token.ExpiresAt,
 		CreatedAt:   token.CreatedAt,
@@ -57,14 +57,14 @@ func (r *PasswordResetRepository) InvalidateByUser(ctx context.Context, userID u
 	now := time.Now().UTC()
 	return r.db.WithContext(ctx).
 		Model(&models.PasswordResetTokenModel{}).
-		Where("admin_user_id = ? AND used_at IS NULL", userID).
+		Where("user_id = ? AND used_at IS NULL", userID).
 		Update("used_at", now).Error
 }
 
 func toPasswordResetDomain(m *models.PasswordResetTokenModel) *user.PasswordResetToken {
 	return &user.PasswordResetToken{
 		ID:        m.ID,
-		UserID:    m.AdminUserID,
+		UserID:    m.UserID,
 		TokenHash: m.TokenHash,
 		ExpiresAt: m.ExpiresAt,
 		UsedAt:    m.UsedAt,
