@@ -183,7 +183,7 @@ Authorization is enforced at the **router/application layer**, not the database 
 | **Authenticated** | `/api/v1/auth/logout`, `/api/v1/auth/me`                 | `admin`, `customer` |
 | **Admin**         | `/api/v1/admin/*`                                        | `admin` only        |
 
-- Each user has exactly **one role**: `admin` or `customer` (stored as a column on `admin_users`).
+- Each user has exactly **one role**: `admin` or `customer` (stored as a column on `users`).
 - Role is embedded in the JWT at login and validated by middleware — no DB permission lookups per request.
 - Route guards: `Authenticate` → `RequireRole(user.RoleAdmin)`.
 
@@ -358,9 +358,9 @@ Query params: `page`, `per_page` (max 100), `sort`, `order` (asc|desc).
 ### 4.1 ER Overview
 
 ```
-admin_users ──M:N── admin_user_roles ──M:N── roles ──M:N── role_permissions ──M:N── permissions
-admin_users ──1:N── refresh_tokens
-admin_users ──1:N── audit_logs
+users ──M:N── user_roles ──M:N── roles ──M:N── role_permissions ──M:N── permissions
+users ──1:N── refresh_tokens
+users ──1:N── audit_logs
 
 categories (self-referential parent_id)
 products ──N:1── categories
@@ -379,7 +379,7 @@ coupons (standalone)
 
 ### 4.2 Table Definitions
 
-#### `admin_users`
+#### `users`
 
 | Column        | Type         | Constraints                   |
 | ------------- | ------------ | ----------------------------- |
@@ -414,13 +414,13 @@ coupons (standalone)
 | description | TEXT         |                             |
 | created_at  | TIMESTAMPTZ  | NOT NULL                    |
 
-#### `admin_user_roles` (join)
+#### `user_roles` (join)
 
 | Column                               | Type | Constraints      |
 | ------------------------------------ | ---- | ---------------- |
-| admin_user_id                        | UUID | FK → admin_users |
+| user_id                          | UUID | FK → users |
 | role_id                              | UUID | FK → roles       |
-| PRIMARY KEY (admin_user_id, role_id) |      |                  |
+| PRIMARY KEY (user_id, role_id) |      |                  |
 
 #### `role_permissions` (join)
 
@@ -435,7 +435,7 @@ coupons (standalone)
 | Column        | Type         | Constraints                |
 | ------------- | ------------ | -------------------------- |
 | id            | UUID         | PK                         |
-| admin_user_id | UUID         | FK → admin_users           |
+| user_id | UUID         | FK → users           |
 | token_hash    | VARCHAR(255) | NOT NULL                   |
 | family_id     | UUID         | NOT NULL (rotation family) |
 | expires_at    | TIMESTAMPTZ  | NOT NULL                   |
@@ -582,7 +582,7 @@ coupons (standalone)
 | from_status | VARCHAR(20) | NULLABLE                   |
 | to_status   | VARCHAR(20) | NOT NULL                   |
 | note        | TEXT        | NULLABLE                   |
-| changed_by  | UUID        | FK → admin_users, NULLABLE |
+| changed_by  | UUID        | FK → users, NULLABLE |
 | created_at  | TIMESTAMPTZ | NOT NULL                   |
 
 #### `coupons`
@@ -608,7 +608,7 @@ coupons (standalone)
 | Column        | Type         | Constraints      |
 | ------------- | ------------ | ---------------- |
 | id            | UUID         | PK               |
-| admin_user_id | UUID         | FK → admin_users |
+| user_id | UUID         | FK → users |
 | action        | VARCHAR(50)  | NOT NULL         |
 | resource_type | VARCHAR(50)  | NOT NULL         |
 | resource_id   | VARCHAR(100) | NOT NULL         |
@@ -627,7 +627,7 @@ CREATE INDEX idx_products_slug ON products(slug);
 CREATE INDEX idx_orders_customer ON orders(customer_id);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_orders_created ON orders(created_at DESC);
-CREATE INDEX idx_audit_logs_admin ON audit_logs(admin_user_id);
+CREATE INDEX idx_audit_logs_admin ON audit_logs(user_id);
 CREATE INDEX idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
 CREATE INDEX idx_audit_logs_created ON audit_logs(created_at DESC);
 CREATE INDEX idx_coupons_code ON coupons(code);
@@ -1187,7 +1187,7 @@ Singleton row in `store_settings` (JSONB per section). All endpoints require adm
 |           |                                                                              |
 | --------- | ---------------------------------------------------------------------------- |
 | **Auth**  | `audit:read`                                                                 |
-| **Query** | `page`, `per_page`, `admin_user_id`, `resource_type`, `action`, `from`, `to` |
+| **Query** | `page`, `per_page`, `user_id`, `resource_type`, `action`, `from`, `to` |
 
 #### GET `/audit-logs/{id}`
 
