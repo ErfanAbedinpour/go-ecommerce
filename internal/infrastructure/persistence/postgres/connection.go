@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -56,11 +57,12 @@ func New(cfg config.DatabaseConfig, log *slog.Logger, isDev bool) (*DB, error) {
 		return nil, fmt.Errorf("ping database: %w", err)
 	}
 
-	log.Info("database connected",
-		slog.String("host", cfg.Host),
-		slog.Int("port", cfg.Port),
-		slog.String("database", cfg.Name),
-	)
+	dbName, err := cfg.DatabaseName()
+	if err != nil {
+		return nil, fmt.Errorf("database name: %w", err)
+	}
+
+	log.Info("database connected", slog.String("database", dbName))
 
 	return &DB{DB: db, sqlDB: sqlDB, log: log}, nil
 }
@@ -91,12 +93,23 @@ func RunMigrations(cfg config.DatabaseConfig, log *slog.Logger) error {
 		return fmt.Errorf("create migration driver: %w", err)
 	}
 
-	m, err := migrate.NewWithDatabaseInstance(cfg.MigrationsPath, cfg.Name, driver)
+	dbName, err := cfg.DatabaseName()
+	if err != nil {
+		return fmt.Errorf("database name: %w", err)
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(cfg.MigrationsPath, dbName, driver)
 	if err != nil {
 		return fmt.Errorf("create migrator: %w", err)
 	}
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		if strings.Contains(err.Error(), "no migration found for version") {
+			return fmt.Errorf(
+				"run migrations: %w (database migration version is out of sync with this codebase; run: make db-reset)",
+				err,
+			)
+		}
 		return fmt.Errorf("run migrations: %w", err)
 	}
 
