@@ -18,6 +18,7 @@ type ListFilter struct {
 type Repository interface {
 	Create(ctx context.Context, u *User) error
 	FindByEmail(ctx context.Context, email string) (*User, error)
+	FindByPhone(ctx context.Context, phone string) (*User, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*User, error)
 	List(ctx context.Context, filter ListFilter, page pagination.Params) ([]User, int64, error)
 	Update(ctx context.Context, u *User) error
