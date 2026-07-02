@@ -109,7 +109,7 @@
 |---|------|----------|------------|--------------|
 | 7.1 | Rate limiting on auth and checkout | Medium | Low | — |
 | 7.2 | Audit log write integration | Low | Medium | Existing table |
-| 7.3 | Redis cache for homepage + catalog | Medium | Medium | Milestone 2 |
+| 7.3 | PostgreSQL-backed cart storage | Done | — | Milestone 2 |
 | 7.4 | S3 migration for uploads | Medium | Medium | Upload service |
 | 7.5 | Payment gateway integration (Zarinpal/IDPay) | High | High | Milestone 1 |
 | 7.6 | Order confirmation email | Medium | Low | SMTP, Milestone 1 |
