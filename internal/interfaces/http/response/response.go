@@ -6,7 +6,15 @@ import (
 	"net/http"
 
 	"app/pkg/apperror"
+	"app/pkg/i18n"
 )
+
+var translator = i18n.NewTranslator(i18n.LocaleEN)
+
+// Init configures response localization from application config.
+func Init(locale string) {
+	translator = i18n.NewTranslator(locale)
+}
 
 // JSON writes a JSON response with the given status code.
 func JSON(w http.ResponseWriter, status int, data any) {
@@ -45,6 +53,7 @@ func Error(w http.ResponseWriter, r *http.Request, log *slog.Logger, err error) 
 		appErr = apperror.Internal("an unexpected error occurred")
 	}
 
+	appErr = translator.Translate(appErr)
 	JSON(w, appErr.Status, apperror.NewErrorResponse(appErr, requestPath(r)))
 }
 
