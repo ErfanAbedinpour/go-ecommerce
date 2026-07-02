@@ -28,7 +28,6 @@ import (
 	"app/internal/config"
 	domainaudit "app/internal/domain/audit"
 	infraauth "app/internal/infrastructure/auth"
-	"app/internal/infrastructure/cache"
 	"app/internal/infrastructure/email"
 	"app/internal/infrastructure/persistence/postgres"
 	"app/internal/infrastructure/storage"
@@ -47,7 +46,6 @@ type Container struct {
 	JWT    *infraauth.JWTService
 	Hasher *infraauth.PasswordHasher
 	AuditRepo domainaudit.Repository
-	RedisCache *cache.RedisCache
 
 	// Services
 	AuthService     *appauth.AuthService
@@ -145,7 +143,7 @@ func New(cfg *config.Config) (*Container, error) {
 	settingsService := appsettings.NewService(settingsRepo)
 
 	orderRepo := postgres.NewOrderRepository(db.DB)
-	orderService := apporder.NewService(orderRepo, productRepo, customerRepo, couponRepo, settingsRepo)
+	orderService := apporder.NewService(orderRepo, productRepo, customerRepo, couponRepo, settingsRepo, cfg.Order.PaymentTTL)
 
 	brandRepo := postgres.NewBrandRepository(db.DB)
 	brandService := appbrand.NewService(brandRepo)
@@ -170,8 +168,7 @@ func New(cfg *config.Config) (*Container, error) {
 		orderRepo,
 	)
 
-	redisCache := cache.NewRedisCache(cfg.Redis)
-	cartRepo := cache.NewCartRepository(redisCache)
+	cartRepo := postgres.NewCartRepository(db.DB)
 	cartService := appcart.NewService(cartRepo, productRepo)
 
 	storefrontService := appstorefront.NewService(
@@ -181,6 +178,7 @@ func New(cfg *config.Config) (*Container, error) {
 		orderService,
 		couponRepo,
 		customerRepo,
+		userRepo,
 		settingsRepo,
 		cartService,
 		mailer,
@@ -213,7 +211,6 @@ func New(cfg *config.Config) (*Container, error) {
 		JWT:             jwtService,
 		Hasher:          hasher,
 		AuditRepo:       auditRepo,
-		RedisCache:      redisCache,
 		AuthService:     authService,
 		ProductService:  productService,
 		CategoryService: categoryService,
@@ -235,7 +232,7 @@ func New(cfg *config.Config) (*Container, error) {
 		BlogService:        blogService,
 		CartService:        cartService,
 		Health:           handler.NewHealthHandler(db, cfg.App.Version),
-		Auth:            handler.NewAuthHandler(authService, v, log),
+		Auth:            handler.NewAuthHandler(authService, cartService, v, log),
 		Product:         handler.NewProductHandler(productService, v, log),
 		Category:        handler.NewCategoryHandler(categoryService, v, log),
 		Coupon:          handler.NewCouponHandler(couponService, v, log),
@@ -254,6 +251,7 @@ func New(cfg *config.Config) (*Container, error) {
 			themeService,
 			productReviewService,
 			wishlistService,
+			cartService,
 			cfg.Payment.CallbackSecret,
 			v,
 			log,
