@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/caarlos0/env/v11"
@@ -19,8 +21,9 @@ type Config struct {
 	CORS     CORSConfig
 	Upload   UploadConfig
 	Log      LogConfig
-	Redis    RedisConfig
 	Payment  PaymentConfig
+	Order    OrderConfig
+	Swagger  SwaggerConfig
 }
 
 // AppConfig holds application-level settings.
@@ -28,6 +31,7 @@ type AppConfig struct {
 	Name        string `env:"APP_NAME" envDefault:"ecommerce-api"`
 	Environment string `env:"APP_ENV" envDefault:"development"`
 	Version     string `env:"APP_VERSION" envDefault:"1.0.0"`
+	Locale      string `env:"APP_LOCALE" envDefault:"en"`
 }
 
 // ServerConfig holds HTTP server settings.
@@ -42,12 +46,7 @@ type ServerConfig struct {
 
 // DatabaseConfig holds PostgreSQL connection settings.
 type DatabaseConfig struct {
-	Host            string        `env:"DB_HOST" envDefault:"localhost"`
-	Port            int           `env:"DB_PORT" envDefault:"5432"`
-	User            string        `env:"DB_USER" envDefault:"ecommerce"`
-	Password        string        `env:"DB_PASSWORD" envDefault:"ecommerce"`
-	Name            string        `env:"DB_NAME" envDefault:"ecommerce"`
-	SSLMode         string        `env:"DB_SSL_MODE" envDefault:"disable"`
+	URL             string        `env:"DATABASE_URL" envDefault:"postgres://ecommerce:ecommerce@localhost:5432/ecommerce?sslmode=disable"`
 	MaxOpenConns    int           `env:"DB_MAX_OPEN_CONNS" envDefault:"25"`
 	MaxIdleConns    int           `env:"DB_MAX_IDLE_CONNS" envDefault:"10"`
 	ConnMaxLifetime time.Duration `env:"DB_CONN_MAX_LIFETIME" envDefault:"5m"`
@@ -114,17 +113,20 @@ type LogConfig struct {
 	Format string `env:"LOG_FORMAT" envDefault:"json"`
 }
 
-// RedisConfig holds Redis settings.
-type RedisConfig struct {
-	Host     string `env:"REDIS_HOST" envDefault:"localhost"`
-	Port     int    `env:"REDIS_PORT" envDefault:"6379"`
-	Password string `env:"REDIS_PASSWORD" envDefault:""`
-	DB       int    `env:"REDIS_DB" envDefault:"0"`
-}
-
 // PaymentConfig holds payment gateway settings.
 type PaymentConfig struct {
 	CallbackSecret string `env:"PAYMENT_CALLBACK_SECRET" envDefault:""`
+}
+
+// OrderConfig holds order lifecycle settings.
+type OrderConfig struct {
+	PaymentTTL time.Duration `env:"ORDER_PAYMENT_TTL" envDefault:"25h"`
+}
+
+// SwaggerConfig holds Swagger UI access credentials for production.
+type SwaggerConfig struct {
+	Username string `env:"SWAGGER_USERNAME"`
+	Password string `env:"SWAGGER_PASSWORD"`
 }
 
 // Load reads configuration from environment variables.
@@ -137,7 +139,35 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
 
+	cfg.Database.MigrationsPath = normalizeMigrationsPath(cfg.Database.MigrationsPath)
+
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
 	return cfg, nil
+}
+
+// Validate checks configuration for production safety.
+func (c *Config) Validate() error {
+	if c.IsProduction() {
+		if c.Swagger.Username == "" || c.Swagger.Password == "" {
+			return fmt.Errorf("SWAGGER_USERNAME and SWAGGER_PASSWORD are required when APP_ENV=production")
+		}
+	}
+	return nil
+}
+
+func normalizeMigrationsPath(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return "file://migrations"
+	}
+	if strings.Contains(path, "://") {
+		return path
+	}
+	path = strings.TrimPrefix(path, "./")
+	return "file://" + path
 }
 
 // Addr returns the server listen address.
@@ -147,10 +177,30 @@ func (s ServerConfig) Addr() string {
 
 // DSN returns the PostgreSQL connection string.
 func (d DatabaseConfig) DSN() string {
-	return fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		d.Host, d.Port, d.User, d.Password, d.Name, d.SSLMode,
-	)
+	return d.URL
+}
+
+// DatabaseName extracts the database name from the connection URL.
+func (d DatabaseConfig) DatabaseName() (string, error) {
+	if strings.Contains(d.URL, "://") {
+		parsed, err := url.Parse(d.URL)
+		if err != nil {
+			return "", fmt.Errorf("parse database url: %w", err)
+		}
+		name := strings.TrimPrefix(parsed.Path, "/")
+		if name == "" {
+			return "", fmt.Errorf("database name not found in DATABASE_URL")
+		}
+		return name, nil
+	}
+
+	for _, part := range strings.Fields(d.URL) {
+		if strings.HasPrefix(part, "dbname=") {
+			return strings.TrimPrefix(part, "dbname="), nil
+		}
+	}
+
+	return "", fmt.Errorf("database name not found in DATABASE_URL")
 }
 
 // IsDevelopment returns true if running in development mode.
