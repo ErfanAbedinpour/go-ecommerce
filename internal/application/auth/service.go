@@ -69,8 +69,8 @@ type TokenOutput struct {
 	TokenType    string `json:"token_type"`
 }
 
-// Login authenticates a user and returns tokens.
-func (s *AuthService) Login(ctx context.Context, input LoginInput) (*TokenOutput, error) {
+// Login authenticates a user and returns tokens with the user id for session side effects.
+func (s *AuthService) Login(ctx context.Context, input LoginInput) (*SessionOutput, error) {
 	u, err := s.users.FindByEmail(ctx, input.Email)
 	if err != nil {
 		if err == user.ErrNotFound {
@@ -94,7 +94,11 @@ func (s *AuthService) Login(ctx context.Context, input LoginInput) (*TokenOutput
 
 	_ = s.users.UpdateLastLogin(ctx, u.ID)
 
-	return tokens, nil
+	if err := s.linkOrCreateCustomer(ctx, u); err != nil {
+		return nil, err
+	}
+
+	return &SessionOutput{TokenOutput: tokens, UserID: u.ID}, nil
 }
 
 // RefreshInput holds refresh token request data.
