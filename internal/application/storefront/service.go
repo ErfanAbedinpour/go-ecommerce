@@ -7,6 +7,7 @@ import (
 	domaincustomer "app/internal/domain/customer"
 	domainproduct "app/internal/domain/product"
 	domainsettings "app/internal/domain/settings"
+	"app/internal/domain/user"
 	apporder "app/internal/application/order"
 	appcart "app/internal/application/cart"
 	"app/internal/infrastructure/email"
@@ -20,6 +21,7 @@ type Service struct {
 	orders     *apporder.Service
 	coupons    domaincoupon.Repository
 	customers  domaincustomer.Repository
+	users      user.Repository
 	settings   domainsettings.Repository
 	carts      *appcart.Service
 	mailer     email.Sender
@@ -33,6 +35,7 @@ func NewService(
 	orders *apporder.Service,
 	coupons domaincoupon.Repository,
 	customers domaincustomer.Repository,
+	users user.Repository,
 	settings domainsettings.Repository,
 	carts *appcart.Service,
 	mailer email.Sender,
@@ -44,6 +47,7 @@ func NewService(
 		orders:     orders,
 		coupons:    coupons,
 		customers:  customers,
+		users:      users,
 		settings:   settings,
 		carts:      carts,
 		mailer:     mailer,
