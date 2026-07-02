@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// UserModel is the GORM model for admin_users table.
+// UserModel is the GORM model for users table.
 type UserModel struct {
 	ID           uuid.UUID      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	Email        string         `gorm:"type:varchar(255);uniqueIndex;not null"`
@@ -23,17 +23,17 @@ type UserModel struct {
 	DeletedAt    gorm.DeletedAt `gorm:"index"`
 }
 
-func (UserModel) TableName() string { return "admin_users" }
+func (UserModel) TableName() string { return "users" }
 
 // RefreshTokenModel is the GORM model for refresh_tokens table.
 type RefreshTokenModel struct {
-	ID          uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	AdminUserID uuid.UUID  `gorm:"type:uuid;not null;index;column:admin_user_id"`
-	TokenHash   string     `gorm:"type:varchar(255);not null;index"`
-	FamilyID    uuid.UUID  `gorm:"type:uuid;not null"`
-	ExpiresAt   time.Time  `gorm:"type:timestamptz;not null"`
-	RevokedAt   *time.Time `gorm:"type:timestamptz"`
-	CreatedAt   time.Time  `gorm:"type:timestamptz;not null;autoCreateTime"`
+	ID        uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	UserID    uuid.UUID  `gorm:"type:uuid;not null;index;column:user_id"`
+	TokenHash string     `gorm:"type:varchar(255);not null;index"`
+	FamilyID  uuid.UUID  `gorm:"type:uuid;not null"`
+	ExpiresAt time.Time  `gorm:"type:timestamptz;not null"`
+	RevokedAt *time.Time `gorm:"type:timestamptz"`
+	CreatedAt time.Time  `gorm:"type:timestamptz;not null;autoCreateTime"`
 }
 
 func (RefreshTokenModel) TableName() string { return "refresh_tokens" }
