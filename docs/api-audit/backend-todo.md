@@ -291,7 +291,7 @@
 - [x] JWT authentication middleware
 - [x] Role guards (admin, customer)
 - [x] Rate limiting on auth and checkout
-- [x] Redis response cache on product list + homepage
+- [x] PostgreSQL-backed server-side cart (`carts`, `cart_items`)
 - [x] Audit log middleware on admin mutations
 - [ ] Consistent `*_toman` integer types across all store DTOs
 - [ ] OpenAPI/Swagger sync with actual sort param values and newly added routes
