@@ -29,5 +29,7 @@ type Repository interface {
 	RestoreInventory(ctx context.Context, items []Item) error
 	NextOrderNumber(ctx context.Context) (string, error)
 	IncrementCouponUsage(ctx context.Context, couponID uuid.UUID) error
+	DecrementCouponUsage(ctx context.Context, couponID uuid.UUID) error
+	FindExpiredUnpaid(ctx context.Context, before time.Time, limit int) ([]Order, error)
 	CountByStatus(ctx context.Context, status Status) (int64, error)
 }
