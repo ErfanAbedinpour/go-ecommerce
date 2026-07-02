@@ -16,11 +16,11 @@ import (
 )
 
 var allowedUserSorts = map[string]string{
-	"created_at": "admin_users.created_at",
-	"email":      "admin_users.email",
-	"first_name": "admin_users.first_name",
-	"last_name":  "admin_users.last_name",
-	"updated_at": "admin_users.updated_at",
+	"created_at": "users.created_at",
+	"email":      "users.email",
+	"first_name": "users.first_name",
+	"last_name":  "users.last_name",
+	"updated_at": "users.updated_at",
 }
 
 // UserRepository implements user.Repository using GORM.
@@ -54,6 +54,24 @@ func (r *UserRepository) Create(ctx context.Context, u *user.User) error {
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*user.User, error) {
 	var m models.UserModel
 	err := r.db.WithContext(ctx).Where("email = ?", email).First(&m).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, user.ErrNotFound
+		}
+		return nil, err
+	}
+	return toUserDomain(&m), nil
+}
+
+func (r *UserRepository) FindByPhone(ctx context.Context, phone string) (*user.User, error) {
+	phone = strings.TrimSpace(phone)
+	if phone == "" {
+		return nil, user.ErrNotFound
+	}
+	var m models.UserModel
+	err := r.db.WithContext(ctx).
+		Where("phone IS NOT NULL AND TRIM(phone) = ?", phone).
+		First(&m).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, user.ErrNotFound
