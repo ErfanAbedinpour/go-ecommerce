@@ -18,9 +18,9 @@ import (
 
 var allowedCustomerSorts = map[string]string{
 	"created_at":   "customers.created_at",
-	"email":        "customers.email",
-	"first_name":   "customers.first_name",
-	"last_name":    "customers.last_name",
+	"email":        "COALESCE(users.email, customers.email)",
+	"first_name":   "COALESCE(users.first_name, customers.first_name)",
+	"last_name":    "COALESCE(users.last_name, customers.last_name)",
 	"total_orders": "customers.total_orders",
 	"total_spent":  "customers.total_spent",
 	"updated_at":   "customers.updated_at",
@@ -45,89 +45,178 @@ func NewCustomerRepository(db *gorm.DB) *CustomerRepository {
 
 func (r *CustomerRepository) Create(ctx context.Context, c *customer.Customer) error {
 	m := toCustomerModel(c)
-	if err := r.db.WithContext(ctx).Create(m).Error; err != nil {
-		return err
-	}
-	return nil
+	return r.db.WithContext(ctx).Create(m).Error
 }
 
 func (r *CustomerRepository) FindByUserID(ctx context.Context, userID uuid.UUID) (*customer.Customer, error) {
-	var m models.CustomerModel
-	err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&m).Error
+	var row customerRow
+	err := customerSelectQuery(r.db.WithContext(ctx)).
+		Where("customers.user_id = ?", userID).
+		First(&row).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, customer.ErrNotFound
 		}
 		return nil, err
 	}
-	return toCustomerDomain(&m), nil
+	return toCustomerDomainFromRow(&row), nil
 }
 
 func (r *CustomerRepository) FindByID(ctx context.Context, id uuid.UUID) (*customer.Customer, error) {
-	var m models.CustomerModel
-	err := r.db.WithContext(ctx).Where("id = ?", id).First(&m).Error
+	var row customerRow
+	err := customerSelectQuery(r.db.WithContext(ctx)).
+		Where("customers.id = ?", id).
+		First(&row).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, customer.ErrNotFound
 		}
 		return nil, err
 	}
-	return toCustomerDomain(&m), nil
+	return toCustomerDomainFromRow(&row), nil
 }
 
 func (r *CustomerRepository) List(ctx context.Context, filter customer.ListFilter, page pagination.Params) ([]customer.Customer, int64, error) {
-	query := r.applyListFilters(r.db.WithContext(ctx).Model(&models.CustomerModel{}), filter)
+	base := customerSelectQuery(r.db.WithContext(ctx))
+	base = r.applyListFilters(base, filter)
 
 	var total int64
-	if err := query.Count(&total).Error; err != nil {
+	if err := base.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	var items []models.CustomerModel
-	err := query.
+	var rows []customerRow
+	err := base.
 		Order(r.customerOrderClause(page)).
 		Offset(page.Offset()).
 		Limit(page.Limit()).
-		Find(&items).Error
+		Find(&rows).Error
 	if err != nil {
 		return nil, 0, err
 	}
-	return toCustomersDomain(items), total, nil
+	return toCustomersDomain(rows), total, nil
 }
 
 func (r *CustomerRepository) FindByEmail(ctx context.Context, email string) (*customer.Customer, error) {
-	var m models.CustomerModel
-	err := r.db.WithContext(ctx).Where("email = ?", strings.ToLower(strings.TrimSpace(email))).First(&m).Error
+	normalized := strings.ToLower(strings.TrimSpace(email))
+	var row customerRow
+	err := customerSelectQuery(r.db.WithContext(ctx)).
+		Where(
+			"(customers.type = 'guest' AND LOWER(customers.email) = ?) OR (customers.user_id IS NOT NULL AND LOWER(users.email) = ?)",
+			normalized, normalized,
+		).
+		First(&row).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, customer.ErrNotFound
 		}
 		return nil, err
 	}
-	return toCustomerDomain(&m), nil
+	return toCustomerDomainFromRow(&row), nil
+}
+
+func (r *CustomerRepository) FindGuestByEmail(ctx context.Context, email string) (*customer.Customer, error) {
+	normalized := strings.ToLower(strings.TrimSpace(email))
+	if normalized == "" {
+		return nil, customer.ErrNotFound
+	}
+	var row customerRow
+	err := customerSelectQuery(r.db.WithContext(ctx)).
+		Where("customers.type = ? AND LOWER(customers.email) = ?", customer.TypeGuest.String(), normalized).
+		Order("customers.last_order_at DESC NULLS LAST, customers.created_at DESC").
+		First(&row).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, customer.ErrNotFound
+		}
+		return nil, err
+	}
+	return toCustomerDomainFromRow(&row), nil
+}
+
+func (r *CustomerRepository) FindGuestByPhone(ctx context.Context, phone string) (*customer.Customer, error) {
+	phone = strings.TrimSpace(phone)
+	if phone == "" {
+		return nil, customer.ErrNotFound
+	}
+	var row customerRow
+	err := customerSelectQuery(r.db.WithContext(ctx)).
+		Where("customers.type = ? AND TRIM(customers.phone) = ?", customer.TypeGuest.String(), phone).
+		Order("customers.last_order_at DESC NULLS LAST, customers.created_at DESC").
+		First(&row).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, customer.ErrNotFound
+		}
+		return nil, err
+	}
+	return toCustomerDomainFromRow(&row), nil
+}
+
+func (r *CustomerRepository) FindRegisteredByPhone(ctx context.Context, phone string) (*customer.Customer, error) {
+	phone = strings.TrimSpace(phone)
+	if phone == "" {
+		return nil, customer.ErrNotFound
+	}
+	var row customerRow
+	err := customerSelectQuery(r.db.WithContext(ctx)).
+		Where("customers.user_id IS NOT NULL AND users.phone IS NOT NULL AND TRIM(users.phone) = ?", phone).
+		First(&row).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, customer.ErrNotFound
+		}
+		return nil, err
+	}
+	return toCustomerDomainFromRow(&row), nil
 }
 
 func (r *CustomerRepository) Update(ctx context.Context, c *customer.Customer) error {
-	m := toCustomerModel(c)
-	result := r.db.WithContext(ctx).
-		Model(&models.CustomerModel{}).
-		Where("id = ?", c.ID).
-		Updates(map[string]any{
-			"user_id":    m.UserID,
-			"email":      m.Email,
-			"first_name": m.FirstName,
-			"last_name":  m.LastName,
-			"phone":      m.Phone,
-			"type":       m.Type,
-			"updated_at": m.UpdatedAt,
-		})
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return customer.ErrNotFound
-	}
-	return nil
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if c.UserID != nil {
+			result := tx.Model(&models.UserModel{}).
+				Where("id = ? AND deleted_at IS NULL", *c.UserID).
+				Updates(userIdentityUpdates(c))
+			if result.Error != nil {
+				return result.Error
+			}
+			if result.RowsAffected == 0 {
+				return customer.ErrNotFound
+			}
+		}
+
+		m := toCustomerModel(c)
+		updates := map[string]any{
+			"user_id":       m.UserID,
+			"type":          m.Type,
+			"total_orders":  m.TotalOrders,
+			"total_spent":   m.TotalSpent,
+			"last_order_at": m.LastOrderAt,
+			"updated_at":    m.UpdatedAt,
+		}
+		if c.UserID != nil {
+			updates["email"] = nil
+			updates["first_name"] = nil
+			updates["last_name"] = nil
+			updates["phone"] = nil
+		} else {
+			updates["email"] = m.Email
+			updates["first_name"] = m.FirstName
+			updates["last_name"] = m.LastName
+			updates["phone"] = m.Phone
+		}
+
+		result := tx.Model(&models.CustomerModel{}).
+			Where("id = ?", c.ID).
+			Updates(updates)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return customer.ErrNotFound
+		}
+		return nil
+	})
 }
 
 func (r *CustomerRepository) Delete(ctx context.Context, id uuid.UUID) error {
@@ -156,8 +245,23 @@ func (r *CustomerRepository) HasOrders(ctx context.Context, customerID uuid.UUID
 }
 
 func (r *CustomerRepository) GetLastOrderAt(ctx context.Context, customerID uuid.UUID) (*time.Time, error) {
-	var createdAt time.Time
+	var customerModel models.CustomerModel
 	err := r.db.WithContext(ctx).
+		Select("last_order_at").
+		Where("id = ?", customerID).
+		First(&customerModel).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, customer.ErrNotFound
+		}
+		return nil, err
+	}
+	if customerModel.LastOrderAt != nil {
+		return customerModel.LastOrderAt, nil
+	}
+
+	var createdAt time.Time
+	err = r.db.WithContext(ctx).
 		Model(&models.OrderModel{}).
 		Select("created_at").
 		Where("customer_id = ?", customerID).
@@ -253,12 +357,15 @@ func (r *CustomerRepository) applyListFilters(query *gorm.DB, filter customer.Li
 	if filter.Query != "" {
 		pattern := "%" + strings.ToLower(filter.Query) + "%"
 		query = query.Where(
-			"LOWER(email) LIKE ? OR LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(CONCAT(first_name, ' ', last_name)) LIKE ?",
+			`LOWER(COALESCE(users.email, customers.email)) LIKE ?
+			 OR LOWER(COALESCE(users.first_name, customers.first_name)) LIKE ?
+			 OR LOWER(COALESCE(users.last_name, customers.last_name)) LIKE ?
+			 OR LOWER(CONCAT(COALESCE(users.first_name, customers.first_name), ' ', COALESCE(users.last_name, customers.last_name))) LIKE ?`,
 			pattern, pattern, pattern, pattern,
 		)
 	}
 	if filter.Type != nil {
-		query = query.Where("type = ?", filter.Type.String())
+		query = query.Where("customers.type = ?", filter.Type.String())
 	}
 	return query
 }
@@ -291,6 +398,41 @@ func (r *CustomerRepository) Count(ctx context.Context) (int64, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&models.CustomerModel{}).Count(&count).Error
 	return count, err
+}
+
+func (r *CustomerRepository) RecordOrderPlaced(ctx context.Context, customerID uuid.UUID, orderTotal float64, orderedAt time.Time) error {
+	result := r.db.WithContext(ctx).Exec(`
+		UPDATE customers
+		SET total_orders = total_orders + 1,
+		    total_spent = total_spent + ?,
+		    last_order_at = GREATEST(COALESCE(last_order_at, ?), ?),
+		    updated_at = NOW()
+		WHERE id = ?
+	`, orderTotal, orderedAt, orderedAt, customerID)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return customer.ErrNotFound
+	}
+	return nil
+}
+
+func (r *CustomerRepository) RecordOrderCancelled(ctx context.Context, customerID uuid.UUID, orderTotal float64) error {
+	result := r.db.WithContext(ctx).Exec(`
+		UPDATE customers
+		SET total_orders = GREATEST(total_orders - 1, 0),
+		    total_spent = GREATEST(total_spent - ?, 0),
+		    updated_at = NOW()
+		WHERE id = ?
+	`, orderTotal, customerID)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return customer.ErrNotFound
+	}
+	return nil
 }
 
 var _ customer.Repository = (*CustomerRepository)(nil)
