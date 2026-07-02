@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	appcart "app/internal/application/cart"
 	"app/internal/application/auth"
 	dtoresponse "app/internal/interfaces/http/dto/response"
 	"app/internal/interfaces/http/dto/request"
@@ -18,13 +19,14 @@ var _ = dtoresponse.TokenResponse{}
 // AuthHandler handles authentication HTTP endpoints.
 type AuthHandler struct {
 	authService *auth.AuthService
+	carts       *appcart.Service
 	validator   *validator.Validator
 	log         *slog.Logger
 }
 
 // NewAuthHandler creates a new AuthHandler.
-func NewAuthHandler(authService *auth.AuthService, v *validator.Validator, log *slog.Logger) *AuthHandler {
-	return &AuthHandler{authService: authService, validator: v, log: log}
+func NewAuthHandler(authService *auth.AuthService, carts *appcart.Service, v *validator.Validator, log *slog.Logger) *AuthHandler {
+	return &AuthHandler{authService: authService, carts: carts, validator: v, log: log}
 }
 
 // Login godoc
@@ -46,7 +48,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokens, err := h.authService.Login(r.Context(), auth.LoginInput{
+	session, err := h.authService.Login(r.Context(), auth.LoginInput{
 		Email:    req.Email,
 		Password: req.Password,
 	})
@@ -55,7 +57,12 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.OK(w, tokens)
+	if err := MergeGuestCartIfNeeded(r.Context(), r, h.carts, OwnerWithUser(r, session.UserID)); err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	response.OK(w, session.TokenOutput)
 }
 
 // Refresh godoc
@@ -159,7 +166,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokens, err := h.authService.Signup(r.Context(), auth.SignupInput{
+	session, err := h.authService.Signup(r.Context(), auth.SignupInput{
 		Email:     req.Email,
 		Password:  req.Password,
 		FirstName: req.FirstName,
@@ -171,7 +178,12 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.Created(w, tokens)
+	if err := MergeGuestCartIfNeeded(r.Context(), r, h.carts, OwnerWithUser(r, session.UserID)); err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	response.Created(w, session.TokenOutput)
 }
 
 // ForgotPassword godoc
