@@ -54,7 +54,7 @@ func toUsersDomain(items []models.UserModel) []user.User {
 func toRefreshTokenDomain(m *models.RefreshTokenModel) *user.RefreshToken {
 	return &user.RefreshToken{
 		ID:        m.ID,
-		UserID:    m.AdminUserID,
+		UserID:    m.UserID,
 		TokenHash: m.TokenHash,
 		FamilyID:  m.FamilyID,
 		ExpiresAt: m.ExpiresAt,
