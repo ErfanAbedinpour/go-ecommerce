@@ -34,6 +34,7 @@ func toOrderDomain(m *models.OrderModel, customer *order.CustomerSnapshot) (*ord
 	if m.TransactionID != nil {
 		o.TransactionID = *m.TransactionID
 	}
+	o.PaymentExpiresAt = m.PaymentExpiresAt
 
 	billing, err := parseAddressJSON(m.BillingAddress)
 	if err != nil {
@@ -145,6 +146,7 @@ func toOrderModel(o *order.Order) (*models.OrderModel, error) {
 	if o.TransactionID != "" {
 		m.TransactionID = &o.TransactionID
 	}
+	m.PaymentExpiresAt = o.PaymentExpiresAt
 	return m, nil
 }
 
