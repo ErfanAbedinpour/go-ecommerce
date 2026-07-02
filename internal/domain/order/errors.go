@@ -1,37 +1,34 @@
 package order
 
-import "app/pkg/apperror"
+import (
+	"app/pkg/apperror"
+	"app/pkg/i18n"
+)
 
 var (
 	ErrNotFound = apperror.NotFound("order")
 
-	ErrInvalidStatusTransition = apperror.New(
+	ErrInvalidStatusTransition = apperror.Keyed(
 		apperror.CodeInvalidStatus,
+		i18n.KeyOrderInvalidStatusTransition,
 		"invalid order status transition",
 		422,
 	)
-
-	ErrCannotCancel = apperror.Unprocessable("order cannot be cancelled in its current state")
-
-	ErrCannotRefund = apperror.Unprocessable("order cannot be refunded in its current state")
-
-	ErrInvalidRefundAmount = apperror.Validation("invalid refund amount", map[string]string{
-		"amount": "must be greater than 0 and not exceed order total",
+	ErrCannotCancel = apperror.UnprocessableKeyed(i18n.KeyOrderCannotCancel, "order cannot be cancelled in its current state")
+	ErrCannotRefund = apperror.UnprocessableKeyed(i18n.KeyOrderCannotRefund, "order cannot be refunded in its current state")
+	ErrInvalidRefundAmount = apperror.ValidationKeyed(i18n.KeyOrderInvalidRefundAmount, "invalid refund amount", map[string]string{
+		"amount": "must be greater than zero and not exceed order total",
 	})
-
-	ErrInsufficientStock = apperror.Unprocessable("insufficient product stock")
-
-	ErrEmptyOrder = apperror.Validation("order must contain at least one item", map[string]string{
-		"items": "required",
+	ErrInsufficientStock = apperror.UnprocessableKeyed(i18n.KeyOrderInsufficientStock, "insufficient product stock")
+	ErrEmptyOrder = apperror.ValidationKeyed(i18n.KeyOrderEmpty, "order must contain at least one item", map[string]string{
+		"items": "at least one item is required",
 	})
-
-	ErrInvalidSKU = apperror.Validation("invalid product sku", map[string]string{
-		"sku_id": "sku does not belong to product",
+	ErrInvalidSKU = apperror.ValidationKeyed(i18n.KeyOrderInvalidSKU, "invalid product sku", map[string]string{
+		"sku_id": "sku does not belong to the product",
 	})
-
-	ErrInvalidDateRange = apperror.Validation("invalid date range", map[string]string{
-		"from": "must be before or equal to to",
+	ErrInvalidDateRange = apperror.ValidationKeyed(i18n.KeyOrderInvalidDateRange, "invalid date range", map[string]string{
+		"date_range": "start date must be before end date",
 	})
-
-	ErrPaymentAlreadyPaid = apperror.Conflict("order is already paid")
+	ErrPaymentAlreadyPaid = apperror.ConflictKeyed(i18n.KeyOrderPaymentAlreadyPaid, "order is already paid")
+	ErrPaymentExpired     = apperror.UnprocessableKeyed(i18n.KeyOrderPaymentExpired, "order payment window has expired")
 )
