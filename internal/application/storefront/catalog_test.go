@@ -108,7 +108,7 @@ func TestGetProduct_ActiveOnly(t *testing.T) {
 			id: {ID: id, Slug: "draft-item", Status: domainproduct.StatusDraft, Price: 1000},
 		},
 	}
-	svc := NewService(repo, catalogCategoryRepo{}, nil, nil, nil, nil, nil, nil, noopMailer{})
+	svc := NewService(repo, catalogCategoryRepo{}, nil, nil, nil, nil, nil, nil, nil, noopMailer{})
 
 	_, err := svc.GetProduct(context.Background(), id.String())
 	if err != domainproduct.ErrNotFound {
@@ -123,7 +123,7 @@ func TestGetProduct_BySlug(t *testing.T) {
 			"blue-shirt": {ID: id, Slug: "blue-shirt", Name: "Blue Shirt", Status: domainproduct.StatusActive, Price: 120000},
 		},
 	}
-	svc := NewService(repo, catalogCategoryRepo{}, nil, nil, nil, nil, nil, nil, noopMailer{})
+	svc := NewService(repo, catalogCategoryRepo{}, nil, nil, nil, nil, nil, nil, nil, noopMailer{})
 
 	out, err := svc.GetProduct(context.Background(), "blue-shirt")
 	if err != nil {
@@ -141,7 +141,7 @@ func TestListProducts_ReturnsActiveOnly(t *testing.T) {
 			{ID: activeID, Slug: "active-one", Name: "Active", Status: domainproduct.StatusActive, Price: 50000},
 		},
 	}
-	svc := NewService(repo, catalogCategoryRepo{}, nil, nil, nil, nil, nil, nil, noopMailer{})
+	svc := NewService(repo, catalogCategoryRepo{}, nil, nil, nil, nil, nil, nil, nil, noopMailer{})
 
 	out, err := svc.ListProducts(context.Background(), domainproduct.StoreListFilter{}, pagination.Params{Page: 1, PerPage: 20})
 	if err != nil {
