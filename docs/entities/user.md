@@ -1,12 +1,12 @@
-# User (Admin)
+# User
 
 ## Purpose
 
-Represents authenticated back-office operators who manage the ecommerce platform. Distinct from storefront **customers** (buyers), though both share the `admin_users` table with role-based access.
+Represents every authenticated account in the platform: **admin** operators (back-office) and **customer** shoppers (storefront). Both roles live in the `users` table; access is controlled by the `role` column.
 
 ## Description
 
-The `User` aggregate (`internal/domain/user/entity.go`) maps to the `admin_users` database table. Admin users authenticate via JWT (login/refresh) and access all `/api/v1/admin/*` routes. Passwords are stored as bcrypt hashes; they are never exposed in API responses.
+The `User` aggregate (`internal/domain/user/entity.go`) maps to the `users` database table. Users authenticate via JWT (login/refresh). Admins access `/api/v1/admin/*`; customers access storefront account routes. Passwords are stored as bcrypt hashes; they are never exposed in API responses.
 
 Related entities: `RefreshToken` (session rotation), `PasswordResetToken` (forgot-password flow).
 
@@ -43,7 +43,7 @@ Related entities: `RefreshToken` (session rotation), `PasswordResetToken` (forgo
 | Name | Type | Nullable | Default | Validation | Description |
 |------|------|----------|---------|------------|-------------|
 | `id` | UUID | No | `gen_random_uuid()` | — | Token record ID |
-| `user_id` | UUID | No | — | FK → `admin_users.id` | Token owner |
+| `user_id` | UUID | No | — | FK → `users.id` | Token owner |
 | `token_hash` | string | No | — | SHA-256 of raw token | Lookup key |
 | `family_id` | UUID | No | — | — | Rotation family for reuse detection |
 | `expires_at` | timestamp | No | — | Future UTC | Expiry |
@@ -253,4 +253,4 @@ Soft-delete user.
 
 - Entity: `internal/domain/user/entity.go`
 - Role: `internal/domain/user/role.go`
-- Table: `admin_users` (migration `000001_init_schema.up.sql`)
+- Table: `users` (migration `000001_init_schema.up.sql`, renamed from `admin_users` in `000018_rename_admin_users_to_users.up.sql`)
