@@ -552,7 +552,7 @@ The UI **Users** section maps to **storefront customers** (not admin panel accou
 **Gaps:**
 - UI has edit/delete user actions — no `PUT` / `DELETE` customer endpoints.
 - UI shows `last_order` date on detail — not a dedicated field (derive from order history).
-- **Admin users** (`admin_users` table) are separate; no `/api/v1/admin/users` API for staff management.
+- **Accounts** (`users` table) hold login credentials for admins and customers; `/api/v1/admin/users` manages staff accounts.
 
 ---
 
