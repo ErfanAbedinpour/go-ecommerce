@@ -20,11 +20,12 @@ import (
 
 // Service handles order management use cases.
 type Service struct {
-	repo      domain.Repository
-	products  domainproduct.Repository
-	customers domaincustomer.Repository
-	coupons   domaincoupon.Repository
-	settings  domainsettings.Repository
+	repo        domain.Repository
+	products    domainproduct.Repository
+	customers   domaincustomer.Repository
+	coupons     domaincoupon.Repository
+	settings    domainsettings.Repository
+	paymentTTL  time.Duration
 }
 
 // NewService creates a new order Service.
@@ -34,13 +35,15 @@ func NewService(
 	customers domaincustomer.Repository,
 	coupons domaincoupon.Repository,
 	settings domainsettings.Repository,
+	paymentTTL time.Duration,
 ) *Service {
 	return &Service{
-		repo:      repo,
-		products:  products,
-		customers: customers,
-		coupons:   coupons,
-		settings:  settings,
+		repo:       repo,
+		products:   products,
+		customers:  customers,
+		coupons:    coupons,
+		settings:   settings,
+		paymentTTL: paymentTTL,
 	}
 }
 
@@ -200,8 +203,134 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*domain.Order,
 		}
 	}
 
+	if err := s.customers.RecordOrderPlaced(ctx, input.CustomerID, total, now); err != nil {
+		return nil, err
+	}
+
 	note := "Manual order created"
 	if err := s.recordHistory(ctx, orderID, nil, domain.StatusPending, note, input.ChangedBy, now); err != nil {
+		return nil, err
+	}
+
+	return s.repo.FindByID(ctx, orderID)
+}
+
+// SnapshotLineItem is a priced checkout line used to create an order without recomputing totals.
+type SnapshotLineItem struct {
+	ProductID   uuid.UUID
+	ProductName string
+	ProductSKU  string
+	Quantity    int
+	UnitPrice   float64
+	TotalPrice  float64
+}
+
+// CreateFromSnapshotInput holds quote-locked checkout data for storefront order placement.
+type CreateFromSnapshotInput struct {
+	CustomerID      uuid.UUID
+	CouponID        *uuid.UUID
+	Subtotal        float64
+	DiscountAmount  float64
+	ShippingAmount  float64
+	TaxAmount       float64
+	Total           float64
+	Items           []SnapshotLineItem
+	BillingAddress  domain.Address
+	ShippingAddress domain.Address
+	PaymentMethod   string
+	Notes           string
+}
+
+// CreateFromSnapshot creates a storefront order from a checkout pricing snapshot.
+func (s *Service) CreateFromSnapshot(ctx context.Context, input CreateFromSnapshotInput) (*domain.Order, error) {
+	if len(input.Items) == 0 {
+		return nil, domain.ErrEmptyOrder
+	}
+
+	if _, err := s.customers.FindByID(ctx, input.CustomerID); err != nil {
+		return nil, err
+	}
+
+	if input.CouponID != nil {
+		coupon, err := s.coupons.FindByID(ctx, *input.CouponID)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := coupon.CalculateDiscount(input.Subtotal); err != nil {
+			return nil, err
+		}
+	}
+
+	subtotal := roundMoney(input.Subtotal)
+	discountAmount := roundMoney(input.DiscountAmount)
+	shippingAmount := roundMoney(input.ShippingAmount)
+	taxAmount := roundMoney(input.TaxAmount)
+	total := roundMoney(input.Total)
+	expectedTotal := roundMoney(subtotal - discountAmount + shippingAmount + taxAmount)
+	if total != expectedTotal {
+		return nil, apperror.Conflict("checkout total does not match pricing snapshot")
+	}
+
+	orderNumber, err := s.repo.NextOrderNumber(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now().UTC()
+	expiresAt := now.Add(s.paymentTTL)
+	orderID := uuid.New()
+
+	items := make([]domain.Item, len(input.Items))
+	for i, line := range input.Items {
+		items[i] = domain.Item{
+			ID:          uuid.New(),
+			OrderID:     orderID,
+			ProductID:   line.ProductID,
+			ProductName: line.ProductName,
+			ProductSKU:  line.ProductSKU,
+			Quantity:    line.Quantity,
+			UnitPrice:   line.UnitPrice,
+			TotalPrice:  line.TotalPrice,
+		}
+	}
+
+	o := &domain.Order{
+		ID:               orderID,
+		OrderNumber:      orderNumber,
+		CustomerID:       input.CustomerID,
+		CouponID:         input.CouponID,
+		Status:           domain.StatusPending,
+		PaymentStatus:    domain.PaymentUnpaid,
+		Subtotal:         subtotal,
+		DiscountAmount:   discountAmount,
+		ShippingAmount:   shippingAmount,
+		TaxAmount:        taxAmount,
+		Total:            total,
+		Notes:            input.Notes,
+		PaymentMethod:    input.PaymentMethod,
+		PaymentExpiresAt: &expiresAt,
+		BillingAddress:   input.BillingAddress,
+		ShippingAddress:  input.ShippingAddress,
+		Items:            items,
+		CreatedAt:        now,
+		UpdatedAt:        now,
+	}
+
+	if err := s.repo.Create(ctx, o); err != nil {
+		return nil, err
+	}
+
+	if input.CouponID != nil {
+		if err := s.repo.IncrementCouponUsage(ctx, *input.CouponID); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := s.customers.RecordOrderPlaced(ctx, input.CustomerID, total, now); err != nil {
+		return nil, err
+	}
+
+	if err := s.recordHistory(ctx, orderID, nil, domain.StatusPending, "Storefront order created", uuid.Nil, now); err != nil {
 		return nil, err
 	}
 
@@ -312,12 +441,71 @@ func (s *Service) UpdateStatus(ctx context.Context, id uuid.UUID, input UpdateSt
 	}
 
 	if newStatus == domain.StatusCancelled {
-		if err := s.repo.RestoreInventory(ctx, order.Items); err != nil {
+		if err := s.revertOrderEffects(ctx, order); err != nil {
 			return nil, err
 		}
 	}
 
 	return s.repo.FindByID(ctx, id)
+}
+
+// CancelUnpaidPayment cancels a pending unpaid order after failed payment.
+func (s *Service) CancelUnpaidPayment(ctx context.Context, id uuid.UUID, note string) (*domain.Order, error) {
+	order, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if order.Status != domain.StatusPending || order.PaymentStatus != domain.PaymentUnpaid {
+		return order, nil
+	}
+
+	fromStatus := order.Status
+	order.Status = domain.StatusCancelled
+	order.UpdatedAt = time.Now().UTC()
+
+	if err := s.repo.Update(ctx, order); err != nil {
+		return nil, err
+	}
+
+	if err := s.recordHistory(ctx, order.ID, &fromStatus, domain.StatusCancelled, note, uuid.Nil, order.UpdatedAt); err != nil {
+		return nil, err
+	}
+
+	if err := s.revertOrderEffects(ctx, order); err != nil {
+		return nil, err
+	}
+
+	return s.repo.FindByID(ctx, id)
+}
+
+// ExpireUnpaidOrders cancels unpaid orders past their payment window and restores stock.
+func (s *Service) ExpireUnpaidOrders(ctx context.Context, limit int) (int, error) {
+	orders, err := s.repo.FindExpiredUnpaid(ctx, time.Now().UTC(), limit)
+	if err != nil {
+		return 0, err
+	}
+
+	expired := 0
+	for _, o := range orders {
+		if _, err := s.CancelUnpaidPayment(ctx, o.ID, "Payment window expired"); err != nil {
+			continue
+		}
+		expired++
+	}
+	return expired, nil
+}
+
+func (s *Service) revertOrderEffects(ctx context.Context, order *domain.Order) error {
+	if err := s.repo.RestoreInventory(ctx, order.Items); err != nil {
+		return err
+	}
+	if order.CouponID != nil {
+		if err := s.repo.DecrementCouponUsage(ctx, *order.CouponID); err != nil {
+			return err
+		}
+	}
+	return s.customers.RecordOrderCancelled(ctx, order.CustomerID, order.Total)
 }
 
 // Cancel cancels a pending or processing order and restores inventory.
@@ -343,7 +531,7 @@ func (s *Service) Cancel(ctx context.Context, id uuid.UUID, changedBy uuid.UUID)
 		return nil, err
 	}
 
-	if err := s.repo.RestoreInventory(ctx, order.Items); err != nil {
+	if err := s.revertOrderEffects(ctx, order); err != nil {
 		return nil, err
 	}
 
@@ -396,10 +584,19 @@ type ConfirmPaymentInput struct {
 }
 
 // ConfirmPayment marks an unpaid order as paid after successful gateway callback.
+// Future: transition status to processing and send confirmation email via OnPaymentConfirmed.
 func (s *Service) ConfirmPayment(ctx context.Context, input ConfirmPaymentInput) (*domain.Order, error) {
 	order, err := s.repo.FindByID(ctx, input.OrderID)
 	if err != nil {
 		return nil, err
+	}
+
+	if order.Status == domain.StatusCancelled {
+		return nil, apperror.Unprocessable("order cannot be paid in its current state")
+	}
+
+	if order.PaymentExpiresAt != nil && time.Now().UTC().After(*order.PaymentExpiresAt) {
+		return nil, domain.ErrPaymentExpired
 	}
 
 	switch order.PaymentStatus {
