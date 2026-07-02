@@ -27,11 +27,15 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"app/internal/config"
 	"app/internal/di"
+	apporder "app/internal/application/order"
 	"app/internal/infrastructure/persistence/postgres"
 	apphttp "app/internal/interfaces/http"
+	"app/internal/interfaces/http/response"
+	"app/pkg/i18n"
 )
 
 func main() {
@@ -47,6 +51,8 @@ func run() error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
+	response.Init(i18n.ParseLocale(cfg.App.Locale))
+
 	container, err := di.New(cfg)
 	if err != nil {
 		return fmt.Errorf("initialize container: %w", err)
@@ -60,6 +66,10 @@ func run() error {
 	}
 
 	router := apphttp.NewRouter(container)
+
+	workerCtx, workerCancel := context.WithCancel(context.Background())
+	defer workerCancel()
+	apporder.StartExpiryWorker(workerCtx, container.OrderService, 15*time.Minute, container.Log)
 
 	server := &http.Server{
 		Addr:         cfg.Server.Addr(),
