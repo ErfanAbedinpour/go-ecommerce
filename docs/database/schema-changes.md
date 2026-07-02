@@ -153,7 +153,7 @@ This document lists all database changes required to support the new UI. Existin
 |--------|------|----------|---------|-------|
 | id | UUID | NO | gen_random_uuid() | PK |
 | theme_id | UUID | NO | — | FK → store_themes |
-| purchased_by | UUID | NO | — | FK → admin_users |
+| purchased_by | UUID | NO | — | FK → `users` |
 | purchased_at | TIMESTAMPTZ | NO | now() | |
 
 **Unique:** `(theme_id, purchased_by)`
@@ -286,7 +286,7 @@ This document lists all database changes required to support the new UI. Existin
 | question | TEXT | NO | — | |
 | answer | TEXT | YES | NULL | Admin response |
 | answered_at | TIMESTAMPTZ | YES | NULL | |
-| answered_by | UUID | YES | NULL | FK → admin_users |
+| answered_by | UUID | YES | NULL | FK → `users` |
 | status | VARCHAR(20) | NO | 'open' | open, answered |
 | created_at | TIMESTAMPTZ | NO | now() | |
 
