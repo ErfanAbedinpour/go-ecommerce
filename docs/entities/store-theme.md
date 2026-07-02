@@ -58,7 +58,7 @@ Maps to `store_themes` and `theme_purchases` tables. Themes have pricing (`price
 |------|------|----------|---------|------------|-------------|
 | `id` | UUID | No | `gen_random_uuid()` | UUID v4 | Primary key |
 | `theme_id` | UUID | No | — | FK → `store_themes.id` | Purchased theme |
-| `purchased_by` | UUID | No | — | FK → `admin_users.id` | Admin who purchased |
+| `purchased_by` | UUID | No | — | FK → `users.id` | Admin who purchased |
 | `purchased_at` | timestamp | No | `now()` | — | Purchase timestamp |
 
 **Unique constraint:** `(theme_id, purchased_by)`
