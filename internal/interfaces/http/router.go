@@ -47,9 +47,11 @@ func NewRouter(c *di.Container) http.Handler {
 		r.Get("/swagger/*", swaggerHandler)
 	}
 
-	// Uploaded files (public static assets)
-	uploadDir := c.Config.Upload.Dir
-	r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadDir))))
+	// Local uploads only — S3/MinIO objects are served directly from object storage.
+	if c.Config.Upload.Provider == "local" {
+		uploadDir := c.Config.Upload.Dir
+		r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadDir))))
+	}
 
 	r.Route("/api/v1", func(r chi.Router) {
 		registerPublicRoutes(r, c)

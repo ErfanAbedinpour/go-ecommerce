@@ -201,7 +201,10 @@ func New(cfg *config.Config) (*Container, error) {
 
 	auditRepo := postgres.NewAuditRepository(db.DB)
 
-	uploader := storage.NewUploader(cfg.Upload)
+	uploader, err := storage.NewUploader(cfg.Upload)
+	if err != nil {
+		return nil, err
+	}
 
 	c := &Container{
 		Config:          cfg,

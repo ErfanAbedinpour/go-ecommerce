@@ -1,0 +1,32 @@
+# Production compose — API only.
+# PostgreSQL and MinIO run separately (managed DB / external object storage).
+#
+# Required on the server:
+#   - .env created manually on the server (never modified by CI)
+#   - API_IMAGE set by the deploy workflow
+#
+# Usage (from /srv/paryab-tools-api on the server):
+#   API_IMAGE=ghcr.io/owner/repo:main-abc123 \
+#     docker compose -f docker/docker-compose.prod.yml up -d
+
+services:
+  api:
+    image: ${API_IMAGE:?API_IMAGE is required}
+    container_name: paryab-tools-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8080}:8080"
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - paryab_network
+
+networks:
+  paryab_network:
+    external: true
