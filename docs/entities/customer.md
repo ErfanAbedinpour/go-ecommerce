@@ -63,6 +63,8 @@ Embedded value object: `Address` (shipping/billing addresses stored in `customer
 ## Business Rules
 
 1. Guest customers are created automatically during guest checkout with `type = guest`.
+2. When a user signs up or logs in with the same email or phone as an existing guest profile, the guest customer row is promoted to `type = registered` and linked via `user_id`. Existing orders remain attached to that customer id.
+3. Guest checkout is blocked when the submitted email or phone belongs to an active registered account (`ACCOUNT_EXISTS_LOGIN_REQUIRED`).
 2. `total_orders` and `total_spent` are incremented atomically when an order is confirmed.
 3. Only one address per customer may have `is_default = true` per address type (recommended).
 4. Deleting a customer is blocked if they have non-terminal orders (recommended).
@@ -223,7 +225,7 @@ Single order detail for authenticated customer.
 |--------|----------|---------|
 | `last_order_at` DB column | Medium | Domain has field; add migration if not computed at query time |
 | Customer address CRUD APIs | High | Admin and storefront address management |
-| Customer signup links to Customer record | High | Currently `admin_users` with role=customer; unify or link |
+| Customer signup links to Customer record | Done | `users` with role=customer linked via `customers.user_id` |
 | Public profile endpoint | High | Storefront account section |
 
 ## Domain Reference
