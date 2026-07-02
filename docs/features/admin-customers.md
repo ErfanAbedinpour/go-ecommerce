@@ -10,7 +10,7 @@
 
 Manage **storefront customers** (not admin staff accounts). The sidebar label "Users" maps to the customers table — registered shoppers and guest checkout records. Admins view customer lists, profiles, purchase history, and can edit or delete customers without orders.
 
-**Note:** Admin staff accounts use a separate `admin_users` table with `/api/v1/admin/users` (future staff management UI).
+**Note:** Staff and customer accounts both live in the `users` table; role distinguishes access. Customer commerce data is in `customers` (`/api/v1/admin/customers`).
 
 ---
 
