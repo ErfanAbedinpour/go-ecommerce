@@ -2,7 +2,6 @@ package http
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
@@ -36,9 +35,17 @@ func NewRouter(c *di.Container) http.Handler {
 	r.Handle("/metrics", promhttp.Handler())
 
 	// Swagger UI and OpenAPI spec
-	r.Get("/swagger/*", httpSwagger.Handler(
+	swaggerHandler := httpSwagger.Handler(
 		httpSwagger.InstanceName(swagger.SwaggerInfo.InstanceName()),
-	))
+	)
+	if c.Config.IsProduction() {
+		r.Route("/swagger", func(r chi.Router) {
+			r.Use(appmiddleware.BasicAuth(c.Config.Swagger.Username, c.Config.Swagger.Password))
+			r.Handle("/*", swaggerHandler)
+		})
+	} else {
+		r.Get("/swagger/*", swaggerHandler)
+	}
 
 	// Uploaded files (public static assets)
 	uploadDir := c.Config.Upload.Dir
@@ -60,6 +67,7 @@ func registerPublicRoutes(r chi.Router, c *di.Container) {
 
 	r.Route("/auth", func(r chi.Router) {
 		r.Use(appmiddleware.RateLimit(authLimiter))
+		r.Use(appmiddleware.CartSession())
 		r.Post("/login", c.Auth.Login)
 		r.Post("/refresh", c.Auth.Refresh)
 		r.Post("/signup", c.Auth.Signup)
@@ -229,15 +237,12 @@ func registerStoreRoutes(r chi.Router, c *di.Container) {
 	contactLimiter := appmiddleware.NewRateLimiter(3, 10)
 
 	r.Route("/store", func(r chi.Router) {
-		r.Group(func(r chi.Router) {
-			r.Use(appmiddleware.Cache(c.RedisCache, 5*time.Minute))
-			r.Get("/products", c.Store.ListProducts)
-			r.Get("/products/search", c.Store.SearchProducts)
-			r.Get("/homepage", c.Store.GetHomepage)
-			r.Get("/categories", c.Store.ListCategories)
-			r.Get("/navigation", c.Store.GetNavigation)
-			r.Get("/theme", c.Store.GetTheme)
-		})
+		r.Get("/products", c.Store.ListProducts)
+		r.Get("/products/search", c.Store.SearchProducts)
+		r.Get("/homepage", c.Store.GetHomepage)
+		r.Get("/categories", c.Store.ListCategories)
+		r.Get("/navigation", c.Store.GetNavigation)
+		r.Get("/theme", c.Store.GetTheme)
 
 		r.Get("/products/{id}/related", c.Store.ListRelatedProducts)
 
@@ -286,6 +291,7 @@ func registerStoreRoutes(r chi.Router, c *di.Container) {
 
 			r.Group(func(r chi.Router) {
 				r.Use(appmiddleware.RateLimit(checkoutLimiter))
+				r.Post("/checkout/validate-customer", c.Store.ValidateGuestCheckoutCustomer)
 				r.Post("/checkout/preview", c.Store.PreviewCheckout)
 				r.Post("/checkout", c.Store.Checkout)
 				r.Post("/checkout/payment/callback", c.Store.PaymentCallback)
