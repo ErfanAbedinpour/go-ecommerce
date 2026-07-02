@@ -15,6 +15,7 @@ import (
 	domaincustomer "app/internal/domain/customer"
 	domainorder "app/internal/domain/order"
 	domainproduct "app/internal/domain/product"
+	"app/internal/domain/user"
 	"app/pkg/apperror"
 )
 
@@ -90,11 +91,24 @@ type CheckoutCustomerInput struct {
 
 // PlaceCheckoutOutput is the placed order response.
 type PlaceCheckoutOutput struct {
-	OrderID       uuid.UUID `json:"order_id"`
-	OrderNumber   string    `json:"order_number"`
-	Status        string    `json:"status"`
-	PaymentStatus string    `json:"payment_status"`
-	TotalToman    int64     `json:"total_toman"`
+	OrderID          uuid.UUID `json:"order_id"`
+	OrderNumber      string    `json:"order_number"`
+	Status           string    `json:"status"`
+	PaymentStatus    string    `json:"payment_status"`
+	TotalToman       int64     `json:"total_toman"`
+	PaymentExpiresAt string    `json:"payment_expires_at,omitempty"`
+}
+
+// CheckoutPricingSnapshot holds quote-locked checkout totals and line items.
+type CheckoutPricingSnapshot struct {
+	Items          []PreviewLineItem
+	Subtotal       float64
+	DiscountAmount float64
+	ShippingAmount float64
+	TaxAmount      float64
+	Total          float64
+	CouponID       *uuid.UUID
+	Coupon         *CouponResult
 }
 
 // CouponValidateInput holds coupon validation request data.
@@ -146,6 +160,27 @@ func (s *Service) ValidateCoupon(ctx context.Context, input CouponValidateInput)
 
 // PreviewCheckout validates the server cart and computes totals without creating an order.
 func (s *Service) PreviewCheckout(ctx context.Context, input PreviewCheckoutInput) (*PreviewCheckoutOutput, error) {
+	snapshot, err := s.buildCheckoutSnapshot(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PreviewCheckoutOutput{
+		Items: snapshot.Items,
+		Summary: CheckoutSummary{
+			SubtotalToman: toMoneyToman(snapshot.Subtotal),
+			DiscountToman: toMoneyToman(snapshot.DiscountAmount),
+			ShippingToman: toMoneyToman(snapshot.ShippingAmount),
+			TaxToman:      toMoneyToman(snapshot.TaxAmount),
+			TotalToman:    toMoneyToman(snapshot.Total),
+			Currency:      "IRT",
+			CurrencyLabel: "تومان",
+		},
+		Coupon: snapshot.Coupon,
+	}, nil
+}
+
+func (s *Service) buildCheckoutSnapshot(ctx context.Context, input PreviewCheckoutInput) (*CheckoutPricingSnapshot, error) {
 	items, err := cartOwnerCheckoutItems(ctx, s.carts, input.Owner)
 	if err != nil {
 		return nil, err
@@ -158,9 +193,11 @@ func (s *Service) PreviewCheckout(ctx context.Context, input PreviewCheckoutInpu
 
 	discount := 0.0
 	var couponResult *CouponResult
+	var couponID *uuid.UUID
 	if input.CouponCode != "" {
+		code := domaincoupon.NormalizeCode(input.CouponCode)
 		result, err := s.ValidateCoupon(ctx, CouponValidateInput{
-			Code:          input.CouponCode,
+			Code:          code,
 			SubtotalToman: toMoneyToman(subtotal),
 		})
 		if err != nil {
@@ -169,6 +206,12 @@ func (s *Service) PreviewCheckout(ctx context.Context, input PreviewCheckoutInpu
 		couponResult = result
 		if result.IsValid {
 			discount = float64(result.DiscountToman)
+			coupon, err := s.coupons.FindByCode(ctx, code)
+			if err != nil {
+				return nil, err
+			}
+			id := coupon.ID
+			couponID = &id
 		}
 	}
 
@@ -186,24 +229,21 @@ func (s *Service) PreviewCheckout(ctx context.Context, input PreviewCheckoutInpu
 		return nil, err
 	}
 
-	return &PreviewCheckoutOutput{
-		Items: lineItems,
-		Summary: CheckoutSummary{
-			SubtotalToman: toMoneyToman(subtotal),
-			DiscountToman: toMoneyToman(discount),
-			ShippingToman: toMoneyToman(shipping),
-			TaxToman:      toMoneyToman(tax),
-			TotalToman:    toMoneyToman(total),
-			Currency:      "IRT",
-			CurrencyLabel: "تومان",
-		},
-		Coupon: couponResult,
+	return &CheckoutPricingSnapshot{
+		Items:          lineItems,
+		Subtotal:       subtotal,
+		DiscountAmount: discount,
+		ShippingAmount: shipping,
+		TaxAmount:      tax,
+		Total:          total,
+		CouponID:       couponID,
+		Coupon:         couponResult,
 	}, nil
 }
 
 // PlaceCheckout creates an unpaid storefront order from the server cart.
 func (s *Service) PlaceCheckout(ctx context.Context, input PlaceCheckoutInput) (*PlaceCheckoutOutput, error) {
-	preview, err := s.PreviewCheckout(ctx, PreviewCheckoutInput{
+	snapshot, err := s.buildCheckoutSnapshot(ctx, PreviewCheckoutInput{
 		Owner:          input.Owner,
 		CouponCode:     input.CouponCode,
 		ShippingMethod: input.ShippingMethod,
@@ -213,13 +253,8 @@ func (s *Service) PlaceCheckout(ctx context.Context, input PlaceCheckoutInput) (
 		return nil, err
 	}
 
-	if unavailable := unavailablePreviewItems(preview.Items); len(unavailable) > 0 {
+	if unavailable := unavailablePreviewItems(snapshot.Items); len(unavailable) > 0 {
 		return nil, stockConflictError(unavailable)
-	}
-
-	items, err := cartOwnerCheckoutItems(ctx, s.carts, input.Owner)
-	if err != nil {
-		return nil, err
 	}
 
 	customerID, err := s.resolveCheckoutCustomer(ctx, input)
@@ -227,25 +262,30 @@ func (s *Service) PlaceCheckout(ctx context.Context, input PlaceCheckoutInput) (
 		return nil, err
 	}
 
-	orderItems := make([]apporder.CreateItemInput, len(items))
-	for i, item := range items {
-		orderItems[i] = apporder.CreateItemInput{
-			ProductID: item.ProductID,
-			SkuID:     item.SkuID,
-			Quantity:  item.Quantity,
+	orderItems := make([]apporder.SnapshotLineItem, len(snapshot.Items))
+	for i, item := range snapshot.Items {
+		orderItems[i] = apporder.SnapshotLineItem{
+			ProductID:   item.ProductID,
+			ProductName: item.ProductName,
+			ProductSKU:  item.SKUCode,
+			Quantity:    item.Quantity,
+			UnitPrice:   float64(item.UnitPriceToman),
+			TotalPrice:  float64(item.LineTotalToman),
 		}
 	}
 
-	order, err := s.orders.Create(ctx, apporder.CreateInput{
+	order, err := s.orders.CreateFromSnapshot(ctx, apporder.CreateFromSnapshotInput{
 		CustomerID:      customerID,
+		CouponID:        snapshot.CouponID,
+		Subtotal:        snapshot.Subtotal,
+		DiscountAmount:  snapshot.DiscountAmount,
+		ShippingAmount:  snapshot.ShippingAmount,
+		TaxAmount:       snapshot.TaxAmount,
+		Total:           snapshot.Total,
 		Items:           orderItems,
-		CouponCode:      input.CouponCode,
-		ShippingAmount:  float64(preview.Summary.ShippingToman),
-		TaxAmount:       float64(preview.Summary.TaxToman),
 		BillingAddress:  input.BillingAddress,
 		ShippingAddress: input.ShippingAddress,
 		PaymentMethod:   input.PaymentMethod,
-		PaymentStatus:   domainorder.PaymentUnpaid.String(),
 		Notes:           input.Notes,
 	})
 	if err != nil {
@@ -256,32 +296,89 @@ func (s *Service) PlaceCheckout(ctx context.Context, input PlaceCheckoutInput) (
 		return nil, err
 	}
 
-	if s.mailer != nil {
-		emailTo := input.Customer.Email
-		if emailTo == "" {
-			customer, err := s.customers.FindByID(ctx, customerID)
-			if err == nil && customer != nil {
-				emailTo = customer.Email
-			}
-		}
-		if emailTo != "" {
-			go func() {
-				_ = s.mailer.SendOrderConfirmation(context.Background(), emailTo, order.OrderNumber, order.Total)
-			}()
-		}
-	}
-
-	return &PlaceCheckoutOutput{
+	out := &PlaceCheckoutOutput{
 		OrderID:       order.ID,
 		OrderNumber:   order.OrderNumber,
 		Status:        order.Status.String(),
 		PaymentStatus: order.PaymentStatus.String(),
 		TotalToman:    toMoneyToman(order.Total),
-	}, nil
+	}
+	if order.PaymentExpiresAt != nil {
+		out.PaymentExpiresAt = order.PaymentExpiresAt.UTC().Format(time.RFC3339)
+	}
+	return out, nil
+}
+
+// ValidateGuestCheckoutCustomerInput holds guest contact info for checkout validation.
+type ValidateGuestCheckoutCustomerInput struct {
+	Email string
+	Phone string
+}
+
+// ValidateGuestCheckoutCustomerOutput confirms guest checkout may proceed.
+type ValidateGuestCheckoutCustomerOutput struct {
+	OK bool `json:"ok"`
+}
+
+// ValidateGuestCheckoutCustomer checks whether a guest may continue checkout with the given contact info.
+func (s *Service) ValidateGuestCheckoutCustomer(ctx context.Context, input ValidateGuestCheckoutCustomerInput) (*ValidateGuestCheckoutCustomerOutput, error) {
+	if err := s.assertGuestCanCheckout(ctx, input.Email, input.Phone); err != nil {
+		return nil, err
+	}
+	return &ValidateGuestCheckoutCustomerOutput{OK: true}, nil
+}
+
+func (s *Service) assertGuestCanCheckout(ctx context.Context, email, phone string) error {
+	email = strings.ToLower(strings.TrimSpace(email))
+	phone = strings.TrimSpace(phone)
+
+	if email != "" {
+		if _, err := s.users.FindByEmail(ctx, email); err == nil {
+			return domaincustomer.ErrAccountExistsLoginRequired
+		} else if err != user.ErrNotFound {
+			return err
+		}
+
+		if existing, err := s.customers.FindByEmail(ctx, email); err == nil {
+			if existing.UserID != nil || existing.Type == domaincustomer.TypeRegistered {
+				return domaincustomer.ErrAccountExistsLoginRequired
+			}
+			if phone != "" && existing.Phone != "" && existing.Phone != phone {
+				return domaincustomer.ErrAccountExistsLoginRequired
+			}
+		} else if err != domaincustomer.ErrNotFound {
+			return err
+		}
+	}
+
+	if phone != "" {
+		if _, err := s.users.FindByPhone(ctx, phone); err == nil {
+			return domaincustomer.ErrAccountExistsLoginRequired
+		} else if err != user.ErrNotFound {
+			return err
+		}
+
+		if _, err := s.customers.FindRegisteredByPhone(ctx, phone); err == nil {
+			return domaincustomer.ErrAccountExistsLoginRequired
+		} else if err != domaincustomer.ErrNotFound {
+			return err
+		}
+
+		if existing, err := s.customers.FindGuestByPhone(ctx, phone); err == nil {
+			if email != "" && existing.Email != "" && strings.ToLower(existing.Email) != email {
+				return domaincustomer.ErrAccountExistsLoginRequired
+			}
+		} else if err != domaincustomer.ErrNotFound {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *Service) resolveCheckoutCustomer(ctx context.Context, input PlaceCheckoutInput) (uuid.UUID, error) {
 	email := strings.ToLower(strings.TrimSpace(input.Customer.Email))
+	phone := strings.TrimSpace(input.Customer.Phone)
 
 	if input.UserID != nil {
 		if existing, err := s.customers.FindByUserID(ctx, *input.UserID); err == nil {
@@ -289,38 +386,91 @@ func (s *Service) resolveCheckoutCustomer(ctx context.Context, input PlaceChecko
 		} else if err != domaincustomer.ErrNotFound {
 			return uuid.Nil, err
 		}
+
+		if email != "" {
+			if existing, err := s.customers.FindByEmail(ctx, email); err == nil {
+				if existing.UserID != nil && *existing.UserID != *input.UserID {
+					return uuid.Nil, domaincustomer.ErrAccountExistsLoginRequired
+				}
+				if existing.UserID == nil {
+					existing.UserID = input.UserID
+					existing.Type = domaincustomer.TypeRegistered
+					existing.UpdatedAt = time.Now().UTC()
+					if err := s.customers.Update(ctx, existing); err != nil {
+						return uuid.Nil, err
+					}
+				}
+				return existing.ID, nil
+			} else if err != domaincustomer.ErrNotFound {
+				return uuid.Nil, err
+			}
+		}
+	} else {
+		if err := s.assertGuestCanCheckout(ctx, email, phone); err != nil {
+			return uuid.Nil, err
+		}
+		return s.resolveGuestCustomer(ctx, input, email, phone)
 	}
 
+	now := time.Now().UTC()
+	userID := input.UserID
+	c := &domaincustomer.Customer{
+		ID:        uuid.New(),
+		UserID:    userID,
+		Type:      domaincustomer.TypeRegistered,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	if err := s.customers.Create(ctx, c); err != nil {
+		return uuid.Nil, err
+	}
+	return c.ID, nil
+}
+
+func (s *Service) resolveGuestCustomer(ctx context.Context, input PlaceCheckoutInput, email, phone string) (uuid.UUID, error) {
+	var byEmail, byPhone *domaincustomer.Customer
+
 	if email != "" {
-		if existing, err := s.customers.FindByEmail(ctx, email); err == nil {
-			if input.UserID != nil && existing.UserID == nil {
-				existing.UserID = input.UserID
-				existing.Type = domaincustomer.TypeRegistered
-				existing.UpdatedAt = time.Now().UTC()
-				if err := s.customers.Update(ctx, existing); err != nil {
-					return uuid.Nil, err
-				}
-			}
-			return existing.ID, nil
+		if guest, err := s.customers.FindGuestByEmail(ctx, email); err == nil {
+			byEmail = guest
+		} else if err != domaincustomer.ErrNotFound {
+			return uuid.Nil, err
+		}
+	}
+	if phone != "" {
+		if guest, err := s.customers.FindGuestByPhone(ctx, phone); err == nil {
+			byPhone = guest
 		} else if err != domaincustomer.ErrNotFound {
 			return uuid.Nil, err
 		}
 	}
 
-	now := time.Now().UTC()
-	customerType := domaincustomer.TypeGuest
-	if input.UserID != nil {
-		customerType = domaincustomer.TypeRegistered
+	if byEmail != nil && byPhone != nil && byEmail.ID != byPhone.ID {
+		return uuid.Nil, domaincustomer.ErrAccountExistsLoginRequired
 	}
 
+	existing := byEmail
+	if existing == nil {
+		existing = byPhone
+	}
+	if existing != nil {
+		if email != "" && existing.Email != "" && strings.ToLower(existing.Email) != email {
+			return uuid.Nil, domaincustomer.ErrAccountExistsLoginRequired
+		}
+		if phone != "" && existing.Phone != "" && existing.Phone != phone {
+			return uuid.Nil, domaincustomer.ErrAccountExistsLoginRequired
+		}
+		return existing.ID, nil
+	}
+
+	now := time.Now().UTC()
 	c := &domaincustomer.Customer{
 		ID:        uuid.New(),
-		UserID:    input.UserID,
+		Type:      domaincustomer.TypeGuest,
 		Email:     email,
 		FirstName: strings.TrimSpace(input.Customer.FirstName),
 		LastName:  strings.TrimSpace(input.Customer.LastName),
-		Phone:     strings.TrimSpace(input.Customer.Phone),
-		Type:      customerType,
+		Phone:     phone,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
