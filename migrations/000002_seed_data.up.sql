@@ -29,16 +29,13 @@ INSERT INTO roles (id, name, description) VALUES
     ('b0000000-0000-0000-0000-000000000003', 'manager', 'Product and order management'),
     ('b0000000-0000-0000-0000-000000000004', 'support', 'Read-only support access');
 
--- Assign all permissions to super_admin
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT 'b0000000-0000-0000-0000-000000000001', id FROM permissions;
 
--- Assign permissions to admin (all except users:delete and users:manage_roles)
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT 'b0000000-0000-0000-0000-000000000002', id FROM permissions
 WHERE name NOT IN ('users:delete', 'users:manage_roles');
 
--- Assign permissions to manager
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT 'b0000000-0000-0000-0000-000000000003', id FROM permissions
 WHERE name IN (
@@ -47,7 +44,6 @@ WHERE name IN (
     'orders:cancel', 'coupons:read', 'customers:read'
 );
 
--- Assign permissions to support
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT 'b0000000-0000-0000-0000-000000000004', id FROM permissions
 WHERE name IN (
@@ -55,9 +51,8 @@ WHERE name IN (
     'orders:read', 'coupons:read', 'customers:read'
 );
 
--- Seed default super admin (password: Admin@123456)
--- bcrypt hash of "Admin@123456" with cost 12
-INSERT INTO admin_users (id, email, password_hash, first_name, last_name, role, is_active)
+-- Default super admin (password: Admin@123456)
+INSERT INTO users (id, email, password_hash, first_name, last_name, role, is_active)
 VALUES (
     'c0000000-0000-0000-0000-000000000001',
     'admin@shop.com',
@@ -68,5 +63,49 @@ VALUES (
     TRUE
 );
 
-INSERT INTO admin_user_roles (admin_user_id, role_id)
+INSERT INTO user_roles (user_id, role_id)
 VALUES ('c0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001');
+
+INSERT INTO store_settings (id) VALUES ('f0000000-0000-0000-0000-000000000001');
+
+INSERT INTO product_slides (id, slide_type, title) VALUES
+    ('b1000000-0000-0000-0000-000000000001', 'featured', 'Featured Products'),
+    ('b1000000-0000-0000-0000-000000000002', 'bestseller', 'Bestsellers'),
+    ('b1000000-0000-0000-0000-000000000003', 'discounted', 'Discounted Products');
+
+INSERT INTO store_themes (id, name, slug, description, price, default_colors, default_font) VALUES
+(
+    'd1000000-0000-0000-0000-000000000001',
+    'Modern Blue',
+    'modern-blue',
+    'Clean modern storefront with blue accents',
+    0,
+    '{"primary":"#062fe2","primary_foreground":"#ffffff","secondary":"#277ee4","secondary_foreground":"#ffffff","accent":"#277ee4","accent_foreground":"#ffffff","background":"#fcfdfc","foreground":"#1a1a1a","muted":"#f4f4f5","muted_foreground":"#71717a","border":"#e4e4e7","destructive":"#ef4444"}',
+    'Inter'
+),
+(
+    'd1000000-0000-0000-0000-000000000002',
+    'Minimal Light',
+    'minimal-light',
+    'Minimal light theme for product-focused stores',
+    0,
+    '{"primary":"#18181b","primary_foreground":"#fafafa","secondary":"#f4f4f5","secondary_foreground":"#18181b","accent":"#3f3f46","accent_foreground":"#fafafa","background":"#ffffff","foreground":"#09090b","muted":"#f4f4f5","muted_foreground":"#71717a","border":"#e4e4e7","destructive":"#dc2626"}',
+    'Inter'
+),
+(
+    'd1000000-0000-0000-0000-000000000003',
+    'Bold Dark',
+    'bold-dark',
+    'Bold dark theme with high contrast',
+    0,
+    '{"primary":"#3b82f6","primary_foreground":"#ffffff","secondary":"#1e293b","secondary_foreground":"#f8fafc","accent":"#60a5fa","accent_foreground":"#0f172a","background":"#0f172a","foreground":"#f8fafc","muted":"#1e293b","muted_foreground":"#94a3b8","border":"#334155","destructive":"#f87171"}',
+    'Inter'
+);
+
+INSERT INTO store_style (id, active_theme_id, colors, font_family)
+VALUES (
+    'e1000000-0000-0000-0000-000000000001',
+    'd1000000-0000-0000-0000-000000000001',
+    '{"primary":"#062fe2","primary_foreground":"#ffffff","secondary":"#277ee4","secondary_foreground":"#ffffff","accent":"#277ee4","accent_foreground":"#ffffff","background":"#fcfdfc","foreground":"#1a1a1a","muted":"#f4f4f5","muted_foreground":"#71717a","border":"#e4e4e7","destructive":"#ef4444"}',
+    'Inter'
+);
