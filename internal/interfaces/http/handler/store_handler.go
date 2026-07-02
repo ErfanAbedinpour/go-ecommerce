@@ -11,6 +11,7 @@ import (
 
 	appstorefront "app/internal/application/storefront"
 	appstorecontent "app/internal/application/storecontent"
+	appcart "app/internal/application/cart"
 	appsettings "app/internal/application/settings"
 	appreview "app/internal/application/productreview"
 	apptheme "app/internal/application/theme"
@@ -32,6 +33,7 @@ type StoreHandler struct {
 	theme                 *apptheme.Service
 	reviews               *appreview.Service
 	wishlist              *appwishlist.Service
+	carts                 *appcart.Service
 	paymentCallbackSecret string
 	validator             *validator.Validator
 	log                   *slog.Logger
@@ -45,6 +47,7 @@ func NewStoreHandler(
 	theme *apptheme.Service,
 	reviews *appreview.Service,
 	wishlist *appwishlist.Service,
+	carts *appcart.Service,
 	paymentCallbackSecret string,
 	v *validator.Validator,
 	log *slog.Logger,
@@ -56,6 +59,7 @@ func NewStoreHandler(
 		theme:                 theme,
 		reviews:               reviews,
 		wishlist:              wishlist,
+		carts:                 carts,
 		paymentCallbackSecret: paymentCallbackSecret,
 		validator:             v,
 		log:                   log,
@@ -273,6 +277,39 @@ func (h *StoreHandler) ValidateCoupon(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, result)
 }
 
+// ValidateGuestCheckoutCustomer godoc
+// @Summary      Validate guest checkout contact
+// @Description  Checks whether the provided email or phone belongs to an existing account before guest checkout continues.
+// @Tags         store
+// @Accept       json
+// @Produce      json
+// @Param        body  body  request.StoreCheckoutValidateCustomerRequest  true  "Guest contact info"
+// @Success      200   {object}  appstorefront.ValidateGuestCheckoutCustomerOutput
+// @Failure      409   {object}  dtoresponse.ErrorResponse
+// @Router       /api/v1/store/checkout/validate-customer [post]
+func (h *StoreHandler) ValidateGuestCheckoutCustomer(w http.ResponseWriter, r *http.Request) {
+	if _, ok := appmiddleware.GetUserIDOptional(r.Context()); ok {
+		response.OK(w, &appstorefront.ValidateGuestCheckoutCustomerOutput{OK: true})
+		return
+	}
+
+	var req request.StoreCheckoutValidateCustomerRequest
+	if err := decodeAndValidate(r, &req, h.validator); err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+
+	result, err := h.storefront.ValidateGuestCheckoutCustomer(r.Context(), appstorefront.ValidateGuestCheckoutCustomerInput{
+		Email: req.Email,
+		Phone: req.Phone,
+	})
+	if err != nil {
+		response.Error(w, r, h.log, err)
+		return
+	}
+	response.OK(w, result)
+}
+
 // PreviewCheckout godoc
 // @Summary      Preview checkout
 // @Description  Validates cart items and computes checkout totals without placing an order.
@@ -292,6 +329,10 @@ func (h *StoreHandler) PreviewCheckout(w http.ResponseWriter, r *http.Request) {
 	owner, ok := appmiddleware.GetCartOwner(r.Context())
 	if !ok {
 		response.Error(w, r, h.log, apperror.Internal("cart session missing"))
+		return
+	}
+	if err := MergeGuestCartIfNeeded(r.Context(), r, h.carts, owner); err != nil {
+		response.Error(w, r, h.log, err)
 		return
 	}
 
@@ -327,6 +368,10 @@ func (h *StoreHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 	owner, ok := appmiddleware.GetCartOwner(r.Context())
 	if !ok {
 		response.Error(w, r, h.log, apperror.Internal("cart session missing"))
+		return
+	}
+	if err := MergeGuestCartIfNeeded(r.Context(), r, h.carts, owner); err != nil {
+		response.Error(w, r, h.log, err)
 		return
 	}
 
