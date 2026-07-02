@@ -8,6 +8,7 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	"app/pkg/apperror"
+	"app/pkg/i18n"
 )
 
 // Validator wraps go-playground/validator with application-specific helpers.
@@ -41,37 +42,58 @@ func (v *Validator) Validate(s any) error {
 func toAppError(err error) *apperror.AppError {
 	validationErrors, ok := err.(validator.ValidationErrors)
 	if !ok {
-		return apperror.Validation("validation failed", nil)
+		return apperror.ValidationKeyed(i18n.KeyErrorValidation, "validation failed", nil)
 	}
 
 	details := make(map[string]string, len(validationErrors))
 	for _, fe := range validationErrors {
 		field := fe.Field()
-		details[field] = formatFieldError(fe)
+		details[field] = formatFieldDetail(fe)
 	}
 
-	return apperror.Validation("request validation failed", details)
+	return apperror.ValidationKeyed(i18n.KeyErrorValidationRequest, "request validation failed", details)
 }
 
-func formatFieldError(fe validator.FieldError) string {
+func formatFieldDetail(fe validator.FieldError) string {
+	key := formatFieldErrorKey(fe)
+	switch fe.Tag() {
+	case "min", "max", "gte", "gt", "oneof":
+		return key + ":" + fe.Param()
+	default:
+		return key
+	}
+}
+
+func formatFieldErrorKey(fe validator.FieldError) string {
 	switch fe.Tag() {
 	case "required":
-		return "is required"
+		return i18n.KeyValidationRequired
 	case "email":
-		return "must be a valid email address"
+		return i18n.KeyValidationEmail
 	case "min":
-		return fmt.Sprintf("must be at least %s characters", fe.Param())
+		return i18n.KeyValidationMin
 	case "max":
-		return fmt.Sprintf("must be at most %s characters", fe.Param())
+		return i18n.KeyValidationMax
 	case "gte":
-		return fmt.Sprintf("must be greater than or equal to %s", fe.Param())
+		return i18n.KeyValidationGte
 	case "gt":
-		return fmt.Sprintf("must be greater than %s", fe.Param())
+		return i18n.KeyValidationGt
 	case "uuid":
-		return "must be a valid UUID"
+		return i18n.KeyValidationUUID
 	case "oneof":
-		return fmt.Sprintf("must be one of: %s", fe.Param())
+		return i18n.KeyValidationOneOf
 	default:
-		return fmt.Sprintf("failed on '%s' validation", fe.Tag())
+		return i18n.KeyValidationDefault
+	}
+}
+
+// FormatFieldError returns a human-readable validation message for tests and logging.
+func FormatFieldError(fe validator.FieldError) string {
+	key := formatFieldErrorKey(fe)
+	switch key {
+	case i18n.KeyValidationMin, i18n.KeyValidationMax, i18n.KeyValidationGte, i18n.KeyValidationGt, i18n.KeyValidationOneOf, i18n.KeyValidationDefault:
+		return fmt.Sprintf("%s (%s)", key, fe.Param())
+	default:
+		return key
 	}
 }
