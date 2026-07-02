@@ -28,7 +28,7 @@ Maps to `product_questions` table. Simpler workflow than reviews: `open` → `an
 | `question` | text | No | — | Required, 5–1000 chars | Question text |
 | `answer` | text | Yes | `NULL` | Max 2000 chars | Admin response |
 | `answered_at` | timestamp | Yes | `NULL` | — | When answer was posted |
-| `answered_by` | UUID | Yes | `NULL` | FK → `admin_users.id` SET NULL | Admin who answered |
+| `answered_by` | UUID | Yes | `NULL` | FK → `users.id` SET NULL | Admin who answered |
 | `status` | enum | No | `open` | `open` \| `answered` | Q&A state |
 | `created_at` | timestamp | No | `now()` | — | Question submitted at |
 
