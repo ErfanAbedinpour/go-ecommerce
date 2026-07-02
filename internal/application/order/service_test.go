@@ -90,6 +90,22 @@ func (m *mockRepo) IncrementCouponUsage(_ context.Context, _ uuid.UUID) error {
 	return nil
 }
 
+func (m *mockRepo) DecrementCouponUsage(_ context.Context, _ uuid.UUID) error {
+	return nil
+}
+
+func (m *mockRepo) FindExpiredUnpaid(_ context.Context, before time.Time, _ int) ([]domain.Order, error) {
+	var out []domain.Order
+	for _, o := range m.orders {
+		if o.PaymentStatus == domain.PaymentUnpaid && o.Status == domain.StatusPending &&
+			o.PaymentExpiresAt != nil && o.PaymentExpiresAt.Before(before) {
+			cp := *o
+			out = append(out, cp)
+		}
+	}
+	return out, nil
+}
+
 func (m *mockRepo) CountByStatus(_ context.Context, status domain.Status) (int64, error) {
 	var count int64
 	for _, o := range m.orders {
@@ -196,6 +212,15 @@ func (m *mockCustomerRepo) ListOrders(context.Context, uuid.UUID, pagination.Par
 func (m *mockCustomerRepo) FindByEmail(context.Context, string) (*domaincustomer.Customer, error) {
 	return nil, domaincustomer.ErrNotFound
 }
+func (m *mockCustomerRepo) FindGuestByEmail(context.Context, string) (*domaincustomer.Customer, error) {
+	return nil, domaincustomer.ErrNotFound
+}
+func (m *mockCustomerRepo) FindGuestByPhone(context.Context, string) (*domaincustomer.Customer, error) {
+	return nil, domaincustomer.ErrNotFound
+}
+func (m *mockCustomerRepo) FindRegisteredByPhone(context.Context, string) (*domaincustomer.Customer, error) {
+	return nil, domaincustomer.ErrNotFound
+}
 func (m *mockCustomerRepo) Update(context.Context, *domaincustomer.Customer) error { return nil }
 func (m *mockCustomerRepo) Delete(context.Context, uuid.UUID) error                { return nil }
 func (m *mockCustomerRepo) HasOrders(context.Context, uuid.UUID) (bool, error)     { return false, nil }
@@ -205,6 +230,12 @@ func (m *mockCustomerRepo) GetLastOrderAt(context.Context, uuid.UUID) (*time.Tim
 func (m *mockCustomerRepo) Count(context.Context) (int64, error) {
 	return int64(len(m.customers)), nil
 }
+func (m *mockCustomerRepo) RecordOrderPlaced(context.Context, uuid.UUID, float64, time.Time) error {
+	return nil
+}
+func (m *mockCustomerRepo) RecordOrderCancelled(context.Context, uuid.UUID, float64) error {
+	return nil
+}
 
 type mockCouponRepo struct {
 	coupons map[string]*domaincoupon.Coupon
@@ -213,7 +244,12 @@ type mockCouponRepo struct {
 func (m *mockCouponRepo) Create(context.Context, *domaincoupon.Coupon) error { return nil }
 func (m *mockCouponRepo) Update(context.Context, *domaincoupon.Coupon) error { return nil }
 func (m *mockCouponRepo) SoftDelete(context.Context, uuid.UUID) error        { return nil }
-func (m *mockCouponRepo) FindByID(context.Context, uuid.UUID) (*domaincoupon.Coupon, error) {
+func (m *mockCouponRepo) FindByID(_ context.Context, id uuid.UUID) (*domaincoupon.Coupon, error) {
+	for _, c := range m.coupons {
+		if c.ID == id {
+			return c, nil
+		}
+	}
 	return nil, domaincoupon.ErrNotFound
 }
 func (m *mockCouponRepo) List(context.Context, domaincoupon.ListFilter, pagination.Params) ([]domaincoupon.Coupon, int64, error) {
@@ -261,7 +297,8 @@ func newTestService(repo *mockRepo) *Service {
 	return NewService(repo, &mockProductRepo{products: map[uuid.UUID]*domainproduct.Product{}},
 		&mockCustomerRepo{customers: map[uuid.UUID]*domaincustomer.Customer{}},
 		&mockCouponRepo{coupons: map[string]*domaincoupon.Coupon{}},
-		&mockSettingsRepo{store: &domainsettings.StoreSettings{Site: domainsettings.Site{Name: "Shop"}}})
+		&mockSettingsRepo{store: &domainsettings.StoreSettings{Site: domainsettings.Site{Name: "Shop"}}},
+		25*time.Hour)
 }
 
 func TestService_UpdateStatus(t *testing.T) {
@@ -394,6 +431,7 @@ func TestService_Create(t *testing.T) {
 		}},
 		&mockCouponRepo{coupons: map[string]*domaincoupon.Coupon{}},
 		&mockSettingsRepo{store: &domainsettings.StoreSettings{}},
+		25*time.Hour,
 	)
 
 	order, err := svc.Create(context.Background(), CreateInput{
@@ -464,5 +502,59 @@ func TestService_GetInvoice(t *testing.T) {
 	}
 	if invoice.Store.Name != "Shop" {
 		t.Errorf("store name = %q, want Shop", invoice.Store.Name)
+	}
+}
+
+func TestService_ExpireUnpaidOrders(t *testing.T) {
+	repo := newMockRepo()
+	customers := &mockCustomerRepo{customers: map[uuid.UUID]*domaincustomer.Customer{}}
+	svc := NewService(repo, &mockProductRepo{products: map[uuid.UUID]*domainproduct.Product{}},
+		customers, &mockCouponRepo{coupons: map[string]*domaincoupon.Coupon{}},
+		&mockSettingsRepo{store: &domainsettings.StoreSettings{Site: domainsettings.Site{Name: "Shop"}}},
+		25*time.Hour)
+	id := uuid.New()
+	customerID := uuid.New()
+	customers.customers[customerID] = &domaincustomer.Customer{ID: customerID}
+	expired := time.Now().UTC().Add(-time.Hour)
+	repo.orders[id] = &domain.Order{
+		ID:               id,
+		CustomerID:       customerID,
+		Status:           domain.StatusPending,
+		PaymentStatus:    domain.PaymentUnpaid,
+		PaymentExpiresAt: &expired,
+		Total:            100,
+		Items:            []domain.Item{{ProductID: uuid.New(), Quantity: 1}},
+	}
+
+	count, err := svc.ExpireUnpaidOrders(context.Background(), 10)
+	if err != nil {
+		t.Fatalf("ExpireUnpaidOrders() error = %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expired count = %d, want 1", count)
+	}
+	if repo.orders[id].Status != domain.StatusCancelled {
+		t.Errorf("status = %q, want cancelled", repo.orders[id].Status)
+	}
+	if !repo.restored {
+		t.Error("expected inventory restored")
+	}
+}
+
+func TestService_ConfirmPayment_Expired(t *testing.T) {
+	repo := newMockRepo()
+	svc := newTestService(repo)
+	id := uuid.New()
+	expired := time.Now().UTC().Add(-time.Hour)
+	repo.orders[id] = &domain.Order{
+		ID:               id,
+		PaymentStatus:    domain.PaymentUnpaid,
+		Status:           domain.StatusPending,
+		PaymentExpiresAt: &expired,
+	}
+
+	_, err := svc.ConfirmPayment(context.Background(), ConfirmPaymentInput{OrderID: id, TransactionID: "TXN"})
+	if err != domain.ErrPaymentExpired {
+		t.Fatalf("ConfirmPayment() error = %v, want ErrPaymentExpired", err)
 	}
 }
