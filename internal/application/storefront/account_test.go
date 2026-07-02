@@ -37,6 +37,15 @@ func (m *accountCustomerRepo) FindByID(context.Context, uuid.UUID) (*domaincusto
 func (m *accountCustomerRepo) FindByEmail(context.Context, string) (*domaincustomer.Customer, error) {
 	return nil, domaincustomer.ErrNotFound
 }
+func (m *accountCustomerRepo) FindGuestByEmail(context.Context, string) (*domaincustomer.Customer, error) {
+	return nil, domaincustomer.ErrNotFound
+}
+func (m *accountCustomerRepo) FindGuestByPhone(context.Context, string) (*domaincustomer.Customer, error) {
+	return nil, domaincustomer.ErrNotFound
+}
+func (m *accountCustomerRepo) FindRegisteredByPhone(context.Context, string) (*domaincustomer.Customer, error) {
+	return nil, domaincustomer.ErrNotFound
+}
 func (m *accountCustomerRepo) FindByUserID(_ context.Context, userID uuid.UUID) (*domaincustomer.Customer, error) {
 	c, ok := m.byUser[userID]
 	if !ok {
@@ -77,6 +86,12 @@ func (m *accountCustomerRepo) ListOrders(context.Context, uuid.UUID, pagination.
 }
 func (m *accountCustomerRepo) Count(context.Context) (int64, error) {
 	return int64(len(m.byUser)), nil
+}
+func (m *accountCustomerRepo) RecordOrderPlaced(context.Context, uuid.UUID, float64, time.Time) error {
+	return nil
+}
+func (m *accountCustomerRepo) RecordOrderCancelled(context.Context, uuid.UUID, float64) error {
+	return nil
 }
 
 type accountSettingsRepo struct {
@@ -138,7 +153,7 @@ func TestGetAccountProfile(t *testing.T) {
 		},
 	}
 
-	svc := NewService(nil, nil, nil, nil, nil, customers, &accountSettingsRepo{}, nil, noopMailer{})
+	svc := NewService(nil, nil, nil, nil, nil, customers, nil, &accountSettingsRepo{}, nil, noopMailer{})
 
 	profile, err := svc.GetAccountProfile(context.Background(), userID)
 	if err != nil {
@@ -165,7 +180,7 @@ func TestUpdateAccountProfile(t *testing.T) {
 	}
 
 	customers := newAccountCustomerRepo(customer)
-	svc := NewService(nil, nil, nil, nil, nil, customers, &accountSettingsRepo{}, nil, noopMailer{})
+	svc := NewService(nil, nil, nil, nil, nil, customers, nil, &accountSettingsRepo{}, nil, noopMailer{})
 
 	profile, err := svc.UpdateAccountProfile(context.Background(), userID, UpdateAccountProfileInput{
 		FirstName: "Hassan",
@@ -194,7 +209,7 @@ func TestUpdateAccountProfile(t *testing.T) {
 }
 
 func TestGetStoreNavigation_FiltersInactive(t *testing.T) {
-	svc := NewService(nil, nil, nil, nil, nil, nil, &accountSettingsRepo{
+	svc := NewService(nil, nil, nil, nil, nil, nil, nil, &accountSettingsRepo{
 		settings: domainsettings.StoreSettings{
 			StorefrontNavigation: []domainsettings.NavItem{
 				{ID: "1", Label: "Active", URL: "/products", SortOrder: 1, IsActive: true},
