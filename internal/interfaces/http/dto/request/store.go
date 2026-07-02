@@ -12,6 +12,12 @@ type StoreCartUpdateItemRequest struct {
 	Quantity int `json:"quantity" validate:"required,gte=0"`
 }
 
+// StoreCheckoutValidateCustomerRequest validates guest contact info before checkout.
+type StoreCheckoutValidateCustomerRequest struct {
+	Email string `json:"email" validate:"required,email"`
+	Phone string `json:"phone" validate:"omitempty,max=20"`
+}
+
 // StoreCheckoutPreviewRequest validates the server cart and computes totals.
 type StoreCheckoutPreviewRequest struct {
 	CouponCode     string `json:"coupon_code" validate:"omitempty,max=50"`
