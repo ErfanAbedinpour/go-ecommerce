@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -41,6 +42,10 @@ func (m *mockUserRepo) FindByEmail(_ context.Context, email string) (*user.User,
 	}
 	cp := *u
 	return &cp, nil
+}
+
+func (m *mockUserRepo) FindByPhone(context.Context, string) (*user.User, error) {
+	return nil, user.ErrNotFound
 }
 
 func (m *mockUserRepo) FindByID(_ context.Context, id uuid.UUID) (*user.User, error) {
@@ -180,7 +185,9 @@ func (mockJWT) RefreshTokenTTL() time.Duration {
 }
 
 type mockCustomerRepo struct {
-	created int
+	created      int
+	updated      int
+	guestByEmail *customer.Customer
 }
 
 func (m *mockCustomerRepo) Create(_ context.Context, _ *customer.Customer) error {
@@ -193,13 +200,29 @@ func (m *mockCustomerRepo) FindByID(context.Context, uuid.UUID) (*customer.Custo
 func (m *mockCustomerRepo) FindByEmail(context.Context, string) (*customer.Customer, error) {
 	return nil, customer.ErrNotFound
 }
+func (m *mockCustomerRepo) FindGuestByEmail(_ context.Context, email string) (*customer.Customer, error) {
+	if m.guestByEmail != nil && strings.EqualFold(strings.TrimSpace(m.guestByEmail.Email), strings.TrimSpace(email)) {
+		cp := *m.guestByEmail
+		return &cp, nil
+	}
+	return nil, customer.ErrNotFound
+}
+func (m *mockCustomerRepo) FindGuestByPhone(context.Context, string) (*customer.Customer, error) {
+	return nil, customer.ErrNotFound
+}
+func (m *mockCustomerRepo) FindRegisteredByPhone(context.Context, string) (*customer.Customer, error) {
+	return nil, customer.ErrNotFound
+}
 func (m *mockCustomerRepo) FindByUserID(context.Context, uuid.UUID) (*customer.Customer, error) {
 	return nil, customer.ErrNotFound
 }
 func (m *mockCustomerRepo) List(context.Context, customer.ListFilter, pagination.Params) ([]customer.Customer, int64, error) {
 	return nil, 0, nil
 }
-func (m *mockCustomerRepo) Update(context.Context, *customer.Customer) error { return nil }
+func (m *mockCustomerRepo) Update(context.Context, *customer.Customer) error {
+	m.updated++
+	return nil
+}
 func (m *mockCustomerRepo) Delete(context.Context, uuid.UUID) error          { return nil }
 func (m *mockCustomerRepo) HasOrders(context.Context, uuid.UUID) (bool, error) {
 	return false, nil
@@ -218,6 +241,12 @@ func (m *mockCustomerRepo) ListOrders(context.Context, uuid.UUID, pagination.Par
 }
 func (m *mockCustomerRepo) Count(context.Context) (int64, error) {
 	return int64(m.created), nil
+}
+func (m *mockCustomerRepo) RecordOrderPlaced(context.Context, uuid.UUID, float64, time.Time) error {
+	return nil
+}
+func (m *mockCustomerRepo) RecordOrderCancelled(context.Context, uuid.UUID, float64) error {
+	return nil
 }
 
 func newTestService(signupEnabled bool, defaultRole string) (*AuthService, *mockUserRepo, *mockResetRepo, *mockMailer) {
@@ -264,6 +293,34 @@ func TestSignup_Success(t *testing.T) {
 	}
 	if customers.created != 1 {
 		t.Fatalf("expected customer record on signup, created = %d", customers.created)
+	}
+}
+
+func TestSignup_PromotesExistingGuestCustomer(t *testing.T) {
+	guestID := uuid.New()
+	customers := &mockCustomerRepo{
+		guestByEmail: &customer.Customer{
+			ID:    guestID,
+			Email: "guest@shop.com",
+			Type:  customer.TypeGuest,
+		},
+	}
+	svc := newTestServiceWithCustomers(true, "customer", customers)
+
+	_, err := svc.Signup(context.Background(), SignupInput{
+		Email:     "guest@shop.com",
+		Password:  "Secret123",
+		FirstName: "Guest",
+		LastName:  "User",
+	})
+	if err != nil {
+		t.Fatalf("Signup() error = %v", err)
+	}
+	if customers.created != 0 {
+		t.Fatalf("expected guest promotion, created = %d", customers.created)
+	}
+	if customers.updated != 1 {
+		t.Fatalf("expected guest promotion update, updated = %d", customers.updated)
 	}
 }
 
