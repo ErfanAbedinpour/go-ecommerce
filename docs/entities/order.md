@@ -88,7 +88,7 @@ Embedded value objects: `Address` (billing/shipping), `Item` (line items), `Cust
 | `from_status` | enum | Yes | `NULL` | Status enum | Previous status |
 | `to_status` | enum | No | — | Status enum | New status |
 | `note` | text | Yes | `NULL` | Max 500 | Change reason |
-| `changed_by` | UUID | Yes | `NULL` | FK → `admin_users.id` | Admin who made change |
+| `changed_by` | UUID | Yes | `NULL` | FK → `users.id` | Admin who made change |
 | `created_at` | timestamp | No | `now()` | — | When changed |
 
 ### Address (embedded in order)
