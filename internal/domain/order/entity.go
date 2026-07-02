@@ -21,7 +21,8 @@ type Order struct {
 	Total           float64
 	Notes           string
 	PaymentMethod   string
-	TransactionID   string
+	TransactionID      string
+	PaymentExpiresAt   *time.Time
 	BillingAddress  Address
 	ShippingAddress Address
 	Items          []Item
