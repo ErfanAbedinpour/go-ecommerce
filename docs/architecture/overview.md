@@ -99,7 +99,7 @@ internal/
 | Errors | `pkg/apperror` standard envelope | Reuse for store API |
 | Pagination | `pkg/pagination` | Reuse for all list endpoints |
 | File uploads | `POST /admin/uploads` | Add `POST /store/uploads` for customer avatars (future) |
-| Caching | None | Cache storefront content + catalog reads (Redis optional) |
+| Caching | None | Optional PostgreSQL materialized views or CDN at scale |
 | Events | None implemented | Emit `OrderPlaced`, `StockAdjusted` for async notifications |
 
 ## Deployment Topology
