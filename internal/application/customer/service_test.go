@@ -74,6 +74,30 @@ func (m *mockRepo) ListOrders(_ context.Context, customerID uuid.UUID, page pagi
 func (m *mockRepo) Count(context.Context) (int64, error) {
 	return int64(len(m.customers)), nil
 }
+func (m *mockRepo) RecordOrderPlaced(_ context.Context, customerID uuid.UUID, orderTotal float64, orderedAt time.Time) error {
+	c, ok := m.customers[customerID]
+	if !ok {
+		return domain.ErrNotFound
+	}
+	c.TotalOrders++
+	c.TotalSpent += orderTotal
+	c.LastOrderAt = &orderedAt
+	return nil
+}
+func (m *mockRepo) RecordOrderCancelled(_ context.Context, customerID uuid.UUID, orderTotal float64) error {
+	c, ok := m.customers[customerID]
+	if !ok {
+		return domain.ErrNotFound
+	}
+	if c.TotalOrders > 0 {
+		c.TotalOrders--
+	}
+	c.TotalSpent -= orderTotal
+	if c.TotalSpent < 0 {
+		c.TotalSpent = 0
+	}
+	return nil
+}
 
 func (m *mockRepo) FindByEmail(_ context.Context, email string) (*domain.Customer, error) {
 	for _, c := range m.customers {
@@ -82,6 +106,15 @@ func (m *mockRepo) FindByEmail(_ context.Context, email string) (*domain.Custome
 			return &cp, nil
 		}
 	}
+	return nil, domain.ErrNotFound
+}
+func (m *mockRepo) FindGuestByEmail(context.Context, string) (*domain.Customer, error) {
+	return nil, domain.ErrNotFound
+}
+func (m *mockRepo) FindGuestByPhone(context.Context, string) (*domain.Customer, error) {
+	return nil, domain.ErrNotFound
+}
+func (m *mockRepo) FindRegisteredByPhone(context.Context, string) (*domain.Customer, error) {
 	return nil, domain.ErrNotFound
 }
 
