@@ -261,9 +261,9 @@ func (r *BlogRepository) ListPosts(ctx context.Context, filter blog.PostFilter, 
 
 	var rows []row
 	err := base.
-		Select("blog_posts.*, blog_categories.name AS category_name, (admin_users.first_name || ' ' || admin_users.last_name) AS author_name").
+		Select("blog_posts.*, blog_categories.name AS category_name, (users.first_name || ' ' || users.last_name) AS author_name").
 		Joins("LEFT JOIN blog_categories ON blog_categories.id = blog_posts.category_id").
-		Joins("LEFT JOIN admin_users ON admin_users.id = blog_posts.author_id").
+		Joins("LEFT JOIN users ON users.id = blog_posts.author_id").
 		Order("blog_posts.created_at DESC").
 		Offset(page.Offset()).
 		Limit(page.Limit()).
