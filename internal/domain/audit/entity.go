@@ -7,7 +7,7 @@ import (
 
 type AuditLog struct {
 	ID           string
-	AdminUserID  string
+	UserID       string
 	Action       string
 	ResourceType string
 	ResourceID   string
