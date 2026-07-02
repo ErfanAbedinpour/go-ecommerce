@@ -177,19 +177,17 @@ Add pagination to: themes, partner brands, homepage reviews, FAQ items (when lis
 
 ## Performance
 
-### Caching (already started)
+### Caching
 
-Redis cache on `GET /store/products` and `GET /store/homepage` (5 min TTL). **Extended to:**
+Storefront GET endpoints read from PostgreSQL directly. For scale, consider:
 
-- `GET /store/categories` (**Done** — invalidate on category CRUD still TODO)
-- `GET /store/navigation` (**Done**)
-- `GET /store/theme` (**Done** — invalidate on style update still TODO)
-
-Use cache tags or key prefixes for targeted invalidation on admin content updates.
+- PostgreSQL materialized views for homepage aggregates
+- CDN for static assets and uploaded images
+- Application-level cache with explicit invalidation on admin updates (optional future work)
 
 ### Homepage stats
 
-**Done** — `customers_count`, `delivered_orders_count`, `years_experience` computed on each homepage load. Future: materialized view or Redis counter for scale.
+**Done** — `customers_count`, `delivered_orders_count`, `years_experience` computed on each homepage load. Future: materialized view for scale.
 
 ### N+1 on product slides
 
@@ -270,7 +268,7 @@ CREATE INDEX idx_orders_status_created ON orders(status, created_at DESC);
 
 ### Stateless API
 
-Current design is stateless — good for horizontal scaling. Redis cache and rate limiter must use shared Redis in multi-instance deploys.
+Current design is stateless — good for horizontal scaling. In-memory rate limiter is per-instance; use a shared store if you need global limits across replicas.
 
 ### Background jobs
 
@@ -280,7 +278,7 @@ Move to async:
 - Contact message admin notification
 - Blog comment moderation queue
 
-Use a simple job table or Redis queue before introducing full worker service.
+Use a simple PostgreSQL job table before introducing full worker service.
 
 ### Payment webhooks
 
