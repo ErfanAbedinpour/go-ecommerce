@@ -39,6 +39,10 @@ func (m *mockUserRepo) FindByEmail(_ context.Context, email string) (*domain.Use
 	return nil, domain.ErrNotFound
 }
 
+func (m *mockUserRepo) FindByPhone(context.Context, string) (*domain.User, error) {
+	return nil, domain.ErrNotFound
+}
+
 func (m *mockUserRepo) FindByID(_ context.Context, id uuid.UUID) (*domain.User, error) {
 	u, ok := m.users[id]
 	if !ok {
