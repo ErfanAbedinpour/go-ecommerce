@@ -70,7 +70,7 @@
 | — | Wishlist shape | `added_at` alias, `*_toman` on nested product, idempotent add (200) |
 | — | Blog store fields | `excerpt` + `cover_image_url` aliases alongside legacy fields |
 | — | Theme purchase | Idempotent — returns existing purchase |
-| — | Store caching | Redis 5 min on homepage, products, categories, navigation, theme |
+| — | Store caching | Not used — storefront reads hit PostgreSQL directly |
 | — | Contact rate limit | 3 req/min per IP on `POST /store/contact` |
 | — | Catalog indexes | Migration `000016` for bestseller sort |
 | — | Account profile | `GET/PUT /api/v1/store/account/profile` with addresses |
