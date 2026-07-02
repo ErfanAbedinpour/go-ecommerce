@@ -2,6 +2,7 @@ package storefront
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	domainorder "app/internal/domain/order"
 	domainproduct "app/internal/domain/product"
 	domainsettings "app/internal/domain/settings"
+	"app/internal/domain/user"
 	"app/pkg/pagination"
 )
 
@@ -77,7 +79,8 @@ func (m *checkoutProductRepo) FindByIDs(_ context.Context, ids []uuid.UUID) ([]d
 }
 
 type checkoutCustomerRepo struct {
-	created []*domaincustomer.Customer
+	created       []*domaincustomer.Customer
+	guestsByEmail map[string]*domaincustomer.Customer
 }
 
 func (m *checkoutCustomerRepo) Create(_ context.Context, c *domaincustomer.Customer) error {
@@ -90,9 +93,30 @@ func (m *checkoutCustomerRepo) FindByID(_ context.Context, id uuid.UUID) (*domai
 			return c, nil
 		}
 	}
+	if m.guestsByEmail != nil {
+		for _, c := range m.guestsByEmail {
+			if c.ID == id {
+				return c, nil
+			}
+		}
+	}
 	return nil, domaincustomer.ErrNotFound
 }
 func (m *checkoutCustomerRepo) FindByEmail(context.Context, string) (*domaincustomer.Customer, error) {
+	return nil, domaincustomer.ErrNotFound
+}
+func (m *checkoutCustomerRepo) FindGuestByEmail(_ context.Context, email string) (*domaincustomer.Customer, error) {
+	if m.guestsByEmail != nil {
+		if c, ok := m.guestsByEmail[strings.ToLower(strings.TrimSpace(email))]; ok {
+			return c, nil
+		}
+	}
+	return nil, domaincustomer.ErrNotFound
+}
+func (m *checkoutCustomerRepo) FindGuestByPhone(context.Context, string) (*domaincustomer.Customer, error) {
+	return nil, domaincustomer.ErrNotFound
+}
+func (m *checkoutCustomerRepo) FindRegisteredByPhone(context.Context, string) (*domaincustomer.Customer, error) {
 	return nil, domaincustomer.ErrNotFound
 }
 func (m *checkoutCustomerRepo) FindByUserID(context.Context, uuid.UUID) (*domaincustomer.Customer, error) {
@@ -118,6 +142,61 @@ func (m *checkoutCustomerRepo) ListOrders(context.Context, uuid.UUID, pagination
 }
 func (m *checkoutCustomerRepo) Count(context.Context) (int64, error) {
 	return int64(len(m.created)), nil
+}
+func (m *checkoutCustomerRepo) RecordOrderPlaced(context.Context, uuid.UUID, float64, time.Time) error {
+	return nil
+}
+func (m *checkoutCustomerRepo) RecordOrderCancelled(context.Context, uuid.UUID, float64) error {
+	return nil
+}
+
+type checkoutUserRepo struct {
+	byEmail map[string]*user.User
+}
+
+func (m *checkoutUserRepo) Create(context.Context, *user.User) error { return nil }
+func (m *checkoutUserRepo) FindByEmail(_ context.Context, email string) (*user.User, error) {
+	if m.byEmail != nil {
+		if u, ok := m.byEmail[strings.ToLower(strings.TrimSpace(email))]; ok {
+			return u, nil
+		}
+	}
+	return nil, user.ErrNotFound
+}
+func (m *checkoutUserRepo) FindByPhone(context.Context, string) (*user.User, error) {
+	return nil, user.ErrNotFound
+}
+func (m *checkoutUserRepo) FindByID(context.Context, uuid.UUID) (*user.User, error) {
+	return nil, user.ErrNotFound
+}
+func (m *checkoutUserRepo) List(context.Context, user.ListFilter, pagination.Params) ([]user.User, int64, error) {
+	return nil, 0, nil
+}
+func (m *checkoutUserRepo) Update(context.Context, *user.User) error { return nil }
+func (m *checkoutUserRepo) SoftDelete(context.Context, uuid.UUID) error { return nil }
+func (m *checkoutUserRepo) CountByRole(context.Context, user.Role) (int64, error) { return 0, nil }
+func (m *checkoutUserRepo) UpdateLastLogin(context.Context, uuid.UUID) error { return nil }
+func (m *checkoutUserRepo) UpdatePassword(context.Context, uuid.UUID, string) error { return nil }
+
+func newCheckoutTestServiceWithUsers(users user.Repository, coupons map[string]*domaincoupon.Coupon) *Service {
+	svc, _, _, _, _ := newCheckoutTestService(map[uuid.UUID]*domainproduct.Product{
+		uuid.New(): {
+			ID:        uuid.New(),
+			Name:      "Item",
+			Price:     1000,
+			Status:    domainproduct.StatusActive,
+			Inventory: domainproduct.Inventory{Quantity: 1},
+		},
+	}, coupons)
+	_ = svc
+	productRepo := &checkoutProductRepo{products: map[uuid.UUID]*domainproduct.Product{}}
+	customerRepo := &checkoutCustomerRepo{}
+	orderRepo := &checkoutOrderRepo{}
+	couponRepo := &checkoutCouponRepo{coupons: coupons}
+	orderSvc := apporder.NewService(orderRepo, productRepo, customerRepo, couponRepo, checkoutSettingsRepo{}, 25*time.Hour)
+	cartRepo := newMemoryCartRepo()
+	cartSvc := appcart.NewService(cartRepo, productRepo)
+	return NewService(productRepo, nil, nil, orderSvc, couponRepo, customerRepo, users, checkoutSettingsRepo{}, cartSvc, noopMailer{})
 }
 
 type checkoutOrderRepo struct {
@@ -153,6 +232,10 @@ func (m *checkoutOrderRepo) NextOrderNumber(context.Context) (string, error) {
 	return "ORD-000001", nil
 }
 func (m *checkoutOrderRepo) IncrementCouponUsage(context.Context, uuid.UUID) error { return nil }
+func (m *checkoutOrderRepo) DecrementCouponUsage(context.Context, uuid.UUID) error { return nil }
+func (m *checkoutOrderRepo) FindExpiredUnpaid(context.Context, time.Time, int) ([]domainorder.Order, error) {
+	return nil, nil
+}
 func (m *checkoutOrderRepo) CountByStatus(_ context.Context, status domainorder.Status) (int64, error) {
 	var count int64
 	for _, o := range m.orders {
@@ -170,7 +253,12 @@ type checkoutCouponRepo struct {
 func (m *checkoutCouponRepo) Create(context.Context, *domaincoupon.Coupon) error { return nil }
 func (m *checkoutCouponRepo) Update(context.Context, *domaincoupon.Coupon) error { return nil }
 func (m *checkoutCouponRepo) SoftDelete(context.Context, uuid.UUID) error        { return nil }
-func (m *checkoutCouponRepo) FindByID(context.Context, uuid.UUID) (*domaincoupon.Coupon, error) {
+func (m *checkoutCouponRepo) FindByID(_ context.Context, id uuid.UUID) (*domaincoupon.Coupon, error) {
+	for _, c := range m.coupons {
+		if c.ID == id {
+			return c, nil
+		}
+	}
 	return nil, domaincoupon.ErrNotFound
 }
 func (m *checkoutCouponRepo) List(context.Context, domaincoupon.ListFilter, pagination.Params) ([]domaincoupon.Coupon, int64, error) {
@@ -224,11 +312,11 @@ func newCheckoutTestService(products map[uuid.UUID]*domainproduct.Product, coupo
 	customerRepo := &checkoutCustomerRepo{}
 	orderRepo := &checkoutOrderRepo{}
 	couponRepo := &checkoutCouponRepo{coupons: coupons}
-	orderSvc := apporder.NewService(orderRepo, productRepo, customerRepo, couponRepo, checkoutSettingsRepo{})
+	orderSvc := apporder.NewService(orderRepo, productRepo, customerRepo, couponRepo, checkoutSettingsRepo{}, 25*time.Hour)
 	cartRepo := newMemoryCartRepo()
 	cartSvc := appcart.NewService(cartRepo, productRepo)
 	owner := domaincart.Owner{GuestToken: "test-guest-cart"}
-	return NewService(productRepo, nil, nil, orderSvc, couponRepo, customerRepo, checkoutSettingsRepo{}, cartSvc, noopMailer{}), orderRepo, customerRepo, cartSvc, owner
+	return NewService(productRepo, nil, nil, orderSvc, couponRepo, customerRepo, &checkoutUserRepo{}, checkoutSettingsRepo{}, cartSvc, noopMailer{}), orderRepo, customerRepo, cartSvc, owner
 }
 
 func seedCart(ctx context.Context, carts *appcart.Service, owner domaincart.Owner, items []CheckoutItemInput) error {
@@ -380,5 +468,105 @@ func TestPlaceCheckout_GuestCustomerCreated(t *testing.T) {
 	last := customerRepo.created[len(customerRepo.created)-1]
 	if last.Email != "guest@shop.com" || last.Type != domaincustomer.TypeGuest {
 		t.Fatalf("unexpected guest customer: %+v", last)
+	}
+}
+
+func TestValidateGuestCheckoutCustomer_BlocksRegisteredEmail(t *testing.T) {
+	users := &checkoutUserRepo{byEmail: map[string]*user.User{
+		"member@shop.com": {ID: uuid.New(), Email: "member@shop.com", IsActive: true},
+	}}
+	svc := newCheckoutTestServiceWithUsers(users, nil)
+
+	_, err := svc.ValidateGuestCheckoutCustomer(context.Background(), ValidateGuestCheckoutCustomerInput{
+		Email: "member@shop.com",
+	})
+	if err != domaincustomer.ErrAccountExistsLoginRequired {
+		t.Fatalf("ValidateGuestCheckoutCustomer() error = %v, want ErrAccountExistsLoginRequired", err)
+	}
+}
+
+func TestPlaceCheckout_GuestReusesExistingGuestCustomer(t *testing.T) {
+	productID := uuid.New()
+	products := map[uuid.UUID]*domainproduct.Product{
+		productID: {
+			ID:        productID,
+			Name:      "Bag",
+			Price:     75000,
+			Status:    domainproduct.StatusActive,
+			Inventory: domainproduct.Inventory{Quantity: 5},
+		},
+	}
+	svc, _, customerRepo, carts, owner := newCheckoutTestService(products, nil)
+	guestID := uuid.New()
+	customerRepo.guestsByEmail = map[string]*domaincustomer.Customer{
+		"guest@shop.com": {
+			ID:    guestID,
+			Email: "guest@shop.com",
+			Type:  domaincustomer.TypeGuest,
+		},
+	}
+	if err := seedCart(context.Background(), carts, owner, []CheckoutItemInput{{ProductID: productID, Quantity: 1}}); err != nil {
+		t.Fatalf("seedCart: %v", err)
+	}
+
+	_, err := svc.PlaceCheckout(context.Background(), PlaceCheckoutInput{
+		Owner:          owner,
+		ShippingMethod: "post",
+		ShippingCity:   "Tehran",
+		Customer: CheckoutCustomerInput{
+			Email:     "guest@shop.com",
+			FirstName: "Guest",
+			LastName:  "Shopper",
+		},
+		ShippingAddress: domainorder.Address{City: "Tehran"},
+		BillingAddress:  domainorder.Address{City: "Tehran"},
+	})
+	if err != nil {
+		t.Fatalf("PlaceCheckout() error = %v", err)
+	}
+	if len(customerRepo.created) != 0 {
+		t.Fatalf("expected existing guest reuse, created %d customers", len(customerRepo.created))
+	}
+}
+
+func TestPlaceCheckout_GuestRejectsMismatchedPhone(t *testing.T) {
+	productID := uuid.New()
+	products := map[uuid.UUID]*domainproduct.Product{
+		productID: {
+			ID:        productID,
+			Name:      "Bag",
+			Price:     75000,
+			Status:    domainproduct.StatusActive,
+			Inventory: domainproduct.Inventory{Quantity: 5},
+		},
+	}
+	svc, _, customerRepo, carts, owner := newCheckoutTestService(products, nil)
+	customerRepo.guestsByEmail = map[string]*domaincustomer.Customer{
+		"guest@shop.com": {
+			ID:    uuid.New(),
+			Email: "guest@shop.com",
+			Phone: "09120000000",
+			Type:  domaincustomer.TypeGuest,
+		},
+	}
+	if err := seedCart(context.Background(), carts, owner, []CheckoutItemInput{{ProductID: productID, Quantity: 1}}); err != nil {
+		t.Fatalf("seedCart: %v", err)
+	}
+
+	_, err := svc.PlaceCheckout(context.Background(), PlaceCheckoutInput{
+		Owner:          owner,
+		ShippingMethod: "post",
+		ShippingCity:   "Tehran",
+		Customer: CheckoutCustomerInput{
+			Email:     "guest@shop.com",
+			Phone:     "09121111111",
+			FirstName: "Guest",
+			LastName:  "Shopper",
+		},
+		ShippingAddress: domainorder.Address{City: "Tehran"},
+		BillingAddress:  domainorder.Address{City: "Tehran"},
+	})
+	if err != domaincustomer.ErrAccountExistsLoginRequired {
+		t.Fatalf("PlaceCheckout() error = %v, want ErrAccountExistsLoginRequired", err)
 	}
 }
