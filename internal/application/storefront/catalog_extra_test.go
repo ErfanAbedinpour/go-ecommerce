@@ -110,7 +110,7 @@ func TestSearchProducts(t *testing.T) {
 		{ID: id, Slug: "tile-60", Name: "Tile 60x60", Price: 399000, Status: domainproduct.StatusActive},
 	}
 
-	svc := NewService(repo, catalogCategoryRepo{}, &catalogExtraBrandRepo{}, nil, nil, nil, nil, nil, noopMailer{})
+	svc := NewService(repo, catalogCategoryRepo{}, &catalogExtraBrandRepo{}, nil, nil, nil, nil, nil, nil, noopMailer{})
 	result, err := svc.SearchProducts(context.Background(), "tile", 5)
 	if err != nil {
 		t.Fatalf("SearchProducts() error = %v", err)
@@ -128,7 +128,7 @@ func TestListRelatedProducts(t *testing.T) {
 		{ID: uuid.New(), Slug: "related-tile", Name: "Related Tile", Price: 250000, Status: domainproduct.StatusActive},
 	}
 
-	svc := NewService(repo, catalogCategoryRepo{}, &catalogExtraBrandRepo{}, nil, nil, nil, nil, nil, noopMailer{})
+	svc := NewService(repo, catalogCategoryRepo{}, &catalogExtraBrandRepo{}, nil, nil, nil, nil, nil, nil, noopMailer{})
 	result, err := svc.ListRelatedProducts(context.Background(), id.String(), 4)
 	if err != nil {
 		t.Fatalf("ListRelatedProducts() error = %v", err)
@@ -143,7 +143,7 @@ func TestListBrands(t *testing.T) {
 	brands := &catalogExtraBrandRepo{
 		brands: []domainbrand.Brand{{ID: brandID, Name: "Paryab", Slug: "paryab", IsActive: true}},
 	}
-	svc := NewService(newCatalogExtraProductRepo(), catalogCategoryRepo{}, brands, nil, nil, nil, nil, nil, noopMailer{})
+	svc := NewService(newCatalogExtraProductRepo(), catalogCategoryRepo{}, brands, nil, nil, nil, nil, nil, nil, noopMailer{})
 
 	result, err := svc.ListBrands(context.Background())
 	if err != nil {
@@ -155,7 +155,7 @@ func TestListBrands(t *testing.T) {
 }
 
 func TestGetShippingMethods(t *testing.T) {
-	svc := NewService(nil, nil, nil, nil, nil, nil, nil, nil, noopMailer{})
+	svc := NewService(nil, nil, nil, nil, nil, nil, nil, nil, nil, noopMailer{})
 
 	result, err := svc.GetShippingMethods(context.Background(), "Tehran")
 	if err != nil {
