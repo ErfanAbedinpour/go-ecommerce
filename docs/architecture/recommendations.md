@@ -49,15 +49,13 @@
 
 ---
 
-## 5. Server-Side Cart with Redis
+## 5. Server-Side Cart with PostgreSQL
 
-**Observation:** Checkout page shows cart items with quantities. No cart API exists.
+**Status:** Implemented — carts and cart items are stored in PostgreSQL (`carts`, `cart_items` tables).
 
-**Recommendation:** 
-- **v1:** Client-side cart in localStorage; validate on checkout submit.
-- **v2:** Redis-backed cart keyed by `customer_id` or anonymous `cart_token` cookie.
+**Design:** Server-side cart keyed by authenticated `user_id` or anonymous `cart_token` cookie.
 
-**Why:** v1 is faster to ship. v2 enables abandoned cart recovery and cross-device sync.
+**Why:** Enables cross-device sync for logged-in customers and consistent checkout without a separate cache store.
 
 ---
 
@@ -154,7 +152,7 @@
 | Area | Recommendation |
 |------|----------------|
 | Product catalog | Read replicas + CDN for images |
-| Homepage content | Redis cache with 5-min TTL, invalidate on admin save |
+| Homepage content | PostgreSQL reads; optional materialized view or app-level cache at scale |
 | Search | PostgreSQL full-text now; Elasticsearch at 10k+ products |
 | Checkout | Idempotency key on order creation to prevent duplicates |
 | File storage | S3-compatible object storage for production |
