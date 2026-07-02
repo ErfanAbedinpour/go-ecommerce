@@ -249,7 +249,7 @@ See [api-contract-diff.md](./api-contract-diff.md). Top **open** mismatches:
 3. **Product variants** — per-SKU `price_toman`/`quantity`, `variant_axes`, `default_sku_id`.
 4. **`payment_url`** — missing on place-order response (callback route exists).
 
-**Resolved since contract pass:** catalog sort/filters, homepage aggregate, product `?include=`, wishlist `added_at`/`_*toman`/idempotent add, blog field aliases, engagement slug paths, contact rate limit, Redis cache on categories/navigation/theme.
+**Resolved since contract pass:** catalog sort/filters, homepage aggregate, product `?include=`, wishlist `added_at`/`_*toman`/idempotent add, blog field aliases, engagement slug paths, contact rate limit, PostgreSQL-backed carts.
 
 ---
 
