@@ -8,13 +8,14 @@ import (
 	"github.com/google/uuid"
 
 	apporder "app/internal/application/order"
+	domaincustomer "app/internal/domain/customer"
 	domainorder "app/internal/domain/order"
 	domainsettings "app/internal/domain/settings"
 	"app/pkg/pagination"
 )
 
 func TestGetCheckoutSettings_ReturnsDefaults(t *testing.T) {
-	svc := NewService(nil, nil, nil, nil, nil, nil, checkoutSettingsRepoWithDefaults{}, nil, noopMailer{})
+	svc := NewService(nil, nil, nil, nil, nil, nil, nil, checkoutSettingsRepoWithDefaults{}, nil, noopMailer{})
 
 	settings, err := svc.GetCheckoutSettings(context.Background())
 	if err != nil {
@@ -44,8 +45,8 @@ func TestHandlePaymentCallback_ConfirmsPayment(t *testing.T) {
 			},
 		},
 	}
-	orderSvc := apporder.NewService(orderRepo, nil, nil, nil, checkoutSettingsRepoWithDefaults{})
-	svc := NewService(nil, nil, nil, orderSvc, nil, nil, checkoutSettingsRepoWithDefaults{}, nil, noopMailer{})
+	orderSvc := apporder.NewService(orderRepo, nil, nil, nil, checkoutSettingsRepoWithDefaults{}, 25*time.Hour)
+	svc := NewService(nil, nil, nil, orderSvc, nil, nil, nil, checkoutSettingsRepoWithDefaults{}, nil, noopMailer{})
 
 	out, err := svc.HandlePaymentCallback(context.Background(), PaymentCallbackInput{
 		OrderID:   orderID,
@@ -71,8 +72,8 @@ func TestHandlePaymentCallback_AlreadyPaidConflict(t *testing.T) {
 			PaymentStatus: domainorder.PaymentPaid,
 		},
 	}
-	orderSvc := apporder.NewService(orderRepo, nil, nil, nil, checkoutSettingsRepoWithDefaults{})
-	svc := NewService(nil, nil, nil, orderSvc, nil, nil, checkoutSettingsRepoWithDefaults{}, nil, noopMailer{})
+	orderSvc := apporder.NewService(orderRepo, nil, nil, nil, checkoutSettingsRepoWithDefaults{}, 25*time.Hour)
+	svc := NewService(nil, nil, nil, orderSvc, nil, nil, nil, checkoutSettingsRepoWithDefaults{}, nil, noopMailer{})
 
 	_, err := svc.HandlePaymentCallback(context.Background(), PaymentCallbackInput{
 		OrderID:   orderID,
@@ -81,6 +82,40 @@ func TestHandlePaymentCallback_AlreadyPaidConflict(t *testing.T) {
 	}, "")
 	if err != domainorder.ErrPaymentAlreadyPaid {
 		t.Fatalf("expected ErrPaymentAlreadyPaid, got %v", err)
+	}
+}
+
+func TestHandlePaymentCallback_FailedPaymentCancelsOrder(t *testing.T) {
+	orderID := uuid.New()
+	customerID := uuid.New()
+	orderRepo := &paymentCallbackOrderRepo{
+		order: &domainorder.Order{
+			ID:            orderID,
+			CustomerID:    customerID,
+			Status:        domainorder.StatusPending,
+			PaymentStatus: domainorder.PaymentUnpaid,
+			Items:         []domainorder.Item{{ProductID: uuid.New(), Quantity: 1}},
+		},
+	}
+	customerRepo := &paymentCallbackCustomerRepo{}
+	orderSvc := apporder.NewService(orderRepo, nil, customerRepo, nil, checkoutSettingsRepoWithDefaults{}, 25*time.Hour)
+	svc := NewService(nil, nil, nil, orderSvc, nil, customerRepo, nil, checkoutSettingsRepoWithDefaults{}, nil, noopMailer{})
+
+	out, err := svc.HandlePaymentCallback(context.Background(), PaymentCallbackInput{
+		OrderID: orderID,
+		Status:  "NOK",
+	}, "")
+	if err != nil {
+		t.Fatalf("HandlePaymentCallback: %v", err)
+	}
+	if out.PaymentStatus != "unpaid" {
+		t.Errorf("payment_status = %q, want unpaid", out.PaymentStatus)
+	}
+	if orderRepo.order.Status != domainorder.StatusCancelled {
+		t.Errorf("order status = %q, want cancelled", orderRepo.order.Status)
+	}
+	if !orderRepo.restored {
+		t.Error("expected inventory restore on failed payment")
 	}
 }
 
@@ -114,7 +149,8 @@ func (checkoutSettingsRepoWithDefaults) UpdateContactSectionImage(context.Contex
 }
 
 type paymentCallbackOrderRepo struct {
-	order *domainorder.Order
+	order    *domainorder.Order
+	restored bool
 }
 
 func (m *paymentCallbackOrderRepo) FindByID(_ context.Context, id uuid.UUID) (*domainorder.Order, error) {
@@ -137,14 +173,68 @@ func (m *paymentCallbackOrderRepo) UpdateNotes(context.Context, uuid.UUID, strin
 func (m *paymentCallbackOrderRepo) AddStatusHistory(context.Context, *domainorder.StatusHistory) error {
 	return nil
 }
-func (m *paymentCallbackOrderRepo) RestoreInventory(context.Context, []domainorder.Item) error { return nil }
+func (m *paymentCallbackOrderRepo) RestoreInventory(context.Context, []domainorder.Item) error {
+	m.restored = true
+	return nil
+}
 func (m *paymentCallbackOrderRepo) NextOrderNumber(context.Context) (string, error) {
 	return "ORD-1001", nil
 }
 func (m *paymentCallbackOrderRepo) IncrementCouponUsage(context.Context, uuid.UUID) error { return nil }
+func (m *paymentCallbackOrderRepo) DecrementCouponUsage(context.Context, uuid.UUID) error { return nil }
+func (m *paymentCallbackOrderRepo) FindExpiredUnpaid(context.Context, time.Time, int) ([]domainorder.Order, error) {
+	return nil, nil
+}
 func (m *paymentCallbackOrderRepo) CountByStatus(_ context.Context, status domainorder.Status) (int64, error) {
 	if m.order != nil && m.order.Status == status {
 		return 1, nil
 	}
 	return 0, nil
+}
+
+type paymentCallbackCustomerRepo struct{}
+
+func (paymentCallbackCustomerRepo) Create(context.Context, *domaincustomer.Customer) error { return nil }
+func (paymentCallbackCustomerRepo) FindByID(context.Context, uuid.UUID) (*domaincustomer.Customer, error) {
+	return nil, domaincustomer.ErrNotFound
+}
+func (paymentCallbackCustomerRepo) FindByEmail(context.Context, string) (*domaincustomer.Customer, error) {
+	return nil, domaincustomer.ErrNotFound
+}
+func (paymentCallbackCustomerRepo) FindGuestByEmail(context.Context, string) (*domaincustomer.Customer, error) {
+	return nil, domaincustomer.ErrNotFound
+}
+func (paymentCallbackCustomerRepo) FindGuestByPhone(context.Context, string) (*domaincustomer.Customer, error) {
+	return nil, domaincustomer.ErrNotFound
+}
+func (paymentCallbackCustomerRepo) FindRegisteredByPhone(context.Context, string) (*domaincustomer.Customer, error) {
+	return nil, domaincustomer.ErrNotFound
+}
+func (paymentCallbackCustomerRepo) FindByUserID(context.Context, uuid.UUID) (*domaincustomer.Customer, error) {
+	return nil, domaincustomer.ErrNotFound
+}
+func (paymentCallbackCustomerRepo) List(context.Context, domaincustomer.ListFilter, pagination.Params) ([]domaincustomer.Customer, int64, error) {
+	return nil, 0, nil
+}
+func (paymentCallbackCustomerRepo) Update(context.Context, *domaincustomer.Customer) error { return nil }
+func (paymentCallbackCustomerRepo) Delete(context.Context, uuid.UUID) error                { return nil }
+func (paymentCallbackCustomerRepo) HasOrders(context.Context, uuid.UUID) (bool, error)     { return false, nil }
+func (paymentCallbackCustomerRepo) GetLastOrderAt(context.Context, uuid.UUID) (*time.Time, error) {
+	return nil, nil
+}
+func (paymentCallbackCustomerRepo) ListAddresses(context.Context, uuid.UUID) ([]domaincustomer.Address, error) {
+	return nil, nil
+}
+func (paymentCallbackCustomerRepo) ReplaceAddresses(context.Context, uuid.UUID, []domaincustomer.Address) error {
+	return nil
+}
+func (paymentCallbackCustomerRepo) ListOrders(context.Context, uuid.UUID, pagination.Params) ([]domainorder.Summary, int64, error) {
+	return nil, 0, nil
+}
+func (paymentCallbackCustomerRepo) Count(context.Context) (int64, error) { return 0, nil }
+func (paymentCallbackCustomerRepo) RecordOrderPlaced(context.Context, uuid.UUID, float64, time.Time) error {
+	return nil
+}
+func (paymentCallbackCustomerRepo) RecordOrderCancelled(context.Context, uuid.UUID, float64) error {
+	return nil
 }
