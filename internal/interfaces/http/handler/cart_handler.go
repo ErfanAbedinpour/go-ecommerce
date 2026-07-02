@@ -53,11 +53,7 @@ func (h *CartHandler) resolveOwner(w http.ResponseWriter, r *http.Request) (doma
 }
 
 func (h *CartHandler) mergeGuestCartIfNeeded(r *http.Request, owner domaincart.Owner) error {
-	if owner.UserID == nil {
-		return nil
-	}
-	token := appmiddleware.GetCartGuestToken(r.Context())
-	return h.carts.MergeGuestIntoUser(r.Context(), token, *owner.UserID)
+	return MergeGuestCartIfNeeded(r.Context(), r, h.carts, owner)
 }
 
 // GetCart godoc
