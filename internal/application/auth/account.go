@@ -28,7 +28,7 @@ type SignupInput struct {
 }
 
 // Signup registers a new user and returns an authentication token pair.
-func (s *AuthService) Signup(ctx context.Context, input SignupInput) (*TokenOutput, error) {
+func (s *AuthService) Signup(ctx context.Context, input SignupInput) (*SessionOutput, error) {
 	if !s.cfg.SignupEnabled {
 		return nil, user.ErrSignupDisabled
 	}
@@ -42,6 +42,27 @@ func (s *AuthService) Signup(ctx context.Context, input SignupInput) (*TokenOutp
 		return nil, user.ErrEmailTaken
 	} else if err != user.ErrNotFound {
 		return nil, err
+	}
+
+	phone := strings.TrimSpace(input.Phone)
+	if phone != "" {
+		if _, err := s.users.FindByPhone(ctx, phone); err == nil {
+			return nil, domaincustomer.ErrAccountExistsLoginRequired
+		} else if err != user.ErrNotFound {
+			return nil, err
+		}
+		if _, err := s.customers.FindRegisteredByPhone(ctx, phone); err == nil {
+			return nil, domaincustomer.ErrAccountExistsLoginRequired
+		} else if err != domaincustomer.ErrNotFound {
+			return nil, err
+		}
+		if guest, err := s.customers.FindGuestByPhone(ctx, phone); err == nil {
+			if email != "" && guest.Email != "" && strings.ToLower(guest.Email) != email {
+				return nil, domaincustomer.ErrAccountExistsLoginRequired
+			}
+		} else if err != domaincustomer.ErrNotFound {
+			return nil, err
+		}
 	}
 
 	role, err := user.ParseRole(s.cfg.SignupDefaultRole)
@@ -72,27 +93,15 @@ func (s *AuthService) Signup(ctx context.Context, input SignupInput) (*TokenOutp
 		return nil, err
 	}
 
-	if role == user.RoleCustomer {
-		userID := u.ID
-		now := time.Now().UTC()
-		customer := &domaincustomer.Customer{
-			ID:        uuid.New(),
-			UserID:    &userID,
-			Email:     email,
-			FirstName: u.FirstName,
-			LastName:  u.LastName,
-			Phone:     u.Phone,
-			Type:      domaincustomer.TypeRegistered,
-			CreatedAt: now,
-			UpdatedAt: now,
-		}
-		if err := s.customers.Create(ctx, customer); err != nil {
-			return nil, err
-		}
+	if err := s.linkOrCreateCustomer(ctx, u); err != nil {
+		return nil, err
 	}
 
 	tokens, _, _, err := s.generateAndStoreTokens(ctx, u)
-	return tokens, err
+	if err != nil {
+		return nil, err
+	}
+	return &SessionOutput{TokenOutput: tokens, UserID: u.ID}, nil
 }
 
 // ForgotPasswordInput holds a password reset request.
