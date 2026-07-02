@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	apporder "app/internal/application/order"
+	domainorder "app/internal/domain/order"
 	"app/pkg/apperror"
 )
 
@@ -41,13 +42,13 @@ func (s *Service) HandlePaymentCallback(ctx context.Context, input PaymentCallba
 	}
 
 	if status == "NOK" {
-		order, err := s.orders.GetByID(ctx, input.OrderID)
+		_, err := s.orders.CancelUnpaidPayment(ctx, input.OrderID, "Payment failed")
 		if err != nil {
 			return nil, err
 		}
 		return &PaymentCallbackOutput{
-			OrderID:       order.ID,
-			PaymentStatus: order.PaymentStatus.String(),
+			OrderID:       input.OrderID,
+			PaymentStatus: domainorder.PaymentUnpaid.String(),
 		}, nil
 	}
 
@@ -59,11 +60,7 @@ func (s *Service) HandlePaymentCallback(ctx context.Context, input PaymentCallba
 		return nil, err
 	}
 
-	if s.mailer != nil && order.Customer != nil && order.Customer.Email != "" {
-		go func() {
-			_ = s.mailer.SendOrderConfirmation(context.Background(), order.Customer.Email, order.OrderNumber, order.Total)
-		}()
-	}
+	// Confirmation email is sent when payment integration moves order to processing.
 
 	return &PaymentCallbackOutput{
 		OrderID:       order.ID,
