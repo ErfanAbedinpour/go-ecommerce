@@ -198,15 +198,62 @@ func (r *OrderRepository) IncrementCouponUsage(ctx context.Context, couponID uui
 	return nil
 }
 
+func (r *OrderRepository) DecrementCouponUsage(ctx context.Context, couponID uuid.UUID) error {
+	result := r.db.WithContext(ctx).Exec(
+		"UPDATE coupons SET usage_count = GREATEST(usage_count - 1, 0), updated_at = NOW() WHERE id = ?",
+		couponID,
+	)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("coupon not found")
+	}
+	return nil
+}
+
+func (r *OrderRepository) FindExpiredUnpaid(ctx context.Context, before time.Time, limit int) ([]order.Order, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+
+	var ids []uuid.UUID
+	err := r.db.WithContext(ctx).
+		Model(&models.OrderModel{}).
+		Select("id").
+		Where("payment_status = ? AND status = ? AND payment_expires_at IS NOT NULL AND payment_expires_at < ?",
+			order.PaymentUnpaid.String(), order.StatusPending.String(), before.UTC()).
+		Order("payment_expires_at ASC").
+		Limit(limit).
+		Pluck("id", &ids).Error
+	if err != nil {
+		return nil, err
+	}
+
+	orders := make([]order.Order, 0, len(ids))
+	for _, id := range ids {
+		o, err := r.FindByID(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		orders = append(orders, *o)
+	}
+	return orders, nil
+}
+
 func (r *OrderRepository) Update(ctx context.Context, o *order.Order) error {
+	updates := map[string]any{
+		"status":         o.Status.String(),
+		"payment_status": o.PaymentStatus.String(),
+		"updated_at":     o.UpdatedAt,
+	}
+	if o.TransactionID != "" {
+		updates["transaction_id"] = o.TransactionID
+	}
 	result := r.db.WithContext(ctx).
 		Model(&models.OrderModel{}).
 		Where("id = ?", o.ID).
-		Updates(map[string]any{
-			"status":         o.Status.String(),
-			"payment_status": o.PaymentStatus.String(),
-			"updated_at":     o.UpdatedAt,
-		})
+		Updates(updates)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -249,10 +296,16 @@ func (r *OrderRepository) loadCustomerSnapshot(ctx context.Context, customerID u
 		return nil, err
 	}
 	snap := &order.CustomerSnapshot{
-		ID:        c.ID,
-		Email:     c.Email,
-		FirstName: c.FirstName,
-		LastName:  c.LastName,
+		ID: c.ID,
+	}
+	if c.Email != nil {
+		snap.Email = *c.Email
+	}
+	if c.FirstName != nil {
+		snap.FirstName = *c.FirstName
+	}
+	if c.LastName != nil {
+		snap.LastName = *c.LastName
 	}
 	if c.Phone != nil {
 		snap.Phone = *c.Phone
