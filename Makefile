@@ -1,4 +1,4 @@
-.PHONY: build run test test-unit test-integration lint fmt migrate-up migrate-down docker-up docker-down docker-build clean swagger
+.PHONY: build run test test-unit test-integration test-e2e lint fmt migrate-up migrate-down migrate-version migrate-force db-reset docker-up docker-down docker-build clean swagger
 
 APP_NAME := ecommerce-api
 BUILD_DIR := bin
@@ -24,6 +24,9 @@ test-unit:
 test-integration:
 	go test -race -count=1 -tags=integration ./tests/integration/...
 
+test-e2e:
+	go test -race -count=1 -tags=e2e ./tests/e2e/...
+
 lint:
 	golangci-lint run ./...
 
@@ -41,6 +44,16 @@ migrate-down:
 
 migrate-version:
 	migrate -path migrations -database "$(DB_DSN)" version
+
+# Set schema_migrations.version when files were squashed (e.g. VERSION=2)
+migrate-force:
+	@test -n "$(VERSION)" || (echo "Usage: make migrate-force VERSION=2" && exit 1)
+	migrate -path migrations -database "$(DB_DSN)" force $(VERSION)
+
+# Drop all objects and re-apply migrations via the API (requires RUN_MIGRATIONS=true in .env)
+db-reset:
+	psql "$(DB_DSN)" -v ON_ERROR_STOP=1 -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+	@echo "Schema dropped. Run 'make dev' to apply migrations on startup."
 
 docker-up:
 	$(DOCKER_COMPOSE) up -d
