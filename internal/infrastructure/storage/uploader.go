@@ -18,11 +18,11 @@ type Uploader interface {
 	Save(filename string, contentType string, size int64, data io.Reader) (*UploadResult, error)
 }
 
-func NewUploader(cfg config.UploadConfig) Uploader {
+func NewUploader(cfg config.UploadConfig) (Uploader, error) {
 	if cfg.Provider == "s3" {
 		return NewS3Uploader(cfg)
 	}
-	return NewLocalUploader(cfg)
+	return NewLocalUploader(cfg), nil
 }
 
 func isAllowedType(cfg config.UploadConfig, contentType string) bool {

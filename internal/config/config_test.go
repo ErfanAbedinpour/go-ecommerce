@@ -50,6 +50,42 @@ func TestLoad_CustomValues(t *testing.T) {
 	}
 }
 
+func TestUploadConfig_PublicObjectURL(t *testing.T) {
+	cfg := UploadConfig{
+		BaseURL:          "http://185.243.48.122:9000/media",
+		S3Endpoint:       "http://185.243.48.122:9000",
+		S3Bucket:         "media",
+		S3ForcePathStyle: true,
+	}
+
+	if got := cfg.PublicObjectURL("abc.png"); got != "http://185.243.48.122:9000/media/abc.png" {
+		t.Fatalf("PublicObjectURL() = %q", got)
+	}
+
+	cfg.BaseURL = ""
+	if got := cfg.PublicObjectURL("abc.png"); got != "http://185.243.48.122:9000/media/abc.png" {
+		t.Fatalf("PublicObjectURL() without base = %q", got)
+	}
+}
+
+func TestUploadConfig_Validate_S3(t *testing.T) {
+	cfg := UploadConfig{
+		Provider:    "s3",
+		S3Bucket:    "media",
+		S3Endpoint:  "http://localhost:9000",
+		S3AccessKey: "key",
+		S3SecretKey: "secret",
+	}
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("Validate() error = %v", err)
+	}
+
+	cfg.S3Bucket = ""
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected error for missing S3_BUCKET")
+	}
+}
+
 func TestServerConfig_Addr(t *testing.T) {
 	cfg := ServerConfig{Host: "0.0.0.0", Port: 8080}
 	if got := cfg.Addr(); got != "0.0.0.0:8080" {

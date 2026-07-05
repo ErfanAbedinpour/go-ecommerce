@@ -1,0 +1,12 @@
+.git
+.github
+graphify-out
+bin
+uploads
+.env
+.env.*
+*.md
+!README.md
+tests
+**/*_test.go
+**/.DS_Store

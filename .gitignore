@@ -27,9 +27,14 @@ go.work.sum
 
 # env file
 .env
+.env.*
+!.env.example
 graphify-out
 # Uploaded files
 uploads/
+
+# Local deploy scripts and server configs (secrets live in GitHub Environments)
+deploy/
 
 # Editor/IDE
 # .idea/

@@ -98,13 +98,14 @@ type UploadConfig struct {
 	MaxSizeMB    int      `env:"UPLOAD_MAX_SIZE_MB" envDefault:"5"`
 	BaseURL      string   `env:"UPLOAD_BASE_URL" envDefault:"http://localhost:8080/uploads"`
 	AllowedTypes []string `env:"UPLOAD_ALLOWED_TYPES" envDefault:"image/jpeg,image/png,image/webp,image/gif,video/mp4"`
-	
-	// S3 specific configs
-	S3Bucket     string   `env:"UPLOAD_S3_BUCKET" envDefault:""`
-	S3Region     string   `env:"UPLOAD_S3_REGION" envDefault:"us-east-1"`
-	S3Endpoint   string   `env:"UPLOAD_S3_ENDPOINT" envDefault:""` // For minio or custom endpoint
-	S3AccessKey  string   `env:"UPLOAD_S3_ACCESS_KEY" envDefault:""`
-	S3SecretKey  string   `env:"UPLOAD_S3_SECRET_KEY" envDefault:""`
+
+	// S3 / MinIO object storage
+	S3Bucket          string `env:"S3_BUCKET" envDefault:""`
+	S3Region          string `env:"S3_REGION" envDefault:"us-east-1"`
+	S3Endpoint        string `env:"S3_ENDPOINT" envDefault:""`
+	S3AccessKey       string `env:"S3_ACCESS_KEY_ID" envDefault:""`
+	S3SecretKey       string `env:"S3_SECRET_ACCESS_KEY" envDefault:""`
+	S3ForcePathStyle  bool   `env:"S3_FORCE_PATH_STYLE" envDefault:"true"`
 }
 
 // LogConfig holds logging settings.
@@ -155,7 +156,40 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("SWAGGER_USERNAME and SWAGGER_PASSWORD are required when APP_ENV=production")
 		}
 	}
+	if err := c.Upload.Validate(); err != nil {
+		return err
+	}
 	return nil
+}
+
+// Validate checks upload provider settings.
+func (u UploadConfig) Validate() error {
+	if u.Provider != "s3" {
+		return nil
+	}
+	if u.S3Bucket == "" {
+		return fmt.Errorf("S3_BUCKET is required when UPLOAD_PROVIDER=s3")
+	}
+	if u.S3Endpoint == "" {
+		return fmt.Errorf("S3_ENDPOINT is required when UPLOAD_PROVIDER=s3")
+	}
+	if u.S3AccessKey == "" || u.S3SecretKey == "" {
+		return fmt.Errorf("S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY are required when UPLOAD_PROVIDER=s3")
+	}
+	return nil
+}
+
+// PublicObjectURL returns the public URL for a stored object key.
+func (u UploadConfig) PublicObjectURL(key string) string {
+	key = strings.TrimPrefix(key, "/")
+	if base := strings.TrimRight(u.BaseURL, "/"); base != "" {
+		return base + "/" + key
+	}
+	endpoint := strings.TrimRight(u.S3Endpoint, "/")
+	if u.S3ForcePathStyle {
+		return fmt.Sprintf("%s/%s/%s", endpoint, u.S3Bucket, key)
+	}
+	return fmt.Sprintf("%s/%s", endpoint, key)
 }
 
 func normalizeMigrationsPath(path string) string {

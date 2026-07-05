@@ -105,6 +105,7 @@ func setupTestEnv() (*config.Config, func(), error) {
 	setDefaultEnv("JWT_SECRET", "dev-secret-change-in-production-min-32-chars")
 	setDefaultEnv("AUTH_SIGNUP_ENABLED", "true")
 	setDefaultEnv("SMTP_ENABLED", "false")
+	setDefaultEnv("UPLOAD_PROVIDER", "local")
 	setDefaultEnv("UPLOAD_DIR", uploadDir)
 	setDefaultEnv("UPLOAD_BASE_URL", "http://localhost:8080/uploads")
 

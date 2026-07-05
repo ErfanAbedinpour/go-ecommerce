@@ -1,6 +1,8 @@
 # Build stage
 FROM golang:1.25-alpine AS builder
 
+ARG VERSION=1.0.0
+
 RUN apk add --no-cache git ca-certificates
 
 WORKDIR /build
@@ -11,7 +13,7 @@ RUN go mod download
 COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -ldflags="-w -s -X main.version=${VERSION:-1.0.0}" \
+    -ldflags="-w -s -X main.version=${VERSION}" \
     -o /build/api ./cmd/api
 
 # Runtime stage
